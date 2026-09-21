@@ -1,12 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ashen</title>
-    <link rel="icon" href="img/logo.png"/>
+    <link rel="icon" href="img/logo.png" />
+    <link rel="stylesheet" href="css/style.css" />
 </head>
+
 <body>
-    
+    <h1>Ashen</h1>
+    <div class="tab-container">
+        <button class="tab tab-left" id="tabMenu">Menu</button>
+        <button class="tab tab-center" id="tabCompendium">Compendium</button>
+        <button class="tab tab-right" id="tabSettings">Settings</button>
+    </div>
+
+    <div id="join">
+        <label for="browse-button">Browse Lobbies</label>
+        <button id="browse-button">Browse</button>
+        <label for="join-code">Join Lobby with Code</label>
+        <input type="text" id="join-code" placeholder="Enter lobby code"/>
+        <button id="join-button">Join</button>
+        <label for="create-lobby">Create Lobby</label>
+        <button id="create-lobby">Create</button>
+    </div>
+
+    <div id="compendium">
+        
+    </div>
+    <script src="js/script.js"></script>
 </body>
+
 </html>
