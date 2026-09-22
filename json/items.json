@@ -219,6 +219,255 @@
       "xxzweiradxx.staff.exhaustion",
       "xxzweiradxx.staff.hyperspeed"
     ],
-    "description": "A mystical, ancient staff."
+    "description": "A mystical, ancient staff. Legend says, it was found by the mighty warrior Noel."
+  },
+  {
+    "id": "xxzweiradxx.dumbbell",
+    "name": "xXZweiradXx's Dumbbell",
+    "pack": "xxzweiradxx",
+    "type": "buff",
+    "sprite": "xxzweiradxx/dumbbell.png",
+    "price": 40,
+    "effects": [
+      "xxzweiradxx.dumbbell.staff_smash_damage_buff",
+      "xxzweiradxx.dumbbell.staff_smash_hit_condition_buff"
+    ],
+    "description": "An unrealistically heavy dumbbell, greatly enhancing power."
+  },
+  {
+    "id": "xxzweiradxx.shirt",
+    "name": "Iconic Shirt",
+    "pack": "xxzweiradxx",
+    "type": "shirt",
+    "sprite": "xxzweiradxx/shirt.png",
+    "price": 50,
+    "base_stats": {
+      "damage_reduction": 0.35
+    },
+    "effects": ["xxzweiradxx.shirt.weapon_damage_buff"],
+    "description": "A shirt that has been seen quite often. Wearing it makes you feel a sudden rush of strength."
+  },
+  {
+    "id": "xxzweiradxx.chain",
+    "name": "Sports Chain",
+    "pack": "xxzweiradxx",
+    "type": "charm",
+    "sprite": "xxzweiradxx/chain.png",
+    "price": 50,
+    "base_stats": {
+      "dodge_chance": 0.15,
+      "damage_reduction": 0.05
+    },
+    "effects": ["xxzweiradxx.chain.weapon_crit_chance_buff"],
+    "description": "A chain, that reminds of a game studio. Gives immense strength, for some reason."
+  },
+  {
+    "id": "xxzweiradxx.keyboard",
+    "name": "Expensive Keyboard",
+    "pack": "xxzweiradxx",
+    "type": "passive",
+    "sprite": "xxzweiradxx/keyboard.png",
+    "price": 50,
+    "effects": ["xxzweiradxx.keyboard.stacking_damage_buff"],
+    "description": "A keyboard, that is way too expensive. At least it's insanely fast."
+  },
+  {
+    "id": "generic.sword",
+    "name": "Sword",
+    "pack": "generic",
+    "type": "weapon",
+    "sprite": "generic/sword.png",
+    "price": 10,
+    "base_stats": {
+      "damage": 5,
+      "cooldown": 1,
+      "crit_chance": 0.15,
+      "crit_damage": 1.5
+    },
+    "level_stats": {
+      "damage_add": 1,
+      "cooldown_add": -0.05,
+      "crit_chance_add": 0.05,
+      "crit_damage_add": 0.1
+    },
+    "description": "A sword. Simple, but effective."
+  },
+  {
+    "id": "generic.hammer",
+    "name": "Hammer",
+    "pack": "generic",
+    "type": "weapon",
+    "sprite": "generic/hammer.png",
+    "price": 10,
+    "base_stats": {
+      "damage": 10,
+      "cooldown": 2,
+      "crit_chance": 0.05,
+      "crit_damage": 2.5
+    },
+    "level_stats": {
+      "damage_add": 3,
+      "cooldown_add": 0.2,
+      "crit_chance_add": 0.05,
+      "crit_damage_add": 0.25
+    },
+    "description": "A hammer. This is not supposed to be used for combat, but that's fine"
+  },
+  {
+    "id": "generic.frying_pan",
+    "name": "Frying Pan",
+    "pack": "generic",
+    "type": "weapon",
+    "sprite": "generic/frying_pan.png",
+    "price": 10,
+    "base_stats": {
+      "damage": 3,
+      "cooldown": 1,
+      "crit_chance": 0.25,
+      "crit_damage": 2
+    },
+    "level_stats": {
+      "damage_add": 1,
+      "cooldown_add": -0.075,
+      "crit_chance_add": 0.05,
+      "crit_damage_add": 0.25
+    },
+    "description": "A frying pan. Not a weapon! But works, I guess..."
+  },
+  {
+    "id": "generic.bow",
+    "name": "Speedy Bow",
+    "pack": "generic",
+    "type": "weapon",
+    "sprite": "generic/bow.png",
+    "price": 10,
+    "base_stats": {
+      "damage": 2,
+      "cooldown": 0.5,
+      "crit_chance": 0.25,
+      "crit_damage": 2
+    },
+    "level_stats": {
+      "damage_add": 0.5,
+      "cooldown_add": -0.05,
+      "crit_chance_add": 0.05,
+      "crit_damage_add": 0.25
+    },
+    "description": "A bow. How can you shoot this so fast?"
+  },
+  {
+    "id": "generic.beige_shirt",
+    "name": "Beige Shirt",
+    "pack": "generic",
+    "type": "shirt",
+    "sprite": "generic/beige_shirt.png",
+    "price": 10,
+    "base_stats": {
+      "dodge_chance": 0.15,
+      "damage_reduction": 0.05
+    },
+    "level_stats": {
+      "dodge_chance_add": 0.025,
+      "damage_reduction_add": 0.0075
+    },
+    "description": "A plain, beige shirt."
+  },
+  {
+    "id": "generic.brown_shirt",
+    "name": "Brown Shirt",
+    "pack": "generic",
+    "type": "shirt",
+    "sprite": "generic/brown_shirt.png",
+    "price": 10,
+    "base_stats": {
+      "dodge_chance": 0.05,
+      "damage_reduction": 0.15
+    },
+    "level_stats": {
+      "dodge_chance_add": 0.0075,
+      "damage_reduction_add": 0.025
+    },
+    "description": "A plain, brown shirt."
+  },
+  {
+    "id": "generic.band_shirt",
+    "name": "Band Shirt",
+    "pack": "generic",
+    "type": "shirt",
+    "sprite": "generic/band_shirt.png",
+    "price": 10,
+    "base_stats": {
+      "damage_reduction": 0.2
+    },
+    "level_stats": {
+      "damage_reduction_add": 0.0325
+    },
+    "description": "You have to survive moshpits somehow."
+  },
+  {
+    "id": "generic.mike_shirt",
+    "name": "Mike Shirt",
+    "pack": "generic",
+    "type": "shirt",
+    "sprite": "generic/mike_shirt.png",
+    "price": 10,
+    "base_stats": {
+      "dodge_chance": 0.2
+    },
+    "level_stats": {
+      "dodge_chance_add": 0.0325
+    },
+    "description": "This sports shirt makes you agile."
+  },
+  {
+    "id": "generic.knight",
+    "name": "The Knight",
+    "pack": "generic",
+    "type": "passive",
+    "sprite": "generic/knight.png",
+    "price": 10,
+    "base_stats": {
+      "dodge_chance": 0.1
+    },
+    "level_stats": {
+      "dodge_chance_add": 0.025
+    },
+    "effects": ["generic.knight.weapon_cooldown_buff"],
+    "description": "A very familiar figure, that doesn't look happy to be here."
+  },
+  {
+    "id": "generic.horseshoe",
+    "name": "Horseshoe",
+    "pack": "generic",
+    "type": "passive",
+    "sprite": "generic/horseshoe.png",
+    "price": 10,
+    "base_stats": {
+      "damage_reduction": 0.1
+    },
+    "level_stats": {
+      "damage_reduction_add": 0.025
+    },
+    "effects": ["generic.horseshoe.weapon_crit_chance_buff"]
+  },
+  {
+    "id": "generic.coin",
+    "name": "Coin",
+    "pack": "generic",
+    "type": "passive",
+    "sprite": "generic/coin.png",
+    "price": 20,
+    "effects": ["generic.coin.money_earning"],
+    "description": "A coin worth a LOT."
+  },
+  {
+    "id": "generic.crown",
+    "name": "Crown",
+    "pack": "generic",
+    "type": "passive",
+    "sprite": "generic/crown.png",
+    "price": 20,
+    "effects": ["generic.crown.interest"],
+    "description": "A (definitely non-plastic) Crown."
   }
 ]
