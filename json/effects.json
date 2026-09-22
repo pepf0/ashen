@@ -218,7 +218,7 @@
     "target": "xxzweiradxx.staff.smash",
     "stat": "damage",
     "mult": 2.5,
-    "description": "Increases the smash damage of Ely7's Blade by {(mult-1)*100}%"
+    "description": "Increases the smash damage of xXZweiradXx's Staff by {(mult-1)*100}%"
   },
   {
     "id": "xxzweiradxx.dumbbell.staff_smash_hit_condition_buff",
@@ -233,7 +233,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "damage",
-    "mult": 2,
+    "mult": 1.5,
     "description": "Increases the damage of your weapon by {(mult-1)*100}%"
   },
   {
@@ -284,6 +284,6 @@
     "trigger": "round-start",
     "type": "interest",
     "gain": 0.1,
-    "description": "At the start of combat, earn {gain}% of your money as interest" 
+    "description": "At the start of combat, earn {gain*100}% of your money as interest" 
   }
 ]

@@ -79,3 +79,52 @@ h1 {
     border-color: #c0c0ff;
 }
 /*#endregion*/
+/*#region Compendium*/
+#compendium {
+    text-align: center;
+    margin-top: 20px;
+}
+#compendium h2 {
+    font-size: 2vw;
+    margin: 0 0 10px 0 
+}
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 128px);
+    row-gap: 16px;
+    column-gap: 48px;
+    margin: 0 auto 30px auto;
+    width: fit-content;
+}
+.item-card {
+    width: 160px;
+    height: 160px;
+    padding: 16px;
+    box-sizing: border-box;
+    background-color: #131025;
+    border: 1px solid #808080;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.item-card[data-pack="pepf"] {
+    border-color: #40e0d0;
+}
+.item-card[data-pack="z7fox"] {
+    border-color: #e0407a;
+}
+.item-card[data-pack="ely7"] {
+    border-color: #a8ff40;
+}
+.item-card[data-pack="xxzweiradxx"] {
+    border-color: #6040e0;
+}
+
+.item-card img {
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
+}
+/*#endregion*/

@@ -30,7 +30,7 @@
   },
   {
     "id": "pepf.shirt",
-    "name": "Pepf Band-Shirt",
+    "name": "Pepf Shirt",
     "pack": "pepf",
     "type": "shirt",
     "sprite": "pepf/shirt.png",
@@ -39,7 +39,7 @@
       "damage_reduction": 0.35
     },
     "effects": ["pepf.shirt.weapon_cooldown_buff"],
-    "description": "An extremely cool looking shirt. Looks kinda familiar"
+    "description": "An extremely cool looking shirt. Looks kinda familiar."
   },
   {
     "id": "pepf.sigil",
@@ -285,10 +285,10 @@
       "crit_damage": 1.5
     },
     "level_stats": {
-      "damage_add": 1,
-      "cooldown_add": -0.05,
-      "crit_chance_add": 0.05,
-      "crit_damage_add": 0.1
+      "damage_add": 0.5,
+      "cooldown_add": -0.025,
+      "crit_chance_add": 0.025,
+      "crit_damage_add": 0.05
     },
     "description": "A sword. Simple, but effective."
   },
@@ -306,12 +306,12 @@
       "crit_damage": 2.5
     },
     "level_stats": {
-      "damage_add": 3,
-      "cooldown_add": 0.2,
-      "crit_chance_add": 0.05,
-      "crit_damage_add": 0.25
+      "damage_add": 1.5,
+      "cooldown_add": 0.1,
+      "crit_chance_add": 0.025,
+      "crit_damage_add": 0.125
     },
-    "description": "A hammer. This is not supposed to be used for combat, but that's fine"
+    "description": "A hammer. This is not supposed to be used for combat, but that's fine."
   },
   {
     "id": "generic.frying_pan",
@@ -327,10 +327,10 @@
       "crit_damage": 2
     },
     "level_stats": {
-      "damage_add": 1,
-      "cooldown_add": -0.075,
-      "crit_chance_add": 0.05,
-      "crit_damage_add": 0.25
+      "damage_add": 0.5,
+      "cooldown_add": -0.0375,
+      "crit_chance_add": 0.025,
+      "crit_damage_add": 0.125
     },
     "description": "A frying pan. Not a weapon! But works, I guess..."
   },
@@ -348,10 +348,10 @@
       "crit_damage": 2
     },
     "level_stats": {
-      "damage_add": 0.5,
-      "cooldown_add": -0.05,
-      "crit_chance_add": 0.05,
-      "crit_damage_add": 0.25
+      "damage_add": 0.25,
+      "cooldown_add": -0.0125,
+      "crit_chance_add": 0.025,
+      "crit_damage_add": 0.125
     },
     "description": "A bow. How can you shoot this so fast?"
   },
@@ -397,7 +397,7 @@
     "sprite": "generic/band_shirt.png",
     "price": 10,
     "base_stats": {
-      "damage_reduction": 0.2
+      "damage_reduction": 0.15
     },
     "level_stats": {
       "damage_reduction_add": 0.0325
@@ -412,7 +412,7 @@
     "sprite": "generic/mike_shirt.png",
     "price": 10,
     "base_stats": {
-      "dodge_chance": 0.2
+      "dodge_chance": 0.15
     },
     "level_stats": {
       "dodge_chance_add": 0.0325
@@ -448,7 +448,8 @@
     "level_stats": {
       "damage_reduction_add": 0.025
     },
-    "effects": ["generic.horseshoe.weapon_crit_chance_buff"]
+    "effects": ["generic.horseshoe.weapon_crit_chance_buff"],
+    "description": "Looks lucky, might actually be lucky."
   },
   {
     "id": "generic.coin",
