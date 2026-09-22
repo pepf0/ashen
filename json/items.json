@@ -1,51 +1,224 @@
 [
-    {
-        "id": "pepf.guitar",
-        "name": "Pepf's Guitar",
-        "pack": "pepf",
-        "type": "weapon",
-        "sprite": "pepf/guitar.png",
-        "price": 60,
-        "base_stats": {
-            "damage": 5,
-            "cooldown": 1.0,
-            "crit_chance": 0.15,
-            "crit_damage": 2
-        },
-        "effects": ["pepf.guitar.stacking_damage_buff"],
-        "description": "A guitar, optimal for power chords. May give foes hearing issues..."
+  {
+    "id": "pepf.guitar",
+    "name": "Pepf's Guitar",
+    "pack": "pepf",
+    "type": "weapon",
+    "sprite": "pepf/guitar.png",
+    "price": 60,
+    "base_stats": {
+      "damage": 5,
+      "cooldown": 1.0,
+      "crit_chance": 0.15,
+      "crit_damage": 2
     },
-    {
-        "id": "pepf.pick",
-        "name": "Pepf's Pick",
-        "pack": "pepf",
-        "type": "buff",
-        "sprite": "pepf/pick.png",
-        "price": 40,
-        "effects": ["pepf.pick.guitar_damage_buff", "pepf.pick.guitar_cooldown_buff"],
-        "description": "A great guitar pick, increasing playing speed by a lot."
+    "effects": ["pepf.guitar.stacking_damage_buff"],
+    "description": "A guitar, optimal for power chords. May give foes hearing issues..."
+  },
+  {
+    "id": "pepf.pick",
+    "name": "Pepf's Pick",
+    "pack": "pepf",
+    "type": "buff",
+    "sprite": "pepf/pick.png",
+    "price": 40,
+    "effects": [
+      "pepf.pick.guitar_damage_buff",
+      "pepf.pick.guitar_cooldown_buff"
+    ],
+    "description": "A great guitar pick, increasing playing speed by a lot."
+  },
+  {
+    "id": "pepf.shirt",
+    "name": "Pepf Band-Shirt",
+    "pack": "pepf",
+    "type": "shirt",
+    "sprite": "pepf/shirt.png",
+    "price": 50,
+    "base_stats": {
+      "damage_reduction": 0.35
     },
-    {
-        "id": "pepf.shirt",
-        "name": "Pepf's Shirt",
-        "pack": "pepf",
-        "type": "shirt",
-        "sprite": "pepf/shirt.png",
-        "price": 50,
-        "base_stats": {
-            "damage_reduction": 0.35
-        },
-        "effects": ["pepf.shirt.weapon_cooldown_buff"],
-        "description": "An extremely cool looking shirt. Looks kinda familiar"
+    "effects": ["pepf.shirt.weapon_cooldown_buff"],
+    "description": "An extremely cool looking shirt. Looks kinda familiar"
+  },
+  {
+    "id": "pepf.sigil",
+    "name": "Cyan Sigil",
+    "pack": "pepf",
+    "type": "charm",
+    "sprite": "pepf/sigil.png",
+    "price": 50,
+    "effects": [
+      "pepf.sigil.low_hp_weapon_damage_buff",
+      "pepf.sigil.weapon_cooldown_buff"
+    ],
+    "description": "A weird sigil. Looks cool, and could prove very useful."
+  },
+  {
+    "id": "pepf.dragon",
+    "name": "The Dragon",
+    "pack": "pepf",
+    "type": "passive",
+    "sprite": "pepf/dragon.png",
+    "price": 100,
+    "effects": [
+      "pepf.dragon.invulnerability",
+      "pepf.dragon.weapon_cooldown_buff",
+      "pepf.dragon.weapon_damage_buff"
+    ],
+    "description": "The mightiest of dragons. He protects his owner with his life."
+  },
+  {
+    "id": "z7fox.whip",
+    "name": "Z7FOX's Whip",
+    "pack": "z7fox",
+    "type": "weapon",
+    "sprite": "z7fox/whip.png",
+    "price": 60,
+    "base_stats": {
+      "damage": 25,
+      "cooldown": 5,
+      "crit_chance": 0.1,
+      "crit_damage": 1.5
     },
-    {
-        "id": "pepf.sigil",
-        "name": "Pepf's Sigil",
-        "pack": "pepf",
-        "type": "charm",
-        "sprite": "pepf/sigil.png",
-        "price": 50,
-        "effects": ["pepf.sigil.low_hp_weapon_damage_buff", "pepf.sigil.weapon_cooldown_buff"],
-        "description": "A weird sigil. Looks cool, and is useful."
-    }
+    "effects": ["z7fox.whip.stun", "z7fox.whip.crit_stun"],
+    "description": "A heavy whip. Hard to swing, but hard hitting."
+  },
+  {
+    "id": "z7fox.emblem",
+    "name": "Z7FOX's Emblem",
+    "pack": "z7fox",
+    "type": "buff",
+    "sprite": "z7fox/emblem.png",
+    "price": 40,
+    "effects": [
+      "z7fox.emblem.whip_stun_cooldown_buff",
+      "z7fox.emblem.whip_damage_buff"
+    ],
+    "description": "An otherworldly emblem. Feels like it doesn't just buff whips."
+  },
+  {
+    "id": "z7fox.shirt",
+    "name": "Magenta Shirt",
+    "pack": "z7fox",
+    "type": "shirt",
+    "sprite": "z7fox/shirt.png",
+    "price": 50,
+    "base_stats": {
+      "damage_reduction": 0.45
+    },
+    "effects": ["z7fox.shirt.stun_chance"],
+    "description": "A shirt with an interesting color... No one could ever joke about that."
+  },
+  {
+    "id": "z7fox.chain",
+    "name": "Cross Chain",
+    "pack": "z7fox",
+    "type": "charm",
+    "sprite": "z7fox/chain.png",
+    "price": 50,
+    "base_stats": {
+      "damage_reduction": 0.25,
+      "dodge_chance": 0.25
+    },
+    "description": "Your faith will protect you."
+  },
+  {
+    "id": "z7fox.football",
+    "name": "Z7FOX's Football",
+    "pack": "z7fox",
+    "type": "passive",
+    "sprite": "z7fox/football.png",
+    "price": 50,
+    "base_stats": {
+      "dodge_chance": 0.25
+    },
+    "effects": ["z7fox.football.weapon_cooldown_buff"],
+    "description": "A football, that somehow makes you agile?! Also, it's red..."
+  },
+  {
+    "id": "ely7.blade",
+    "name": "Ely7's Blade",
+    "pack": "ely7",
+    "type": "weapon",
+    "sprite": "ely7/blade.png",
+    "price": 60,
+    "base_stats": {
+      "damage": 5,
+      "cooldown": 1,
+      "crit_chance": 0.4,
+      "crit_damage": 1
+    },
+    "effects": ["ely7.blade.stacking_crit_damage_buff"],
+    "description": "A blade wielded by a lucky man."
+  },
+  {
+    "id": "ely7.whetstone",
+    "name": "Ely7's Whetstone",
+    "pack": "ely7",
+    "type": "buff",
+    "sprite": "ely7/whetstone.png",
+    "price": 40,
+    "effects": [
+      "ely7.whetstone.blade_crit_chance_buff",
+      "ely7.whetstone.blade_cooldown_buff"
+    ],
+    "description": "Makes green Blades extra sharp."
+  },
+  {
+    "id": "ely7.shirt",
+    "name": "Celestial Shirt",
+    "pack": "ely7",
+    "type": "shirt",
+    "sprite": "ely7/shirt.png",
+    "price": 50,
+    "base_stats": {
+      "damage_reduction": 0.2
+    },
+    "effects": [
+      "ely7.shirt.weapon_crit_chance_buff",
+      "ely7.shirt.special_chance_buff"
+    ],
+    "description": "A shirt filled to the brim with ely7's luck"
+  },
+  {
+    "id": "ely7.clover",
+    "name": "Dark Clover",
+    "pack": "ely7",
+    "type": "charm",
+    "sprite": "ely7/clover.png",
+    "price": 50,
+    "effects": ["ely7.clover.special_chance_buff"],
+    "description": "Not just any clover. A dark clover, that is incredibly lucky."
+  },
+  {
+    "id": "ely7.chip",
+    "name": "Black Market Chip",
+    "pack": "ely7",
+    "type": "passive",
+    "sprite": "ely7/chip.png",
+    "price": 75,
+    "effects": ["ely7.chip.double_or_half"],
+    "description": "Definitely illegal. Will make you rich."
+  },
+  {
+    "id": "xxzweiradxx.staff",
+    "name": "xXZweiradXx's Staff",
+    "pack": "xxzweiradxx",
+    "type": "weapon",
+    "sprite": "xxzweiradxx/staff.png",
+    "price": 60,
+    "base_stats": {
+      "damage": 1,
+      "cooldown": 0.5,
+      "crit_chance": 0.1,
+      "crit_damage": 2
+    },
+    "effects": [
+      "xxzweiradxx.staff.smash",
+      "xxzweiradxx.staff.exhaustion",
+      "xxzweiradxx.staff.hyperspeed"
+    ],
+    "description": "A mystical, ancient staff."
+  }
 ]

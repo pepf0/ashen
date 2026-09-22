@@ -1,64 +1,215 @@
 [
-    {
-        "id": "pepf.guitar.stacking_damage_buff",
-        "trigger": "pepf.guitar.hit",
-        "type": "buff",
-        "target": "pepf.guitar",
-        "stat": "damage",
-        "mult": 1.1,
-        "duration": 5,
-        "max_stacks": 50,
-        "description": "On hit, gains a stacking {(mult-1)*100}% damage buff, lasting for {duration} seconds, up to {max_stacks} stacks."
-    },
-    {
-        "id": "pepf.pick.guitar_damage_buff",
-        "trigger": "passive",
-        "type": "buff",
-        "target": "pepf.guitar",
-        "stat": "damage",
-        "mult": 2.0,
-        "max_stacks": 1,
-        "description": "Increases the damage of Pepf's Guitar by {(mult-1)*100}%."
-    },
-    {
-        "id": "pepf.pick.guitar_cooldown_buff",
-        "trigger": "passive",
-        "type": "buff",
-        "target": "pepf.guitar",
-        "stat": "cooldown",
-        "mult": 0.75,
-        "max_stacks": 1,
-        "description": "Reduces the cooldown of Pepf's Guitar by {(1-mult)*100}%."
-    },
-    {
-        "id": "pepf.shirt.weapon_cooldown_buff",
-        "trigger": "passive",
-        "type": "buff",
-        "target": "type.weapon",
-        "stat": "cooldown",
-        "mult": 0.85,
-        "max_stacks": 1,
-        "description": "Reduces the cooldown of your weapons by {(1-mult)*100}%."
-    },
-    {
-        "id": "pepf.sigil.low_hp_weapon_damage_buff",
-        "trigger": "passive",
-        "condition": { "hp_below": 0.4 },
-        "type": "buff",
-        "target": "type.weapon",
-        "stat": "damage",
-        "mult": 1.75,
-        "max_stacks": 1,
-        "description": "Increases the damage of your weapons by {(mult-1)*100}% while below {condition.hp_below*100}% HP."
-    },
-    {
-        "id": "pepf.sigil.weapon_cooldown_buff",
-        "trigger": "passive",
-        "type": "buff",
-        "target": "type.weapon",
-        "stat": "cooldown",
-        "mult": 0.9,
-        "max_stacks": 1,
-        "description": "Reduces the cooldown of your weapons by {(1-mult)*100}%."
-    }
+  {
+    "id": "pepf.guitar.stacking_damage_buff",
+    "trigger": "pepf.guitar.hit",
+    "type": "buff",
+    "target": "pepf.guitar",
+    "stat": "damage",
+    "mult": 1.1,
+    "duration": 3,
+    "max_stacks": 50,
+    "description": "On hit, gains a stacking {(mult-1)*100}% damage buff, lasting for {duration} seconds, up to {max_stacks} stacks."
+  },
+  {
+    "id": "pepf.pick.guitar_damage_buff",
+    "type": "buff",
+    "target": "pepf.guitar",
+    "stat": "damage",
+    "mult": 2.0,
+    "description": "Increases the damage of Pepf's Guitar by {(mult-1)*100}%."
+  },
+  {
+    "id": "pepf.pick.guitar_cooldown_buff",
+    "type": "buff",
+    "target": "pepf.guitar",
+    "stat": "cooldown",
+    "mult": 0.75,
+    "description": "Reduces the cooldown of Pepf's Guitar by {(1-mult)*100}%."
+  },
+  {
+    "id": "pepf.shirt.weapon_cooldown_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "cooldown",
+    "mult": 0.85,
+    "description": "Reduces the cooldown of your weapon by {(1-mult)*100}%."
+  },
+  {
+    "id": "pepf.sigil.low_hp_weapon_damage_buff",
+    "condition": { "hp_below": 0.4 },
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "damage",
+    "mult": 1.75,
+    "description": "Increases the damage of your weapon by {(mult-1)*100}% while below {condition.hp_below*100}% HP."
+  },
+  {
+    "id": "pepf.sigil.weapon_cooldown_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "cooldown",
+    "mult": 0.9,
+    "description": "Reduces the cooldown of your weapon by {(1-mult)*100}%."
+  },
+  {
+    "id": "pepf.dragon.invulnerability",
+    "trigger": "cooldown",
+    "cooldown": 15,
+    "type": "invulnerability",
+    "duration": 3,
+    "description": "Gives {duration} seconds of invulnerability every {cooldown} seconds."
+  },
+  {
+    "id": "pepf.dragon.weapon_cooldown_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "cooldown",
+    "mult": 0.65,
+    "description": "Reduces the cooldown of your weapon by {(1-mult)*100}%."
+  },
+  {
+    "id": "pepf.dragon.weapon_damage_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "damage",
+    "mult": 2.0,
+    "description": "Increases the damage of your weapon by {(mult-1)*100}%."
+  },
+  {
+    "id": "z7fox.whip.stun",
+    "trigger": "cooldown",
+    "cooldown": 5,
+    "type": "stun",
+    "duration": 1,
+    "description": "Stuns enemies for {duration} seconds every {cooldown} seconds. Can crit for double the stun duration."
+  },
+  {
+    "id": "z7fox.whip.crit_stun",
+    "trigger": "z7fox.whip.hit",
+    "type": "buff",
+    "target": "z7fox.whip",
+    "stat": "crit_chance",
+    "add": 0.05,
+    "description": "On hit, increases crit chance by {add*100}%."
+  },
+  {
+    "id": "z7fox.emblem.whip_stun_cooldown_buff",
+    "type": "buff",
+    "target": "z7fox.whip.stun",
+    "stat": "cooldown",
+    "mult": 0.8,
+    "description": "Reduces the stun cooldown of Z7FOX's Whip by {(1-mult)*100}%."
+  },
+  {
+    "id": "z7fox.emblem.whip_damage_buff",
+    "type": "buff",
+    "target": "z7fox.whip",
+    "stat": "damage",
+    "mult": 2.4,
+    "description": "Increases the damage of Z7FOX's Whip by {(mult-1)*100}%."
+  },
+  {
+    "id": "z7fox.shirt.stun_chance",
+    "trigger": "cooldown",
+    "cooldown": 1,
+    "type": "stun",
+    "duration": 1,
+    "chance": 0.05,
+    "description": "Has a {chance*100}% chance to stun enemies for 1 second every second."
+  },
+  {
+    "id": "z7fox.football.weapon_cooldown_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "cooldown",
+    "mult": 0.75,
+    "description": "Reduces the cooldown of your weapon by {(1-mult)*100}%."
+  },
+  {
+    "id": "ely7.blade.stacking_crit_damage_buff",
+    "trigger": "ely7.blade.crit",
+    "type": "buff",
+    "target": "ely7.blade",
+    "stat": "crit_damage",
+    "mult": 1.075,
+    "max_stacks": 30,
+    "description": "On crit, gains a stacking {(mult-1)*100}% crit damage buff, up to {max_stacks} stacks."
+  },
+  {
+    "id": "ely7.whetstone.blade_crit_chance_buff",
+    "type": "buff",
+    "target": "ely7.blade",
+    "stat": "crit_chance",
+    "mult": 2.0,
+    "description": "Increases the crit chance of Ely7's Blade by {(mult-1)*100}%."
+  },
+  {
+    "id": "ely7.whetstone.blade_cooldown_buff",
+    "type": "buff",
+    "target": "ely7.blade",
+    "stat": "cooldown",
+    "mult": 0.75,
+    "description": "Reduces the cooldown of Ely7's Blade by {(1-mult)*100}%."
+  },
+  {
+    "id": "ely7.shirt.weapon_crit_chance_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "crit_chance",
+    "add": 0.2,
+    "description": "Increases the crit chance of your weapon by a flat {add*100}%."
+  },
+  {
+    "id": "ely7.shirt.special_chance_buff",
+    "type": "buff",
+    "target": "special_chance",
+    "mult": 1.5,
+    "description": "Increases your Special Item Chance by {(mult-1)*100}%."
+  },
+  {
+    "id": "ely7.clover.special_chance_buff",
+    "type": "buff",
+    "target": "special_chance",
+    "mult": 2.5,
+    "description": "Increases your Special Item Chance by {(mult-1)*100}%."
+  },
+  {
+    "id": "ely7.chip.double_or_half",
+    "trigger": "cooldown",
+    "cooldown": 5,
+    "type": "gamble",
+    "start_money": 10,
+    "win_mult": 2,
+    "lose_mult": 0.5,
+    "description": "Starts with a payout of {start_money}$. 50/50 chance to either double, or halve its payout every {cooldown} seconds."
+  },
+  {
+    "id": "xxzweiradxx.staff.smash",
+    "trigger": "xxzweiradxx.staff.hit",
+    "condition": { "every_n_hits": 10 },
+    "type": "attack",
+    "damage": 60,
+    "description": "Every {condition.every_n_hits} hits, unleashes a strong smash, dealing {damage} damage."
+  },
+  {
+    "id": "xxzweiradxx.staff.exhaustion",
+    "trigger": "xxzweiradxx.staff.hit",
+    "condition": { "every_n_hits": 10 },
+    "type": "buff",
+    "target": "xxzweiradxx.staff",
+    "stat": "cooldown",
+    "mult": 10,
+    "duration": 5,
+    "description": "Every {condition.every_n_hits} hits, gets exhausted for {duration} seconds, increasing cooldown by {(mult-1)*100}%."
+  },
+  {
+    "id": "xxzweiradxx.staff.hyperspeed",
+    "trigger": "xxzweiradxx.staff.hit",
+    "condition": { "every_n_hits": 10 },
+    "type": "buff",
+    "target": "xxzweiradxx.staff",
+    "stat": "cooldown",
+    "mult": 0.9,
+    "description": "Every {condition.every_n_hits} hits, permanently reduces cooldown by {(1-mult)*100}%."
+  }
 ]
