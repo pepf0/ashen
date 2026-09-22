@@ -1,19 +1,51 @@
 [
     {
-        "id": "generic.sword",
-        "name": "Sword",
-        "pack": "generic",
+        "id": "pepf.guitar",
+        "name": "Pepf's Guitar",
+        "pack": "pepf",
         "type": "weapon",
-        "sprite": "generic/sword.png",
-        "price": 10,
+        "sprite": "pepf/guitar.png",
+        "price": 60,
         "base_stats": {
             "damage": 5,
             "cooldown": 1.0,
-            "crit_chance": 0.05,
-            "crit_damage": 1.5
+            "crit_chance": 0.15,
+            "crit_damage": 2
         },
-        "bonus_stats": null,
-        "description": "A basic sword. Simple, but effective."
-        
+        "effects": ["pepf.guitar.stacking_damage_buff"],
+        "description": "A guitar, optimal for power chords. May give foes hearing issues..."
+    },
+    {
+        "id": "pepf.pick",
+        "name": "Pepf's Pick",
+        "pack": "pepf",
+        "type": "buff",
+        "sprite": "pepf/pick.png",
+        "price": 40,
+        "effects": ["pepf.pick.guitar_damage_buff", "pepf.pick.guitar_cooldown_buff"],
+        "description": "A great guitar pick, increasing playing speed by a lot."
+    },
+    {
+        "id": "pepf.shirt",
+        "name": "Pepf's Shirt",
+        "pack": "pepf",
+        "type": "shirt",
+        "sprite": "pepf/shirt.png",
+        "price": 50,
+        "base_stats": {
+            "damage_reduction": 0.35
+        },
+        "effects": ["pepf.shirt.weapon_cooldown_buff"],
+        "description": "An extremely cool looking shirt. Looks kinda familiar"
+    },
+    {
+        "id": "pepf.sigil",
+        "name": "Pepf's Sigil",
+        "pack": "pepf",
+        "type": "charm",
+        "sprite": "pepf/sigil.png",
+        "price": 50,
+        "effects": ["pepf.sigil.low_hp_weapon_damage_buff", "pepf.sigil.weapon_cooldown_buff"],
+        "description": "A weird sigil. Looks cool, and is useful."
     }
 ]

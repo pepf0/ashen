@@ -1,0 +1,64 @@
+[
+    {
+        "id": "pepf.guitar.stacking_damage_buff",
+        "trigger": "pepf.guitar.hit",
+        "type": "buff",
+        "target": "pepf.guitar",
+        "stat": "damage",
+        "mult": 1.1,
+        "duration": 5,
+        "max_stacks": 50,
+        "description": "On hit, gains a stacking {(mult-1)*100}% damage buff, lasting for {duration} seconds, up to {max_stacks} stacks."
+    },
+    {
+        "id": "pepf.pick.guitar_damage_buff",
+        "trigger": "passive",
+        "type": "buff",
+        "target": "pepf.guitar",
+        "stat": "damage",
+        "mult": 2.0,
+        "max_stacks": 1,
+        "description": "Increases the damage of Pepf's Guitar by {(mult-1)*100}%."
+    },
+    {
+        "id": "pepf.pick.guitar_cooldown_buff",
+        "trigger": "passive",
+        "type": "buff",
+        "target": "pepf.guitar",
+        "stat": "cooldown",
+        "mult": 0.75,
+        "max_stacks": 1,
+        "description": "Reduces the cooldown of Pepf's Guitar by {(1-mult)*100}%."
+    },
+    {
+        "id": "pepf.shirt.weapon_cooldown_buff",
+        "trigger": "passive",
+        "type": "buff",
+        "target": "type.weapon",
+        "stat": "cooldown",
+        "mult": 0.85,
+        "max_stacks": 1,
+        "description": "Reduces the cooldown of your weapons by {(1-mult)*100}%."
+    },
+    {
+        "id": "pepf.sigil.low_hp_weapon_damage_buff",
+        "trigger": "passive",
+        "condition": { "hp_below": 0.4 },
+        "type": "buff",
+        "target": "type.weapon",
+        "stat": "damage",
+        "mult": 1.75,
+        "max_stacks": 1,
+        "description": "Increases the damage of your weapons by {(mult-1)*100}% while below {condition.hp_below*100}% HP."
+    },
+    {
+        "id": "pepf.sigil.weapon_cooldown_buff",
+        "trigger": "passive",
+        "type": "buff",
+        "target": "type.weapon",
+        "stat": "cooldown",
+        "mult": 0.9,
+        "max_stacks": 1,
+        "description": "Reduces the cooldown of your weapons by {(1-mult)*100}%."
+    }
+]
