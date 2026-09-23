@@ -20,7 +20,7 @@ public class Item
     [JsonPropertyName("effects")]
     public List<string>? EffectIds { get; set; }
     [JsonIgnore]
-    public List<Effect>? Effects => EffectIds.Select(effectId => Program.Effects.Values.Single(effect => effectId == effect.Id )).ToList();
+    public List<Effect>? Effects => EffectIds.Select(effectId => Program.Effects.Values.Single(effect => effectId == effect.Id )).ToList() ?? new List<Effect>();
     public string Description { get; set; }
 }
 
