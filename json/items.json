@@ -76,10 +76,10 @@
     "sprite": "z7fox/whip.png",
     "price": 60,
     "base_stats": {
-      "damage": 25,
+      "damage": 20,
       "cooldown": 5,
       "crit_chance": 0.1,
-      "crit_damage": 1.5
+      "crit_damage": 1.9
     },
     "effects": ["z7fox.whip.stun", "z7fox.whip.crit_stun"],
     "description": "A heavy whip. Hard to swing, but hard hitting."
@@ -146,7 +146,7 @@
     "base_stats": {
       "damage": 5,
       "cooldown": 1,
-      "crit_chance": 0.4,
+      "crit_chance": 0.3,
       "crit_damage": 1
     },
     "effects": ["ely7.blade.stacking_crit_damage_buff"],

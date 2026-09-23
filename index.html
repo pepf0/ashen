@@ -11,6 +11,9 @@
 
 <body>
     <h1>Ashen</h1>
+    <div class="back-container" id="backContainer" style="display: none;">
+        <button id="backButton">Go Back</button>
+    </div>
     <div class="tab-container">
         <button class="tab tab-left" id="tabMenu">Menu</button>
         <button class="tab tab-center" id="tabCompendium">Compendium</button>
@@ -18,17 +21,31 @@
     </div>
 
     <div id="join">
-        <label for="browse-button">Browse Lobbies</label>
-        <button id="browse-button">Browse</button>
-        <label for="join-code">Join Lobby with Code</label>
-        <input type="text" id="join-code" placeholder="Enter lobby code"/>
-        <button id="join-button">Join</button>
+        <label for="browseButton">Browse Lobbies</label>
+        <button id="browseButton">Browse</button>
+        <label for="joinCode">Join Lobby with Code</label>
+        <input type="text" id="joinCode" placeholder="Enter lobby code" />
+        <button id="joinButton">Join</button>
         <label for="create-lobby">Create Lobby</label>
         <button id="create-lobby">Create</button>
     </div>
-
     <div id="compendium" style="display: none;">
-        
+    </div>
+    <div id="itemInfo" style="display: none;">
+        <h2 id="itemInfoName"></h2>
+        <div class="item-card-big">
+            <img id="itemInfoImg" src="./img/item/pepf/guitar.png">
+        </div>
+        <div id="itemInfoDesc">
+            <ul id="itemInfoStats">
+            </ul>
+            <h3 id="itemInfoLevelStatsTitle">Per Level</h3>
+            <ul id="itemInfoLevelStats">
+            </ul>
+            <ul id="itemInfoEffects">
+            </ul>
+            <p id="itemInfoDescription"></p>
+        </div>
     </div>
     <script src="js/script.js"></script>
 </body>

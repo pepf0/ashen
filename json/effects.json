@@ -5,7 +5,7 @@
     "type": "buff",
     "target": "pepf.guitar",
     "stat": "damage",
-    "mult": 1.1,
+    "mult": 1.125,
     "duration": 3,
     "max_stacks": 50,
     "description": "On hit, gains a stacking {(mult-1)*100}% damage buff, lasting for {duration} seconds, up to {max_stacks} stacks"
@@ -105,7 +105,7 @@
     "type": "buff",
     "target": "z7fox.whip",
     "stat": "damage",
-    "mult": 2.4,
+    "mult": 3,
     "description": "Increases the damage of Z7FOX's Whip by {(mult-1)*100}%"
   },
   {
@@ -140,7 +140,7 @@
     "type": "buff",
     "target": "ely7.blade",
     "stat": "crit_chance",
-    "mult": 2.0,
+    "mult": 2.4,
     "description": "Increases the crit chance of Ely7's Blade by {(mult-1)*100}%"
   },
   {
@@ -217,7 +217,7 @@
     "type": "buff",
     "target": "xxzweiradxx.staff.smash",
     "stat": "damage",
-    "mult": 2.5,
+    "mult": 3.95,
     "description": "Increases the smash damage of xXZweiradXx's Staff by {(mult-1)*100}%"
   },
   {
