@@ -2,15 +2,10 @@
 using System.Net.WebSockets;
 using System.Text;
 
-namespace ashen;
+namespace Ashen;
 
 public class Program
 {
-    static string jsonsFolder = "../../json";
-    public static Dictionary<string, Item> Item => ItemLoader.ItemsFromJson(File.ReadAllText(jsonsFolder + "/items.json"))
-        .ToDictionary(item => item.Id);
-    public static Dictionary<string, Effect> Effects => ItemLoader.EffectsFromJson(File.ReadAllText(jsonsFolder + "/effects.json"))
-        .ToDictionary(effect => effect.Id);
     public static async Task Main(string[] args)
     {
         var listener = new HttpListener();

@@ -13,3 +13,11 @@
 /home/pepf/ashen/ashen/server/server/obj/Debug/net10.0/server.pdb
 /home/pepf/ashen/ashen/server/server/obj/Debug/net10.0/server.genruntimeconfig.cache
 /home/pepf/ashen/ashen/server/server/obj/Debug/net10.0/ref/server.dll
+C:\Dev\ashen\server\server\obj\Debug\net10.0\server.GeneratedMSBuildEditorConfig.editorconfig
+C:\Dev\ashen\server\server\obj\Debug\net10.0\server.AssemblyInfoInputs.cache
+C:\Dev\ashen\server\server\obj\Debug\net10.0\server.AssemblyInfo.cs
+C:\Dev\ashen\server\server\obj\Debug\net10.0\server.csproj.CoreCompileInputs.cache
+C:\Dev\ashen\server\server\obj\Debug\net10.0\server.sourcelink.json
+C:\Dev\ashen\server\server\obj\Debug\net10.0\server.dll
+C:\Dev\ashen\server\server\obj\Debug\net10.0\refint\server.dll
+C:\Dev\ashen\server\server\obj\Debug\net10.0\server.pdb
