@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics;
 
 namespace Ashen;
 
@@ -19,21 +15,19 @@ public static class Combat
         ApplyRoundStartEffects(p1);
         ApplyRoundStartEffects(p2);
 
-        var p1Random = new Random();
-        var p2Random = new Random();
+        var p1Rng = new Random();
+        var p2Rng = new Random();
 
         while (p1.Health > 0 && p2.Health > 0)
         {
             TickCooldowns(p1);
             TickCooldowns(p2);
 
+            TryWeaponAttack(p1, p2, p1Rng, p2Rng, tick, events);
+            TryWeaponAttack(p2, p1, p2Rng, p1Rng, tick, events);
 
-
-            TryWeaponAttack(p1, p2, p1Random, tick, events);
-            TryWeaponAttack(p2, p1, p2Random, tick, events);
-
-            TryTriggerCooldownEffects(p1, p2, p1Random, tick, events);
-            TryTriggerCooldownEffects(p2, p1, p2Random, tick, events);
+            TryTriggerCooldownEffects(p1, p2, p1Rng, tick, events);
+            TryTriggerCooldownEffects(p2, p1, p2Rng, tick, events);
 
             tick++;
         }
@@ -69,25 +63,31 @@ public static class Combat
                 effect.CurrentCooldown -= SPT;
     }
 
-    private static void TryWeaponAttack(Player attacker, Player defender, Random rng, int tick, List<CombatEvent> events)
+    private static void TryWeaponAttack(Player attacker, Player defender, Random atkrng, Random defrng, int tick, List<CombatEvent> events)
     {
         if (attacker.Stunned) return;
+        bool dodged = false;
+        if (defrng.NextDouble() < defender.DodgeChance)
+            dodged = true;
+        
         var weapon = attacker.Weapon;
         if (weapon is null || weapon.CurrentCooldown > tiny) return;
 
-        bool crit = rng.NextDouble() < weapon.RealCritChance;
+        bool crit = atkrng.NextDouble() < weapon.RealCritChance;
         events.Add(new DamageEvent
         {
             Tick = tick,
             Source = attacker,
             Target = defender,
             ItemSource = weapon,
-            Damage = weapon.RealDamage,
-            CritMultiplier = crit ? weapon.RealCritDamage : null
+            Damage = weapon.RealDamage * defender.DamageReduction,
+            CritMultiplier = crit ? weapon.RealCritDamage : null,
+            Dodged = dodged
         });
 
         weapon.CurrentCooldown += weapon.RealCooldown;
-        defender.Health -= weapon.RealDamage * (crit ? weapon.RealCritDamage : 1);
+        if (!dodged)
+            defender.Health -= weapon.RealDamage * defender.DamageReduction * (crit ? weapon.RealCritDamage : 1);
     }
 
     private static void TryTriggerCooldownEffects(Player owner, Player opponent, Random rng, int tick, List<CombatEvent> events)
@@ -126,6 +126,15 @@ public static class Combat
                 opponent.Stunned = true;
                 opponent.StunDurationLeft += effect.Effect.Duration ?? 0;
                 break;
+            case EffectType.Buff: 
+                events.Add(new BuffEvent()
+                {
+                    Tick = tick,
+                    SourceFilter = owner,
+                    Target = opponent,
+                    ItemSource = item,
+                    
+                })
         }
     }
 
