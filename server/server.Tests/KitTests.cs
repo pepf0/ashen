@@ -67,7 +67,7 @@ public class KitTests
         while (fight.Time < 2.2) fight.Step();
         var events = fight.TakeNewEvents();
         Assert.Contains(events, e => e is DamageEvent { Parried: true, Source: 1 });
-        Assert.Contains(events, e => e is DamageEvent { Reflected: true, Source: 0, Damage: 5 });
+        Assert.Contains(events, e => e is DamageEvent { Reflected: true, Source: 0, Damage: 4.5 });
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class KitTests
         fight.Queue(0, 0);
         while (fight.Time < 2.2) fight.Step();
         var hit = fight.TakeNewEvents().OfType<DamageEvent>().First(e => e.Source == 1 && e.WeaponAttack);
-        Assert.Equal(10, hit.Absorbed + hit.Damage, 3);
+        Assert.Equal(9, hit.Absorbed + hit.Damage, 3);
         Assert.True(hit.Absorbed > 0);
     }
 

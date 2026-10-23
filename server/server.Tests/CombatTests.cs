@@ -36,7 +36,7 @@ public class CombatTests
     [Fact]
     public void DamageReductionIsCapped()
     {
-        var tank = TestHelpers.Build(null, "z7fox.shirt", "z7fox.chain", "generic.horseshoe", "pepf.dragon");
+        var tank = TestHelpers.Build(null, "z7fox.shirt", "z7fox.chain", "generic.horseshoe", "xxzweiradxx.chain");
         tank.Shirt = TestHelpers.Own("z7fox.shirt");
         var stats = Combat.PreviewStats(tank);
         Assert.Equal(Combat.MaxDamageReduction, stats["damage_reduction"], 6);

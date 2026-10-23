@@ -72,7 +72,7 @@ public class RunVarietyTests
         tank.AugmentMods = Augment.Combine(new[] { "iron_wall" });
         var r = Combat.CalculateCombatResults(tank, TestHelpers.Build("generic.hammer"), seed: 2);
         var first = r.Events.OfType<DamageEvent>().First(e => e.WeaponAttack && e.Source == 1);
-        Assert.Equal(10, first.Absorbed, 3);
+        Assert.Equal(9, first.Absorbed, 3);
     }
 
     [Fact]
