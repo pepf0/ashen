@@ -871,3 +871,12 @@ button.ab.ready:hover { border-color: var(--text); }
 .kb-hint, .kb-key, .key, .ab-key { font-family: var(--font-body) !important; font-weight: 700; }
 .shop-item { position: relative; }
 .slot-hint { position: absolute; top: 6px; left: 6px; margin: 0; }
+
+/* Grid columns must be allowed to shrink their content, otherwise long names and tags push
+   the side panels underneath the shop (very visible in Firefox). */
+.game-grid > *, .game-side, .game-center, .lobby-grid > *, .board-grid > *, .settings-grid > *, .menu-grid > * { min-width: 0; }
+.game-side { grid-template-columns: minmax(0, 1fr); }
+.player-list li .grow, .member-list li .grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-list li .grow .mastery { white-space: normal; }
+.player-list li { flex-wrap: wrap; }
+.event-list li, .chat-log li { overflow-wrap: anywhere; }
