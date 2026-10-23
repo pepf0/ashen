@@ -151,4 +151,31 @@ public class KitTests
         double rate = (double)dodged / attacks;
         Assert.InRange(rate, 0.38, Combat.AbilityMaxDodgeChance + 0.03);
     }
+
+    [Fact]
+    public void ReflectedDamageIsReducedByTheAttackersDamageReduction()
+    {
+        // A tanky attacker hitting into Bulwark takes the reflect through its own damage reduction.
+        var attacker = TestHelpers.Build("generic.bow", "generic.band_shirt", "generic.horseshoe");
+        attacker.Shirt = TestHelpers.Own("generic.band_shirt", 5);
+        attacker.MaxHealth = 1000;
+        var guardian = WithKit("guardian", null, hp: 200);
+        var fight = Start(attacker, guardian);
+        var events = new List<CombatEvent>();
+        for (int i = 0; i < 20 * 60 && !fight.Finished; i++)
+        {
+            fight.Queue(1, 3); // Bulwark as soon as it's charged
+            fight.Step();
+            events.AddRange(fight.TakeNewEvents());
+        }
+        var blocked = events.OfType<DamageEvent>().FirstOrDefault(e => e.Blocked && e.Source == 0 && e.WeaponAttack);
+        var reflect = events.OfType<DamageEvent>().FirstOrDefault(e => e.Reflected && e.AbilitySource == "bulwark");
+        Assert.True(blocked is not null, $"no blocked hit; abilities: {string.Join(",", events.OfType<AbilityEvent>().Select(a => a.Ability))}; finished {fight.Finished}");
+        Assert.NotNull(reflect);
+        // 50% of the blocked bow hit comes back, reduced by the attacker's own damage reduction.
+        double raw = 2 * (blocked!.CritMultiplier ?? 1);
+        double dr = Combat.PreviewStats(attacker)["damage_reduction"];
+        Assert.True(dr > 0.25);
+        Assert.Equal(0.5 * raw * (1 - dr), reflect!.Damage, 2);
+    }
 }

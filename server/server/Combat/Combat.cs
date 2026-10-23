@@ -673,10 +673,26 @@ public sealed class Fight
         return true;
     }
 
+    /// <summary>Reflected damage is real damage to the attacker: their invulnerability blocks it, their damage
+    /// reduction reduces it and their shield absorbs it (it can't be dodged, parried or reflected again).</summary>
     private void Reflect(Fighter from, Fighter to, double amount, string ability)
     {
         var ev = new DamageEvent { Source = from.Index, Target = to.Index, Reflected = true, AbilitySource = ability };
-        Deal(from, to, Math.Max(0, amount), ev);
+        if (to.Invulnerable)
+        {
+            ev.Blocked = true;
+            Emit(ev);
+            return;
+        }
+        double damage = Math.Max(0, amount) * (1 - DamageReduction(to));
+        if (to.Shield > 0)
+        {
+            double absorbed = Math.Min(to.Shield, damage);
+            to.Shield -= absorbed;
+            damage -= absorbed;
+            ev.Absorbed = Math.Round(absorbed, 2);
+        }
+        Deal(from, to, damage, ev);
     }
 
     private void Deal(Fighter attacker, Fighter defender, double damage, DamageEvent ev, bool chargeUlt = true)
