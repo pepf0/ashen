@@ -153,4 +153,18 @@ public class CombatTests
             Assert.All(r.Events, e => Assert.Equal(2, e.Hp.Length));
         }
     }
+
+    [Fact]
+    public void LevelingSpecialsOnlyMakesThemStronger()
+    {
+        // Dragon: damage and cooldown buffs grow with level.
+        var l1 = Combat.PreviewStats(TestHelpers.Build("generic.sword", null, "pepf.dragon"));
+        var dragon3 = TestHelpers.Build("generic.sword");
+        dragon3.Dynamics[0] = TestHelpers.Own("pepf.dragon", 3);
+        var l3 = Combat.PreviewStats(dragon3);
+        Assert.True(l3["damage"] > l1["damage"]);
+        Assert.True(l3["cooldown"] < l1["cooldown"]);
+        // Staff exhaustion is a drawback: it stays x10 at any level.
+        Assert.False(GameData.Effects["xxzweiradxx.staff.exhaustion"].Scales);
+    }
 }

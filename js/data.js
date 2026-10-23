@@ -55,7 +55,7 @@ export function statsAtLevel(it, level) {
 /** Effect values grow by +50% of their base strength per level above 1 (same as the server). */
 export function scaleEffect(effect, level) {
     const s = 1 + 0.5 * (level - 1);
-    if (s === 1) return effect;
+    if (s === 1 || effect.scales === false) return effect;
     const e = { ...effect };
     if (e.mult !== undefined) e.mult = 1 + (e.mult - 1) * s;
     if (e.add !== undefined) e.add *= s;

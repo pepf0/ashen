@@ -181,7 +181,7 @@ public sealed class Fight
         {
             Effect = effect;
             Source = source;
-            Scale = scale;
+            Scale = effect.Scales ? scale : 1;
             Payout = (effect.StartMoney ?? 0) * scale;
         }
 

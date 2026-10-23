@@ -19,6 +19,8 @@ public class Effect
     public int? MaxStacks { get; set; }
     /// <summary>"multiply": every stack multiplies again (m^n) instead of adding up (1 + n·(m-1)).</summary>
     public string? Stacking { get; set; }
+    /// <summary>False for drawbacks (e.g. Staff exhaustion): leveling the item doesn't make them stronger.</summary>
+    public bool Scales { get; set; } = true;
     public double? Damage { get; set; }
     public double? Chance { get; set; }
     public double? StartMoney { get; set; }

@@ -202,6 +202,7 @@
     "stat": "cooldown",
     "mult": 10,
     "duration": 3,
+    "scales": false,
     "description": "Every {condition.every_n_hits} hits, gets exhausted for {duration} seconds, increasing cooldown by {(mult-1)*100}%"
   },
   {
