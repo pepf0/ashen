@@ -22,13 +22,20 @@ export async function loadAchievements() {
  * appearance: { nameColor, frame, victory, title, level } from the server, or null.
  */
 export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
-    const node = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "")
-        + (appearance?.nameBorder && appearance.nameBorder !== "nb_none" ? ` nb ${appearance.nameBorder}` : "") }, name);
+    const node = nameNode(name, appearance);
     const wrap = el("span", { class: "name-wrap" + (userId > 0 ? " clickable" : ""), onclick: userId > 0 ? e => { e.stopPropagation(); openProfile(userId); } : undefined },
         appearance?.level ? el("span", { class: "level-badge-sm", text: `${appearance.level}` }) : null,
         node,
         showTitle && appearance?.title ? el("span", { class: "player-title", text: appearance.title }) : null);
     return wrap;
+}
+
+/** The name in its color, wrapped in its name border (if any). The border is a separate element so its
+ * background can't hide gradient (text-clipped) name colors. */
+export function nameNode(name, appearance, cls = "") {
+    const text = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "") + (cls ? ` ${cls}` : ""), text: name });
+    const border = appearance?.nameBorder;
+    return border && border !== "nb_none" ? el("span", { class: `nb ${border}` }, text) : text;
 }
 
 /** Pixel portrait of the player's kit inside their portrait border cosmetic. size: "sm" | "md" | "lg". */
@@ -53,7 +60,7 @@ export async function openProfile(userId) {
                 portraitEl(p.kits?.[0]?.kit ?? "none", p.appearance, "lg"),
                 el("div", { class: "profile-level", text: `${p.level}` }),
                 el("div", { class: "grow" },
-                    el("div", { class: "profile-name" }, el("span", { class: "player-name" + (p.appearance?.nameColor ? ` nc-${p.appearance.nameColor}` : "") + (p.appearance?.nameBorder && p.appearance.nameBorder !== "nb_none" ? ` nb ${p.appearance.nameBorder}` : ""), text: p.name })),
+                    el("div", { class: "profile-name" }, nameNode(p.name, p.appearance)),
                     el("div", { class: "muted small" }, `@${p.username}`, p.appearance?.title ? ` · ${p.appearance.title}` : "", p.mastery ? ` · ${p.mastery}` : ""),
                     bar(p.levelXp, p.nextLevelXp))),
             el("div", { class: "profile-stats" }, [
@@ -131,7 +138,7 @@ export async function renderLocker(root, onChange) {
                             onclick: () => equip(kind, o.id)
                         },
                             kind === "name_color" ? el("span", { class: `player-name nc-${o.id}`, text: o.name })
-                                : kind === "name_border" ? el("span", { class: `player-name ${o.id === "nb_none" ? "" : `nb ${o.id}`}`, text: o.name })
+                                : kind === "name_border" ? nameNode(o.name, { nameBorder: o.id })
                                 : kind === "border" ? el("span", { class: "row" }, portraitEl(locker.kit ?? "duelist", { border: o.id }, "sm"), o.name)
                                 : kind === "weapon_skin" ? el("span", { class: "row" }, itemCard("generic.sword", { size: "small", skin: o.id }), o.name)
                                 : kind === "frame" ? el("span", { class: `frame-swatch frame-${o.id}` }, o.name)

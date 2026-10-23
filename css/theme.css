@@ -602,7 +602,7 @@ button.augment-card:hover { transform: translateY(-4px) scale(1.02); }
 .nc-name_legend { background-image: linear-gradient(90deg, #ffd166, #ff7a3d, #e070ff, #40e0d0, #ffd166); filter: drop-shadow(0 0 5px rgba(255, 209, 102, 0.5)); }
 .nc-name_bounty { background-image: linear-gradient(90deg, #c8a060, #ffe0a0, #8a5a2a, #ffe0a0, #c8a060); }
 
-.player-name.nb {
+.nb {
     display: inline-block;
     padding: 0 7px;
     border-radius: 3px;
@@ -624,11 +624,7 @@ button.augment-card:hover { transform: translateY(-4px) scale(1.02); }
 @keyframes nb-inferno { to { box-shadow: 0 -5px 14px rgba(255, 170, 50, 0.95), 0 0 6px #ffd166; } }
 .nb_prismatic { border: 2px solid transparent !important; background: linear-gradient(#0a0618, #0a0618) padding-box, linear-gradient(120deg, #e070ff, #40e0d0, #ffd166, #e070ff) border-box; background-size: 100%, 300% 300%; animation: prism-border 3s linear infinite; }
 .nb_dragon { border: 2px solid #c0302a; background-image: repeating-linear-gradient(60deg, rgba(255, 90, 60, 0.15) 0 3px, transparent 3px 6px); box-shadow: 0 0 10px rgba(255, 90, 60, 0.5); }
-/* text-clip colors and a bordered background don't mix: put the color on top of the chip */
-.player-name.nb[class*="nc-name_ash"], .player-name.nb[class*="nc-name_molten"], .player-name.nb[class*="nc-name_abyssal"],
-.player-name.nb[class*="nc-name_celestial"], .player-name.nb[class*="nc-name_hellfire"], .player-name.nb[class*="nc-name_legend"],
-.player-name.nb[class*="nc-name_bounty"], .player-name.nb[class*="nc-name_rainbow"], .player-name.nb[class*="nc-name_sunset"],
-.player-name.nb[class*="nc-name_aurora"], .player-name.nb[class*="nc-name_dragon"] { background-color: transparent; }
+
 
 .player-title {
     font-family: var(--font-pixel);
