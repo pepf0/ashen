@@ -3,15 +3,16 @@ import { label as keyLabelOf, SKILL_ACTIONS } from "./keybinds.js";
 import { skinApplies, skinnedUrl } from "./skins.js";
 import { portraitUrl } from "./sprites.js";
 
-export const data = { items: {}, effects: {}, kits: {}, modifiers: {}, augments: {}, mutators: {}, arenas: {} };
+export const data = { items: {}, effects: {}, kits: {}, modifiers: {}, augments: {}, mutators: {}, arenas: {}, cosmetics: [] };
 
 export const TYPES = ["weapon", "buff", "shirt", "charm", "passive"];
 export const PACK_NAMES = { pepf: "Pepf", z7fox: "Z7FOX", ely7: "Ely7", xxzweiradxx: "xXZweiradXx", generic: "Generic" };
 export const MAX_LEVEL = 5;
 
 export async function loadData() {
-    const [items, effects, kits, modifiers, augments, mutators, arenas] = await Promise.all(
-        ["items", "effects", "kits", "modifiers", "augments", "mutators", "arenas"].map(f => fetch(`json/${f}.json`).then(r => r.json())));
+    const [items, effects, kits, modifiers, augments, mutators, arenas, cosmetics] = await Promise.all(
+        ["items", "effects", "kits", "modifiers", "augments", "mutators", "arenas", "cosmetics"].map(f => fetch(`json/${f}.json`).then(r => r.json())));
+    data.cosmetics = cosmetics;
     data.augments = Object.fromEntries(augments.map(a => [a.id, a]));
     data.mutators = Object.fromEntries(mutators.map(m => [m.id, m]));
     data.arenas = Object.fromEntries(arenas.map(a => [a.id, a]));

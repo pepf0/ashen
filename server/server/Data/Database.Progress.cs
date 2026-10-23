@@ -137,9 +137,12 @@ public partial class Database
         return new ProgressResult(gained, xp, level, into, needed, level - oldLevel, earned, newCosmetics);
     }
 
+    private bool IsAdminId(long userId) => GetUser(userId) is { } u && Admin.IsAdmin(u);
+
     /// <summary>What others see: equipped cosmetics (only if still unlocked), chosen title and level.</summary>
     public Appearance GetAppearance(long userId)
     {
+        bool admin = IsAdminId(userId);
         using var conn = Open();
         int level = Progression.LevelOf(ReadXp(conn, userId)).Level;
         var achievements = ReadAchievements(conn, userId);
@@ -148,18 +151,18 @@ public partial class Database
         {
             if (!equipped.TryGetValue(kind, out var id)) return null;
             var c = GameData.Cosmetics.FirstOrDefault(x => x.Id == id && x.Kind == kind);
-            return c is not null && Progression.Unlocked(c, level, achievements) ? c.Id : null;
+            return c is not null && Progression.Unlocked(c, level, achievements, admin) ? c.Id : null;
         }
-        string? title = equipped.TryGetValue("title", out var t) && AvailableTitles(userId, level, achievements).Contains(t) ? t : null;
+        string? title = equipped.TryGetValue("title", out var t) && AvailableTitles(userId, level, achievements, admin).Contains(t) ? t : null;
         return new Appearance(Pick("name_color"), Pick("frame"), Pick("victory"), title, level,
             Pick("name_border"), Pick("border"), Pick("weapon_skin"));
     }
 
     /// <summary>Achievement names, the kit mastery title and unlocked title cosmetics.</summary>
-    private List<string> AvailableTitles(long userId, int level, ISet<string> achievements)
+    private List<string> AvailableTitles(long userId, int level, ISet<string> achievements, bool admin)
     {
         var titles = GameData.Achievements.Where(a => achievements.Contains(a.Id)).Select(a => a.Name).ToList();
-        titles.AddRange(GameData.Cosmetics.Where(c => c.Kind == "title" && Progression.Unlocked(c, level, achievements)).Select(c => c.Name));
+        titles.AddRange(GameData.Cosmetics.Where(c => c.Kind == "title" && Progression.Unlocked(c, level, achievements, admin)).Select(c => c.Name));
         if (MasteryTitle(userId) is { } mastery) titles.Insert(0, mastery);
         return titles;
     }
@@ -167,6 +170,7 @@ public partial class Database
     /// <summary>Locker: every cosmetic with its unlock state, available titles and what's equipped.</summary>
     public object GetLocker(long userId)
     {
+        bool admin = IsAdminId(userId);
         using var conn = Open();
         int xp = ReadXp(conn, userId);
         var (level, into, needed) = Progression.LevelOf(xp);
@@ -178,27 +182,29 @@ public partial class Database
             levelXp = into,
             nextLevelXp = needed,
             equipped = ReadEquipped(conn, userId),
-            titles = AvailableTitles(userId, level, achievements).Distinct(),
-            cosmetics = GameData.Cosmetics.Select(c => new
+            titles = AvailableTitles(userId, level, achievements, admin).Distinct(),
+            // Admin-only cosmetics are hidden from everyone else.
+            cosmetics = GameData.Cosmetics.Where(c => admin || !c.Unlock.Admin).Select(c => new
             {
                 c.Id, c.Kind, c.Name, c.Unlock,
-                unlocked = Progression.Unlocked(c, level, achievements)
+                unlocked = Progression.Unlocked(c, level, achievements, admin)
             })
         };
     }
 
     public void SetEquipped(long userId, Dictionary<string, string?> wanted)
     {
+        bool admin = IsAdminId(userId);
         using var conn = Open();
         int level = Progression.LevelOf(ReadXp(conn, userId)).Level;
         var achievements = ReadAchievements(conn, userId);
-        var titles = AvailableTitles(userId, level, achievements);
+        var titles = AvailableTitles(userId, level, achievements, admin);
         var equipped = new Dictionary<string, string>();
         foreach (var (kind, id) in wanted)
         {
             if (id is null) continue;
             if (kind == "title" ? titles.Contains(id)
-                : GameData.Cosmetics.Any(c => c.Id == id && c.Kind == kind && Progression.Unlocked(c, level, achievements)))
+                : GameData.Cosmetics.Any(c => c.Id == id && c.Kind == kind && Progression.Unlocked(c, level, achievements, admin)))
                 equipped[kind] = id;
         }
         using var cmd = conn.CreateCommand();

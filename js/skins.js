@@ -15,7 +15,8 @@ export const SKINS = {
     ws_void: { ramp: ["#05010d", "#2a0f4a", "#7a3ad8", "#e0b0ff"], glow: "#b26bff" },
     ws_dragon: { ramp: ["#2a2016", "#8a7a5a", "#e8dcc0", "#ffffff"], glow: "#ff5a3d" },
     ws_headhunter: { ramp: ["#0a0a0a", "#3a0a0a", "#c01a2a", "#ffd0d0"], glow: "#ff3c50" },
-    ws_prismatic: { prismatic: true, glow: "#e070ff" }
+    ws_prismatic: { prismatic: true, glow: "#e070ff" },
+    ws_pepf: { ramp: ["#021c1c", "#077a73", "#40e0d0", "#b8fff6", "#ffffff"], glow: "#40e0d0" }
 };
 
 const cache = new Map();

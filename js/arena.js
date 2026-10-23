@@ -456,6 +456,20 @@ export class Arena {
             victory_dragon: ["#ff5a3d", "#ffd166"],
             victory_crown: ["#ffd166"]
         };
+        if (effect === "victory_pepf") {
+            // Encore: a chord ring, then a fountain of turquoise notes and sparkles.
+            this.ring(x, CY, "#40e0d0", 60);
+            this.ring(x, GROUND - 2, "#b8fff6", 50, true);
+            for (let k = 0; k < 18; k++) this.later(k * 0.06, () => this.projectiles.push({
+                kind: "note", x0: x + (this.rng() - 0.5) * 30, y0: CY, x1: x + (this.rng() - 0.5) * 160, y1: -10,
+                t0: this.now, dur: 1.2, dir: 1, color: ["#40e0d0", "#b8fff6", "#ffffff"][k % 3] }));
+            for (let k = 0; k < 40; k++) this.particle(x + (this.rng() - 0.5) * 100, CY + (this.rng() - 0.5) * 40, (this.rng() - 0.5) * 30, -20 - this.rng() * 40, 1.8, k % 3 ? "#40e0d0" : "#ffffff", 1, 0);
+            this.flashEl.style.setProperty("--flash", "#40e0d0");
+            this.flashEl.classList.remove("on");
+            void this.flashEl.offsetWidth;
+            this.flashEl.classList.add("on");
+            return;
+        }
         if (effect === "victory_meteor") {
             const tx = x + f.dir * 40;
             this.projectiles.push({ kind: "meteor", x0: tx - 60, y0: -10, x1: tx, y1: GROUND - 4, t0: this.now, dur: 0.5, dir: 1, color: "#ff7a1a" });

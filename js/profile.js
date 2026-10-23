@@ -26,8 +26,14 @@ export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
     const wrap = el("span", { class: "name-wrap" + (userId > 0 ? " clickable" : ""), onclick: userId > 0 ? e => { e.stopPropagation(); openProfile(userId); } : undefined },
         appearance?.level ? el("span", { class: "level-badge-sm", text: `${appearance.level}` }) : null,
         node,
-        showTitle && appearance?.title ? el("span", { class: "player-title", text: appearance.title }) : null);
+        showTitle && appearance?.title ? titleEl(appearance.title) : null);
     return wrap;
+}
+
+/** A title; title cosmetics get their own style class (e.g. the admin set). */
+export function titleEl(title) {
+    const c = data.cosmetics.find(x => x.kind === "title" && x.name === title);
+    return el("span", { class: "player-title" + (c ? ` title-${c.id}` : ""), text: title });
 }
 
 /** The name in its color, wrapped in its name border (if any). The border is a separate element so its
@@ -142,7 +148,7 @@ export async function renderLocker(root, onChange) {
                                 : kind === "border" ? el("span", { class: "row" }, portraitEl(locker.kit ?? "duelist", { border: o.id }, "sm"), o.name)
                                 : kind === "weapon_skin" ? el("span", { class: "row" }, itemCard("generic.sword", { size: "small", skin: o.id }), o.name)
                                 : kind === "frame" ? el("span", { class: `frame-swatch frame-${o.id}` }, o.name)
-                                : kind === "title" ? el("span", { class: "player-title", text: o.name })
+                                : kind === "title" ? titleEl(o.name)
                                 : el("span", { text: o.name }),
                             o.unlocked ? null : el("span", { class: "muted small", text: hint }));
                     })));

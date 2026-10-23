@@ -945,3 +945,102 @@ body[data-observer="1"] #mysteryPanel, body[data-observer="1"] #eliminatedPanel 
 body[data-observer="1"] .game-top .stat-pill.money, body[data-observer="1"] .game-top .stat-pill:nth-child(4),
 body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 #standingsTable td:nth-child(4), #standingsTable td:nth-child(5) { white-space: nowrap; }
+
+/* ==========================================================================
+   Admin set "Pepf Prime" (Pepf pack colors: turquoise, aqua, mint, white)
+   ========================================================================== */
+@property --pa { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes pepf-spin { to { --pa: 360deg; } }
+@keyframes pepf-flow { to { background-position: 300% 0; } }
+@keyframes pepf-twinkle { 0%, 100% { opacity: 0.2; transform: scale(0.6) rotate(0deg); } 50% { opacity: 1; transform: scale(1.1) rotate(90deg); } }
+@keyframes pepf-pulse { 50% { box-shadow: 0 0 16px rgba(64, 224, 208, 0.75), 0 0 34px rgba(64, 224, 208, 0.25), inset 0 0 10px rgba(64, 224, 208, 0.35); } }
+
+/* Name color: flowing turquoise > mint > white gradient with a glow and a twinkling star. */
+.nc-name_pepf {
+    position: relative;
+    background-image: linear-gradient(90deg, #0a8f86, #40e0d0, #b8fff6, #ffffff, #7af0e0, #1fb5aa, #0a8f86);
+    background-size: 300% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    font-weight: 700;
+    animation: pepf-flow 4s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(64, 224, 208, 0.7)) drop-shadow(0 0 1px #ffffff);
+}
+.nc-name_pepf::after {
+    content: "\2726";
+    position: absolute;
+    right: -0.75em;
+    top: -0.45em;
+    font-size: 0.6em;
+    color: #c8fff8;
+    -webkit-text-fill-color: #c8fff8;
+    text-shadow: 0 0 6px #40e0d0;
+    animation: pepf-twinkle 1.8s ease-in-out infinite;
+}
+
+/* Name border: spinning turquoise/white gradient frame on a deep-teal plate. */
+.nb_pepf {
+    padding: 1px 10px !important;
+    border: 2px solid transparent;
+    border-radius: 5px !important;
+    background:
+        linear-gradient(135deg, rgba(4, 40, 40, 0.95), rgba(8, 22, 36, 0.95)) padding-box,
+        conic-gradient(from var(--pa), #40e0d0, #ffffff, #0a8f86, #b8fff6, #40e0d0) border-box !important;
+    box-shadow: 0 0 10px rgba(64, 224, 208, 0.5), inset 0 0 8px rgba(64, 224, 208, 0.2);
+    animation: pepf-spin 3s linear infinite, pepf-pulse 2.4s ease-in-out infinite;
+}
+
+/* Title: gradient pixel text with turquoise ornaments. */
+.title-t_pepf {
+    background-image: linear-gradient(90deg, #7af0e0, #ffffff, #40e0d0, #b8fff6, #7af0e0);
+    background-size: 300% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: pepf-flow 5s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(64, 224, 208, 0.6));
+    font-weight: 700;
+}
+.title-t_pepf::before, .title-t_pepf::after { content: "\25C6"; color: #40e0d0; -webkit-text-fill-color: #40e0d0; text-shadow: 0 0 6px #40e0d0; opacity: 1; }
+
+/* Portrait border: spinning gradient ring, inner tide glow and a floating gem. */
+.portrait.pb_pepf {
+    overflow: visible;
+    border: 3px solid transparent;
+    background:
+        radial-gradient(circle at 50% 75%, rgba(64, 224, 208, 0.45), transparent 65%) padding-box,
+        linear-gradient(180deg, #06302e, #04161c) padding-box,
+        conic-gradient(from var(--pa), #40e0d0, #ffffff, #0a8f86, #b8fff6, #40e0d0) border-box;
+    box-shadow: 0 0 14px rgba(64, 224, 208, 0.7), 0 0 30px rgba(64, 224, 208, 0.25);
+    animation: pepf-spin 2.6s linear infinite;
+}
+.portrait.pb_pepf::after {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    width: 9px;
+    height: 9px;
+    transform: translateX(-50%) rotate(45deg);
+    background: linear-gradient(135deg, #ffffff, #40e0d0);
+    box-shadow: 0 0 10px #40e0d0;
+    animation: crown-float 1.6s ease-in-out infinite;
+}
+.portrait.xs.pb_pepf { border-width: 2px; }
+.portrait.xs.pb_pepf::after { width: 5px; height: 5px; top: -4px; }
+
+/* Fighter frame: gradient border that flows around the panel. */
+.fighter.frame-frame_pepf {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(180deg, rgba(10, 40, 44, 0.96), rgba(10, 10, 28, 0.97)) padding-box,
+        conic-gradient(from var(--pa), #40e0d0, #ffffff, #0a8f86, #b8fff6, #40e0d0) border-box;
+    box-shadow: 0 0 26px rgba(64, 224, 208, 0.35), inset 0 0 40px rgba(64, 224, 208, 0.08);
+    animation: pepf-spin 4s linear infinite;
+}
+.skin-ws_pepf { --sk: #40e0d0; }
+.frame-swatch.frame-frame_pepf { border-color: #40e0d0; box-shadow: 0 0 8px rgba(64, 224, 208, 0.6); }
+/* Gradient (text-clipped) names: a heading's text-shadow would show through the transparent text. */
+.nc-name_pepf, .nc-name_ash, .nc-name_molten, .nc-name_abyssal, .nc-name_celestial, .nc-name_hellfire, .nc-name_legend,
+.nc-name_bounty, .nc-name_rainbow, .nc-name_sunset, .nc-name_aurora, .nc-name_dragon, .title-t_pepf { text-shadow: none !important; }

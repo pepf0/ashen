@@ -12,6 +12,8 @@ public class CosmeticUnlock
 {
     public int? Level { get; set; }
     public string? Achievement { get; set; }
+    /// <summary>Only accounts listed in ASHEN_ADMINS have it.</summary>
+    public bool Admin { get; set; }
 }
 
 /// <summary>Purely visual reward (name color, name border, portrait border, fighter frame, victory effect,
@@ -142,6 +144,8 @@ public static class Progression
         return checks.Where(kv => kv.Value).Select(kv => kv.Key);
     }
 
-    public static bool Unlocked(Cosmetic c, int level, ISet<string> achievements) =>
-        (c.Unlock.Level is int l && level >= l) || (c.Unlock.Achievement is string a && achievements.Contains(a));
+    /// <summary>Admin-only cosmetics (unlock.admin) are never unlocked by levels or achievements.</summary>
+    public static bool Unlocked(Cosmetic c, int level, ISet<string> achievements, bool admin = false) =>
+        c.Unlock.Admin ? admin
+            : (c.Unlock.Level is int l && level >= l) || (c.Unlock.Achievement is string a && achievements.Contains(a));
 }

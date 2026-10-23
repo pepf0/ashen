@@ -97,5 +97,12 @@
   {"id": "t_deadeye", "kind": "title", "name": "Deadeye", "unlock": {"achievement": "headshot_finish"}},
   {"id": "victory_ashstorm", "kind": "victory", "name": "Ash Storm", "unlock": {"level": 21}},
   {"id": "victory_souls", "kind": "victory", "name": "Soul Harvest", "unlock": {"level": 39}},
-  {"id": "victory_meteor", "kind": "victory", "name": "Meteor", "unlock": {"level": 46}}
+  {"id": "victory_meteor", "kind": "victory", "name": "Meteor", "unlock": {"level": 46}},
+  {"id": "name_pepf", "kind": "name_color", "name": "Pepf Prime", "unlock": {"admin": true}},
+  {"id": "nb_pepf", "kind": "name_border", "name": "Tidecrown", "unlock": {"admin": true}},
+  {"id": "t_pepf", "kind": "title", "name": "Creator of Ashen", "unlock": {"admin": true}},
+  {"id": "pb_pepf", "kind": "border", "name": "Pepf Aura", "unlock": {"admin": true}},
+  {"id": "frame_pepf", "kind": "frame", "name": "Pepf Tide", "unlock": {"admin": true}},
+  {"id": "ws_pepf", "kind": "weapon_skin", "name": "Pepf Teal", "unlock": {"admin": true}},
+  {"id": "victory_pepf", "kind": "victory", "name": "Encore", "unlock": {"admin": true}}
 ]
