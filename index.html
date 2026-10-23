@@ -145,6 +145,12 @@
                     <div class="settings-fields" id="settingsFields"></div>
                 </form>
                 <div class="panel chat" data-chat></div>
+                <div class="panel lobby-kits">
+                    <h3>Pick your kit</h3>
+                    <p class="muted small">Your abilities in fights: Q, W and E on cooldowns, R is your ultimate (charges as you
+                        deal and take damage). You can switch kits in any shop for <span id="kitSwapCost">15</span>$.</p>
+                    <div class="kit-grid" id="kitGrid"></div>
+                </div>
             </div>
         </section>
 
@@ -173,6 +179,7 @@
                 </aside>
 
                 <div class="game-center">
+                    <div class="modifier-banner" id="modifierBanner" hidden></div>
                     <div class="panel shop" id="shopPanel">
                         <div class="row spread">
                             <h3>Shop</h3>
@@ -191,11 +198,16 @@
                         </div>
                         <div class="shop-grid" id="shopGrid"></div>
                         <p class="muted small" id="shopNote"></p>
+                        <p class="income-note small" id="incomeNote"></p>
                     </div>
                     <div class="panel eliminated" id="eliminatedPanel" hidden>
                         <h2>You were eliminated</h2>
                         <p class="muted" id="eliminatedText"></p>
                         <p class="muted small">The match keeps going. Stick around for the final results, or leave.</p>
+                    </div>
+                    <div class="panel" id="spectatePanel" hidden>
+                        <h3>Live fights</h3>
+                        <ul class="fight-list" id="fightList"></ul>
                     </div>
                     <div class="panel build">
                         <h3>Your build</h3>
@@ -214,6 +226,10 @@
                             </div>
                         </div>
                         <ul class="stat-list" id="statList"></ul>
+                        <div class="kit-row">
+                            <div id="myKit"></div>
+                            <button class="btn btn-small" id="changeKit">Change kit</button>
+                        </div>
                     </div>
                 </div>
 
@@ -229,6 +245,11 @@
                     <b id="cTime">0.0s</b>
                     <span class="overtime" id="cOvertime"></span>
                 </div>
+                <div class="arena-modifier" id="cModifier"></div>
+                <div class="spectator-bar" id="spectatorBar" hidden>
+                    <span class="muted">You are watching this fight.</span>
+                    <button class="btn btn-small" id="leaveSpectate">Back</button>
+                </div>
                 <div class="fighters">
                     <div class="fighter panel" id="fighter0"></div>
                     <div class="versus">VS</div>
@@ -240,8 +261,10 @@
                     <h2 id="resultTitle"></h2>
                     <ul class="result-stats" id="resultStats"></ul>
                     <p class="muted" id="resultWait"></p>
+                    <ul class="fight-list" id="resultFights" hidden></ul>
                 </div>
             </div>
+            <div class="countdown" id="countdown" hidden></div>
         </section>
 
         <!-- End of match -->

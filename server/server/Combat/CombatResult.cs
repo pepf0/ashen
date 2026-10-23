@@ -21,6 +21,7 @@ public class FighterInfo
     public double MaxHp { get; set; }
     public double DamageReduction { get; set; }
     public double DodgeChance { get; set; }
+    public string? Kit { get; set; }
     public List<ItemView> Items { get; set; } = new();
     /// <summary>Buffs active for the whole fight (static effects), as they are at the start.</summary>
     public List<BuffEvent> StartBuffs { get; set; } = new();

@@ -30,6 +30,11 @@ public class Player
     /// <summary>How often this player fought each opponent (for rotating pairings).</summary>
     public Dictionary<long, int> TimesFought { get; } = new();
     public int GhostFights { get; set; }
+    public string Kit { get; set; } = Ashen.Kit.Default;
+    /// <summary>Losses in a row; from 2 on the next shop pays a comeback bonus. Wins and draws reset it.</summary>
+    public int LossStreak { get; set; }
+    /// <summary>What the player got when the current shop opened (shown in the shop).</summary>
+    public Dictionary<string, int> LastIncome { get; set; } = new();
     /// <summary>Fights in rounds 1 and 2 fought without a weapon (2 = gets the pity offer in shop 3).</summary>
     public int EarlyWeaponlessFights { get; set; }
     /// <summary>Set after a fight, used to rank players eliminated in the same round.</summary>
@@ -47,11 +52,13 @@ public class Player
     public OwnedItem? FindOwned(string itemId) => AllItems().FirstOrDefault(i => i.Id == itemId);
 
     /// <summary>Base 1%, times every special_chance buff the player owns (different effects multiply).</summary>
-    public double SpecialChance
+    public double SpecialChance => SpecialChanceWith(null);
+
+    public double SpecialChanceWith(string? modifier)
     {
-        get
         {
-            double chance = BaseSpecialChance;
+            if (modifier == "unlucky") return 0;
+            double chance = BaseSpecialChance * (modifier == "lucky_day" ? 3 : 1);
             foreach (var item in AllItems())
                 foreach (var effect in item.Item.Effects.Where(e => e.Type == EffectType.Buff && e.Target == "special_chance"))
                 {
@@ -72,7 +79,9 @@ public class Player
         Weapon = Weapon?.Clone(),
         Shirt = Shirt?.Clone(),
         Dynamics = Dynamics.Select(d => d?.Clone()).ToArray(),
-        BonusEffects = BonusEffects.ToList()
+        BonusEffects = BonusEffects.ToList(),
+        Kit = Kit,
+        Bot = ghost
     };
 
     public List<ItemView> BuildView()

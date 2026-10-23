@@ -23,6 +23,12 @@ public static class ItemLoader
             ?? throw new JsonException("effects.json is empty or invalid.");
     }
 
+    public static List<T> ListFromJson<T>(string json, string file)
+    {
+        return JsonSerializer.Deserialize<List<T>>(json, Options)
+            ?? throw new JsonException($"{file} is empty or invalid.");
+    }
+
     public static List<LobbyEvent> EventsFromJson(string json)
     {
         return JsonSerializer.Deserialize<List<LobbyEvent>>(json, Options)

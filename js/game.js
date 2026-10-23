@@ -1,5 +1,5 @@
 // Match view during the shop phase: top bar, players, events, shop, build and stats.
-import { el, item, itemCard, statPretty, MAX_LEVEL } from "./data.js";
+import { el, item, itemCard, statPretty, kitCard, data, MAX_LEVEL } from "./data.js";
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
 
 export function createGameView(app) {
@@ -19,6 +19,16 @@ export function createGameView(app) {
                 : "You lose all your lives and are eliminated right away." }),
             [{ label: "Stay", value: false }, { label: eliminated ? "Leave" : "Forfeit", value: true, kind: "btn-danger" }]);
         if (ok) app.socket.send("leave");
+    });
+
+    document.getElementById("changeKit").addEventListener("click", async () => {
+        const you = state?.you;
+        if (!you) return;
+        const choice = await openDialog(`Change kit (${state.kitSwapCost}$)`,
+            el("div", { class: "kit-grid" }, Object.keys(data.kits).map(id =>
+                kitCard(id, { selected: id === you.kit, onclick: id === you.kit ? undefined : () => resolveDialog(id) }))),
+            [{ label: "Cancel", value: null }]);
+        if (choice) app.socket.send("kit", { kit: choice });
     });
 
     setInterval(() => {
@@ -86,14 +96,16 @@ export function createGameView(app) {
             const it = item(slot.itemId);
             const mine = owned(you, it.id);
             const maxed = mine && mine.level >= MAX_LEVEL;
-            const canBuy = open && !slot.bought && !maxed && you.money >= it.price;
+            const price = slot.price ?? it.price;
+            const canBuy = open && !slot.bought && !maxed && you.money >= price;
             const label = slot.bought ? "Bought" : maxed ? "Max level" : mine ? `Level up → ${mine.level + 1}` : `Buy`;
             return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? " special" : "") },
                 itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large" }),
                 el("div", { class: "shop-name", text: it.name }),
                 el("div", { class: "shop-type muted small", text: it.pack !== "generic" ? `Special ${it.type}` : it.type }),
                 el("button", { class: "btn btn-buy", disabled: !canBuy, onclick: () => buy(i) },
-                    el("span", { text: label }), slot.bought ? null : el("b", { text: `${it.price}$` })));
+                    el("span", { text: label }), slot.bought ? null : el("b", {},
+                        price !== it.price ? el("s", { class: "muted", text: `${it.price}$` }) : null, ` ${price}$`)));
         }));
 
         const reroll = document.getElementById("rerollButton");
@@ -106,6 +118,11 @@ export function createGameView(app) {
         ready.textContent = you.ready ? "Not ready" : "Ready";
         ready.classList.toggle("is-ready", you.ready);
         ready.disabled = !open;
+        const income = you.income ?? {};
+        const labels = { interest: "interest", income: "income", lossStreak: "loss streak bonus", tax: "tax" };
+        document.getElementById("incomeNote").textContent = Object.keys(income).length
+            ? "This shop: " + Object.entries(income).map(([k, v]) => `${v >= 0 ? "+" : ""}${v}$ ${labels[k] ?? k}`).join(", ")
+            : "";
         document.getElementById("shopNote").textContent = you.shop.locked
             ? "You bought from this roll, so rerolls are locked until the next shop. You can still buy the rest."
             : `Special item chance per slot: ${statPretty("special_chance", you.specialChance)[1]}`;
@@ -133,6 +150,27 @@ export function createGameView(app) {
             }));
     }
 
+    function renderModifier() {
+        const banner = document.getElementById("modifierBanner");
+        const m = state.modifier;
+        banner.hidden = !m;
+        if (!m) return;
+        banner.className = "modifier-banner " + (m.positive ? "good" : "bad");
+        banner.replaceChildren(el("b", { text: m.name }), el("span", { text: m.description }));
+    }
+
+    function renderFights(you) {
+        const panel = document.getElementById("spectatePanel");
+        const fights = state.fights ?? [];
+        panel.hidden = !(you?.canSpectate && fights.length);
+        if (panel.hidden) return;
+        document.getElementById("fightList").replaceChildren(...fights.map(f =>
+            el("li", {},
+                el("span", { class: "grow", text: `${f.names[0]} vs ${f.names[1]}` }),
+                el("span", { class: "muted small", text: f.ended ? (f.winner === -1 ? "Draw" : `${f.names[f.winner]} won`) : "Live" }),
+                el("button", { class: "btn btn-small", text: "Watch", onclick: () => app.socket.send("spectate", { fightId: f.id }) }))));
+    }
+
     function renderSide() {
         document.getElementById("gPlayers").replaceChildren(...state.players.map(p =>
             el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") },
@@ -156,7 +194,15 @@ export function createGameView(app) {
             document.getElementById("gPhase").textContent = { shop: "Shop", combat: "Fighting", results: "Results" }[state.phase] ?? state.phase;
             document.getElementById("gTimer").textContent = state.phaseRemaining == null ? "–" : formatTime(state.phaseRemaining);
             renderSide();
+            renderModifier();
+            renderFights(you);
             if (!you) return;
+            const kit = data.kits[you.kit];
+            document.getElementById("myKit").replaceChildren(el("span", { class: "muted small", text: "Kit: " }), el("b", { text: kit?.name ?? you.kit }),
+                el("span", { class: "kit-keys" }, (kit?.abilities ?? []).map(a => el("span", { class: "key" + (a.ultimate ? " ult" : ""), title: a.name, text: a.key.toUpperCase() }))));
+            const changeKit = document.getElementById("changeKit");
+            changeKit.textContent = `Change kit (${state.kitSwapCost}$)`;
+            changeKit.disabled = state.phase !== "shop" || you.eliminated || you.money < state.kitSwapCost;
             document.getElementById("gMoney").textContent = `${you.money}$`;
             document.getElementById("gLives").textContent = you.eliminated ? "0" : `${you.lives}`;
             document.getElementById("gMaxHp").textContent = Math.round(you.maxHp);

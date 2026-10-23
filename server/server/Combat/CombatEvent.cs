@@ -12,6 +12,8 @@ namespace Ashen;
 [JsonDerivedType(typeof(BuffEvent), "buff")]
 [JsonDerivedType(typeof(InvulnerabilityEvent), "invulnerability")]
 [JsonDerivedType(typeof(MoneyEvent), "money")]
+[JsonDerivedType(typeof(AbilityEvent), "ability")]
+[JsonDerivedType(typeof(HealEvent), "heal")]
 public abstract class CombatEvent
 {
     public int Tick { get; set; }
@@ -33,6 +35,16 @@ public class DamageEvent : CombatEvent
     public bool Dodged { get; set; }
     public bool Blocked { get; set; }
     public bool SuddenDeath { get; set; }
+    /// <summary>Blocked by a Parry (and partly reflected).</summary>
+    public bool Parried { get; set; }
+    /// <summary>Missed because of Feint or a lost All In.</summary>
+    public bool Missed { get; set; }
+    /// <summary>Damage soaked up by a Shield.</summary>
+    public double Absorbed { get; set; }
+    /// <summary>Damage sent back by Parry or Bulwark.</summary>
+    public bool Reflected { get; set; }
+    /// <summary>Kit ability that caused this damage (Flurry, Headshot, ...).</summary>
+    public string? AbilitySource { get; set; }
     /// <summary>True for weapon swings (used by the client for cooldown bars).</summary>
     public bool WeaponAttack { get; set; }
 }
@@ -70,4 +82,18 @@ public class MoneyEvent : CombatEvent
     /// <summary>Black Market Chip: the payout after this gamble, and whether it doubled.</summary>
     public double? Payout { get; set; }
     public bool? Won { get; set; }
+}
+
+/// <summary>A kit ability was used.</summary>
+public class AbilityEvent : CombatEvent
+{
+    public string Ability { get; set; } = "";
+    public int Slot { get; set; }
+    /// <summary>Outcome text for random abilities (e.g. Jackpot "stun" / "money").</summary>
+    public string? Outcome { get; set; }
+}
+
+public class HealEvent : CombatEvent
+{
+    public double Amount { get; set; }
 }

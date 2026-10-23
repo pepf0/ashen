@@ -1,5 +1,5 @@
 // Waiting room: members, host settings, start/leave/kick.
-import { el } from "./data.js";
+import { el, data, kitCard } from "./data.js";
 import { toast } from "./ui.js";
 
 const FIELDS = [
@@ -63,6 +63,7 @@ export function createLobbyView(app) {
                 el("li", { class: m.connected ? "" : "offline" },
                     el("span", { class: "dot" + (m.connected ? " on" : "") }),
                     el("span", { class: "grow", text: m.name }),
+                    el("span", { class: "tag", text: data.kits[m.kit]?.name ?? m.kit }),
                     m.id === lobby.hostId ? el("span", { class: "tag", text: "Host" }) : null,
                     isHost && m.id !== app.user.id
                         ? el("button", { class: "btn btn-small btn-ghost", text: "Kick", onclick: () => app.socket.send("kick", { userId: m.id }) })
@@ -73,6 +74,9 @@ export function createLobbyView(app) {
             document.getElementById("lobbyHint").textContent = isHost
                 ? (start.disabled ? "Waiting for at least one more player." : "Start whenever everyone is here.")
                 : "Waiting for the host to start the match.";
+            const mine = lobby.members.find(m => m.id === app.user.id)?.kit;
+            document.getElementById("kitGrid").replaceChildren(...Object.keys(data.kits).map(id =>
+                kitCard(id, { selected: id === mine, onclick: () => app.socket.send("kit", { kit: id }) })));
             current = lobby.settings;
             for (const [key, p] of Object.entries(pending)) {
                 // Confirmed, or old enough that the server must have clamped it.

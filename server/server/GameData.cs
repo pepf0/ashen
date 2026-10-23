@@ -9,6 +9,8 @@ public static class GameData
     public static IReadOnlyList<LobbyEvent> Events { get; private set; } = new List<LobbyEvent>();
     public static IReadOnlyList<Item> Generics { get; private set; } = new List<Item>();
     public static IReadOnlyList<Item> Specials { get; private set; } = new List<Item>();
+    public static IReadOnlyDictionary<string, Kit> Kits { get; private set; } = new Dictionary<string, Kit>();
+    public static IReadOnlyList<RoundModifier> Modifiers { get; private set; } = new List<RoundModifier>();
 
     private static readonly object loadLock = new();
     private static bool loaded;
@@ -49,6 +51,11 @@ public static class GameData
             var items = ItemLoader.ItemsFromJson(File.ReadAllText(Path.Combine(json, "items.json")));
             var effects = ItemLoader.EffectsFromJson(File.ReadAllText(Path.Combine(json, "effects.json")));
             var events = ItemLoader.EventsFromJson(File.ReadAllText(Path.Combine(json, "events.json")));
+            var kits = ItemLoader.ListFromJson<Kit>(File.ReadAllText(Path.Combine(json, "kits.json")), "kits.json");
+            var modifiers = ItemLoader.ListFromJson<RoundModifier>(File.ReadAllText(Path.Combine(json, "modifiers.json")), "modifiers.json");
+            foreach (var kit in kits)
+                if (kit.Abilities.Count != 4 || kit.Abilities.Count(a => a.Ultimate) != 1 || !kit.Abilities[3].Ultimate)
+                    throw new InvalidDataException($"Kit {kit.Id}: needs 3 skills followed by 1 ultimate.");
 
             var effectMap = effects.ToDictionary(e => e.Id);
             foreach (var effect in effects) effect.ParseTrigger();
@@ -74,6 +81,8 @@ public static class GameData
             Events = events;
             Generics = items.Where(i => !i.IsSpecial).ToList();
             Specials = items.Where(i => i.IsSpecial).ToList();
+            Kits = kits.ToDictionary(k => k.Id);
+            Modifiers = modifiers;
             loaded = true;
         }
     }

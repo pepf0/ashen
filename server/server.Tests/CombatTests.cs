@@ -9,8 +9,8 @@ public class CombatTests
     {
         var r = Combat.CalculateCombatResults(TestHelpers.Build(), TestHelpers.Build(), seed: 1);
         Assert.Equal(-1, r.Winner);
-        Assert.True(r.Duration > Combat.SuddenDeathStart);
-        Assert.True(r.Duration < Combat.SuddenDeathStart + 15);
+        Assert.True(r.Duration > Combat.NoWeaponSuddenDeathStart);
+        Assert.True(r.Duration < Combat.NoWeaponSuddenDeathStart + 10);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class CombatTests
     {
         var withGuitar = Combat.PreviewStats(TestHelpers.Build("pepf.guitar", null, "pepf.pick"));
         var withSword = Combat.PreviewStats(TestHelpers.Build("generic.sword", null, "pepf.pick"));
-        Assert.Equal(10, withGuitar["damage"], 6);
+        Assert.Equal(10 * 1.05, withGuitar["damage"], 6); // Pick x2, and 2 Pepf items give +5% synergy
         Assert.Equal(5, withSword["damage"], 6);
     }
 
@@ -139,9 +139,15 @@ public class CombatTests
             for (int i = 0; i < picks.Count; i++) l.Dynamics[i] = new OwnedItem(picks[i], rng.Next(1, 6));
             return l;
         }
+        var kits = GameData.Kits.Keys.Append(null).ToList();
+        var modifiers = GameData.Modifiers.Select(m => m.Id).Append(null).ToList();
         for (int i = 0; i < 1500; i++)
         {
-            var r = Combat.CalculateCombatResults(Random(), Random(), seed: i);
+            var a = Random();
+            var b = Random();
+            a.Kit = kits[rng.Next(kits.Count)];
+            b.Kit = kits[rng.Next(kits.Count)];
+            var r = Combat.CalculateCombatResults(a, b, seed: i, rules: new FightRules { Modifier = modifiers[rng.Next(modifiers.Count)] });
             Assert.InRange(r.Duration, 0, Combat.SuddenDeathStart + 25);
             Assert.True(r.Winner is -1 or 0 or 1);
             Assert.All(r.Events, e => Assert.Equal(2, e.Hp.Length));

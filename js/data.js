@@ -1,18 +1,22 @@
 // Item/effect data and text formatting shared by the compendium, shop and combat views.
 
-export const data = { items: {}, effects: {} };
+export const data = { items: {}, effects: {}, kits: {}, modifiers: {} };
 
 export const TYPES = ["weapon", "buff", "shirt", "charm", "passive"];
 export const PACK_NAMES = { pepf: "Pepf", z7fox: "Z7FOX", ely7: "Ely7", xxzweiradxx: "xXZweiradXx", generic: "Generic" };
 export const MAX_LEVEL = 5;
 
 export async function loadData() {
-    const [items, effects] = await Promise.all([
+    const [items, effects, kits, modifiers] = await Promise.all([
         fetch("json/items.json").then(r => r.json()),
-        fetch("json/effects.json").then(r => r.json())
+        fetch("json/effects.json").then(r => r.json()),
+        fetch("json/kits.json").then(r => r.json()),
+        fetch("json/modifiers.json").then(r => r.json())
     ]);
     data.items = Object.fromEntries(items.map(i => [i.id, i]));
     data.effects = Object.fromEntries(effects.map(e => [e.id, e]));
+    data.kits = Object.fromEntries(kits.map(k => [k.id, k]));
+    data.modifiers = Object.fromEntries(modifiers.map(m => [m.id, m]));
 }
 
 export const item = id => data.items[id];
@@ -75,6 +79,36 @@ export function effectPretty(effect) {
         text = text.replace(/\bby ([\d.]+)%/g, "by a flat $1%");
     }
     return text;
+}
+
+/** Fills {expressions} in a kit ability description from its own fields. */
+export function abilityPretty(ability) {
+    const keys = Object.keys(ability);
+    return ability.description.replace(/\{([^}]+)\}/g, (_, expr) => {
+        const value = new Function(...keys, `return ${expr};`)(...keys.map(k => ability[k]));
+        return Math.round(value * 100) / 100;
+    });
+}
+
+export function abilityById(id) {
+    for (const kit of Object.values(data.kits))
+        for (const a of kit.abilities) if (a.id === id) return a;
+    return null;
+}
+
+/** A kit card: name, description and its four abilities with keys. */
+export function kitCard(kitId, { selected = false, onclick, footer } = {}) {
+    const kit = data.kits[kitId];
+    return el("div", { class: "kit-card" + (selected ? " selected" : "") + (onclick ? " clickable" : ""), onclick },
+        el("div", { class: "kit-name", text: kit.name }),
+        el("div", { class: "muted small", text: kit.description }),
+        el("ul", { class: "kit-abilities" }, kit.abilities.map(a => el("li", {},
+            el("span", { class: "key" + (a.ultimate ? " ult" : ""), text: a.key.toUpperCase() }),
+            el("div", {},
+                el("b", { text: a.name }),
+                el("span", { class: "muted small", text: a.cooldown ? `  ${a.cooldown}s` : "  ultimate" }),
+                el("div", { class: "small", text: abilityPretty(a) }))))),
+        footer ?? null);
 }
 
 export function el(tag, attrs = {}, ...children) {

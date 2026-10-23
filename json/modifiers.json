@@ -1,0 +1,13 @@
+[
+  { "id": "blood_moon", "name": "Blood Moon", "description": "Crit damage x1.5 for everyone", "positive": true },
+  { "id": "overclock", "name": "Overclock", "description": "All cooldowns x0.8 (weapons, items and skills)", "positive": true },
+  { "id": "fog", "name": "Fog", "description": "+15% dodge chance for everyone", "positive": true },
+  { "id": "gold_rush", "name": "Gold Rush", "description": "Double income this round", "positive": true },
+  { "id": "clearance", "name": "Clearance", "description": "All shop items cost 30% less", "positive": true },
+  { "id": "lucky_day", "name": "Lucky Day", "description": "Special item chance x3", "positive": true },
+  { "id": "glass_cannon", "name": "Glass Cannon", "description": "All damage x1.5, but max HP x0.7", "positive": true },
+  { "id": "rust", "name": "Rust", "description": "Weapon damage x0.75 for everyone", "positive": false },
+  { "id": "fragile", "name": "Fragile", "description": "Damage reduction is halved for everyone", "positive": false },
+  { "id": "unlucky", "name": "Unlucky", "description": "No special items in the shop this round", "positive": false },
+  { "id": "tax", "name": "Tax", "description": "Everyone loses 10% of their money when the shop opens", "positive": false }
+]

@@ -9,12 +9,13 @@ The full rules are in **[docs/RULES.md](docs/RULES.md)**.
 
 1. Register an account and log in.
 2. Create a lobby and share the 5-letter code (or make it public so it shows up
-   under *Browse*). The host can change the match settings.
+   under *Browse*). The host can change the match settings, and everyone picks a
+   kit.
 3. Each round you get a **shop** with 6 items and 5 free rerolls. Buying an item
    locks the roll (no more rerolls, but you can still buy the rest of it).
    Buying an item you already own levels it up.
-4. When everyone is ready (or the timer runs out) you fight another player. The
-   fight is simulated on the server and replayed in real time.
+4. When everyone is ready (or the timer runs out) you fight another player live.
+   Use your kit's abilities with **Q W E R** (or the buttons).
 5. Losing costs a life. At 0 lives you're out.
 
 ## Project layout
@@ -102,12 +103,14 @@ Each line is one object with a `type`:
 | type | When | Contents |
 |---|---|---|
 | `match_start` | match starts | lobby, settings, players |
-| `snapshot` | every shop opens (after income) | money, lives, max HP, HP upgrades, special chance, W/L, titles, build |
+| `snapshot` | every shop opens (after income) | money, income breakdown, kit, loss streak, lives, max HP, HP upgrades, special chance, W/L, titles, build |
 | `roll` | every shop roll and reroll | the 6 items, reroll number, special chance |
 | `pity_offer` | shop 3, weaponless players | offered items and prices |
 | `purchase` | every buy | item, price, new/level-up/replace, money before/after, rerolls used, time left |
 | `hp_upgrade` | every HP upgrade | cost, new max HP |
-| `fight` | every fight | both builds, max HP, DR, dodge, winner, duration, damage, earnings, attacks, crits, dodges, stuns, sudden death |
+| `round` | every shop opens | round number, round modifier, players alive |
+| `fight` | every fight | both builds, kits, max HP, DR, dodge, winner, duration, damage, earnings, attacks, crits, dodges, stuns, abilities used, healing, shield absorbed, round modifier, sudden death |
+| `kit_change` | kit switched in a shop | from, to, cost |
 | `event_claimed` | first-to events | event, player |
 | `elimination` | player knocked out | placement, final build |
 | `match_end` | match ends | standings |
@@ -126,7 +129,8 @@ ls /var/lib/ashen/backups       # database backups
 
 ## Editing game data
 
-Items, effects and lobby events live in `json/`. The server validates every
+Items, effects, lobby events, kits (`kits.json`) and round modifiers
+(`modifiers.json`) live in `json/`. The server validates every
 reference on startup (unknown effect IDs or event items stop it with a clear
 error), and the compendium reads the same files. Restart the service after
 changing them.

@@ -34,15 +34,20 @@ lobby host.
 
 A match is a loop of **Shop → Combat → Results** until one player is left.
 
-1. Every player starts with *starting money* and *starting lives*, no items.
+1. Every player starts with *starting money* and *starting lives*, no items,
+   and the **kit** they picked in the lobby (see Kits).
 2. **Shop phase** lasts the *shop timer*, or ends early when every alive player
    is ready. Disconnected players count as ready.
-3. **Combat phase**: alive players are paired (see Pairing) and every fight is
-   simulated by the server. Every player watches their own fight replay in real
-   time (no skipping, no speed-up).
-4. **Results**: shown until every connected player has finished their replay,
-   then 5 more seconds.
-5. The next shop starts. Every shop except the first pays *income*.
+3. **Combat phase**: alive players are paired (see Pairing). After a
+   "3, 2, 1, Fight!" countdown all fights run **live** on the server at the same
+   time, and players use their kit abilities with Q/W/E/R or the buttons.
+4. **Results**: once the last fight ends, 5 more seconds.
+5. The next shop starts (see Money for what it pays).
+
+### Spectating
+
+- Eliminated players, and players whose own fight is already over, can pick any
+  fight of the round and watch it live.
 
 ### Pairing
 
@@ -70,10 +75,69 @@ A match is a loop of **Shop → Combat → Results** until one player is left.
 
 ### Disconnects and leaving
 
-- Disconnecting keeps your seat reserved; log in again (same account) to rejoin.
-  While you are gone you count as ready and fight with your current build.
+- Disconnecting keeps your seat reserved; log in again (same account) to rejoin,
+  even mid-fight. While you are gone you count as ready, and a bot uses your
+  kit abilities in fights. Ghosts use the same bot.
 - Clicking **Forfeit** eliminates you immediately (you take the lowest open
   placement) and frees your seat.
+
+## Money
+
+When a shop opens (from round 2 on) you get:
+
+- **Income** (*income per round*, doubled during Gold Rush).
+- **Interest**: +1 $ per 10 $ you held before income, up to +5 $.
+- **Loss streak bonus**: after 2 losses in a row +10 $, then +5 $ more for every
+  further loss in a row (3 → +15 $, 4 → +20 $, …). A win or draw resets it.
+- During **Tax**, you then lose 10 % of your money.
+
+The shop shows what you got. Fights also pay the *win bonus*, the flawless bonus
+and any money items (Coin, Chip, Crown) earned.
+
+## Round modifiers
+
+From round 2 on, 70 % of rounds get a random lobby-wide modifier (30 % are calm).
+It applies to that round's shop and fights and is shown in the shop and fight.
+
+| Modifier | Effect |
+|---|---|
+| Blood Moon | Crit damage ×1.5 |
+| Overclock | All cooldowns ×0.8 (weapons, item effects, kit skills) |
+| Fog | +15 % dodge chance for everyone (before the cap) |
+| Gold Rush | Double income |
+| Clearance | All shop items 30 % cheaper |
+| Lucky Day | Special item chance ×3 |
+| Glass Cannon | All damage ×1.5, max HP ×0.7 |
+| Rust | Weapon damage ×0.75 |
+| Fragile | Damage reduction halved |
+| Unlucky | No special items in the shop |
+| Tax | Lose 10 % of your money when the shop opens |
+
+Modifiers live in `json/modifiers.json` (name/description); their effects are in
+the server code.
+
+## Kits
+
+Everyone picks a kit in the lobby (free). In any shop you can switch for 15 $.
+Several players can pick the same kit. Each kit has three skills (**Q**, **W**,
+**E**) on cooldowns and an **ultimate** (**R**) that charges from damage you deal
+and take: dealing + taking 40 % of your max HP fills it. Charge and cooldowns
+reset every fight. Stunned players can't use abilities (except Cleanse).
+
+| Kit | Q | W | E | R (ultimate) |
+|---|---|---|---|---|
+| Duelist | Parry (6 s): blocks the next hit within 0.6 s, reflects 50 % | Lunge (8 s): instant extra weapon attack | Feint (10 s): enemy's next weapon attack misses | Flurry: 5 extra weapon attacks over 1.5 s |
+| Berserker | Rage (10 s): +50 % damage dealt, +25 % taken, 4 s | Bloodlust (12 s): heal 30 % of damage dealt, 5 s | Shout (9 s): stun 0.5 s | Rampage: weapon cooldown ×0.5 + stun immune 6 s, breaks stuns |
+| Guardian | Shield (8 s): absorb 15 % max HP, 4 s | Brace (10 s): +30 % damage reduction (past the cap), 3 s | Cleanse (12 s): remove stun + enemy debuffs, works while stunned | Bulwark: invulnerable 2.5 s, reflects 100 % of blocked damage |
+| Trickster | Smoke (9 s): +40 % dodge, 3 s | Hex (11 s): enemy weapon cooldown ×1.5, 4 s | Blink (7 s): next weapon attack crits | Mirror: copy the enemy's active buffs for 6 s |
+| Gambler | Coin Flip (6 s): next hit ×2 or ×0.5 | Double Down (12 s): +30 % crit chance, 4 s | Jackpot (15 s): 10 % stun 2 s, else +2 $ | All In: next 3 hits ×3 or miss (50/50 each) |
+| Sniper | Aim (8 s): next hit +100 % | Mark (12 s): enemy takes +20 % damage, 5 s | Retreat (10 s): +50 % dodge, 2 s | Headshot: 2 s wind-up, then 40 % of the enemy's current HP |
+
+- Ability dodge and damage reduction can go past the normal caps (up to 90 %
+  dodge and 95 % damage reduction).
+- Headshot ignores damage reduction and overtime, but invulnerability, Parry
+  and Shield still work against it.
+- All numbers are in `json/kits.json`.
 
 ## Shop
 
@@ -93,6 +157,11 @@ A match is a loop of **Shop → Combat → Results** until one player is left.
     back into the pool.
 - Special chance buffs (Celestial Shirt ×1.5, Dark Clover ×2.5) multiply:
   both together give 3.75 %.
+
+### Pack synergy
+
+- Owning 2 / 3 / 4+ different items of the same special pack gives your weapon
+  +5 % / +10 % / +15 % damage. This stacks with the Pack Master event reward.
 
 ### Buying
 
@@ -138,7 +207,8 @@ A match is a loop of **Shop → Combat → Results** until one player is left.
 - A stunned player's weapon and item cooldowns stop. Stuns hitting an already
   stunned player add their duration. Invulnerability blocks new stuns.
 - **Overtime**: after 30 s all damage is increased by +10 % per second. From 60 s
-  on, **sudden death** deals 1 damage per tick to both players, doubling every
+  on (if **neither** fighter has a weapon: overtime from 5 s, sudden death from
+  10 s), **sudden death** deals 1 damage per tick to both players, doubling every
   second, ignoring damage reduction, dodge and invulnerability. If both die on
   the same tick, the player with more HP before that tick wins; equal = draw.
 

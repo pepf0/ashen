@@ -1,0 +1,92 @@
+[
+  {
+    "id": "duelist",
+    "name": "Duelist",
+    "description": "Precise and reactive. Turns the enemy's attacks against them.",
+    "abilities": [
+      { "id": "parry", "key": "q", "name": "Parry", "cooldown": 6, "duration": 0.6, "reflect": 0.5,
+        "description": "Blocks the next hit within {duration}s and reflects {reflect*100}% of it back" },
+      { "id": "lunge", "key": "w", "name": "Lunge", "cooldown": 8, "needs_weapon": true,
+        "description": "Instantly makes an extra weapon attack" },
+      { "id": "feint", "key": "e", "name": "Feint", "cooldown": 10,
+        "description": "The enemy's next weapon attack misses" },
+      { "id": "flurry", "key": "r", "name": "Flurry", "ultimate": true, "hits": 5, "duration": 1.5, "needs_weapon": true,
+        "description": "Makes {hits} extra weapon attacks over {duration}s" }
+    ]
+  },
+  {
+    "id": "berserker",
+    "name": "Berserker",
+    "description": "All in on damage. Hits hard, heals by hitting, ignores stuns when raging.",
+    "abilities": [
+      { "id": "rage", "key": "q", "name": "Rage", "cooldown": 10, "duration": 4, "mult": 1.5, "taken": 1.25,
+        "description": "Deal {(mult-1)*100}% more damage for {duration}s, but take {(taken-1)*100}% more" },
+      { "id": "bloodlust", "key": "w", "name": "Bloodlust", "cooldown": 12, "duration": 5, "fraction": 0.3,
+        "description": "Heal {fraction*100}% of the damage you deal for {duration}s" },
+      { "id": "shout", "key": "e", "name": "Shout", "cooldown": 9, "duration": 0.5,
+        "description": "Stuns the enemy for {duration}s" },
+      { "id": "rampage", "key": "r", "name": "Rampage", "ultimate": true, "duration": 6, "mult": 0.5,
+        "description": "Weapon cooldown x{mult} and immune to stuns for {duration}s. Breaks current stuns" }
+    ]
+  },
+  {
+    "id": "guardian",
+    "name": "Guardian",
+    "description": "Hard to kill. Absorbs, braces and outlasts.",
+    "abilities": [
+      { "id": "shield", "key": "q", "name": "Shield", "cooldown": 8, "fraction": 0.15, "duration": 4,
+        "description": "Gain a shield absorbing {fraction*100}% of your max HP for {duration}s" },
+      { "id": "brace", "key": "w", "name": "Brace", "cooldown": 10, "add": 0.3, "duration": 3,
+        "description": "+{add*100}% damage reduction for {duration}s, ignoring the cap" },
+      { "id": "cleanse", "key": "e", "name": "Cleanse", "cooldown": 12, "usable_while_stunned": true,
+        "description": "Removes stuns and enemy debuffs. Usable while stunned" },
+      { "id": "bulwark", "key": "r", "name": "Bulwark", "ultimate": true, "duration": 2.5, "reflect": 1,
+        "description": "Invulnerable for {duration}s, reflecting {reflect*100}% of blocked damage" }
+    ]
+  },
+  {
+    "id": "trickster",
+    "name": "Trickster",
+    "description": "Slippery and annoying. Slows the enemy down and steals their power.",
+    "abilities": [
+      { "id": "smoke", "key": "q", "name": "Smoke", "cooldown": 9, "add": 0.4, "duration": 3,
+        "description": "+{add*100}% dodge chance for {duration}s" },
+      { "id": "hex", "key": "w", "name": "Hex", "cooldown": 11, "mult": 1.5, "duration": 4,
+        "description": "Enemy weapon cooldown x{mult} for {duration}s" },
+      { "id": "blink", "key": "e", "name": "Blink", "cooldown": 7, "needs_weapon": true,
+        "description": "Your next weapon attack is a guaranteed crit" },
+      { "id": "mirror", "key": "r", "name": "Mirror", "ultimate": true, "duration": 6,
+        "description": "Copies all of the enemy's active buffs for {duration}s" }
+    ]
+  },
+  {
+    "id": "gambler",
+    "name": "Gambler",
+    "description": "Everything is a coin flip. Big swings, big stories.",
+    "abilities": [
+      { "id": "coin_flip", "key": "q", "name": "Coin Flip", "cooldown": 6, "win_mult": 2, "lose_mult": 0.5, "needs_weapon": true,
+        "description": "Your next hit deals x{win_mult} or x{lose_mult} damage" },
+      { "id": "double_down", "key": "w", "name": "Double Down", "cooldown": 12, "add": 0.3, "duration": 4,
+        "description": "+{add*100}% crit chance for {duration}s" },
+      { "id": "jackpot", "key": "e", "name": "Jackpot", "cooldown": 15, "chance": 0.1, "duration": 2, "money": 2,
+        "description": "{chance*100}% chance to stun the enemy for {duration}s, otherwise earn {money}$" },
+      { "id": "all_in", "key": "r", "name": "All In", "ultimate": true, "hits": 3, "mult": 3, "chance": 0.5, "needs_weapon": true,
+        "description": "Your next {hits} hits each deal x{mult} damage or miss ({chance*100}% each)" }
+    ]
+  },
+  {
+    "id": "sniper",
+    "name": "Sniper",
+    "description": "Patient and deadly. Sets up one huge shot.",
+    "abilities": [
+      { "id": "aim", "key": "q", "name": "Aim", "cooldown": 8, "mult": 2, "needs_weapon": true,
+        "description": "Your next hit deals +{(mult-1)*100}% damage" },
+      { "id": "mark", "key": "w", "name": "Mark", "cooldown": 12, "mult": 1.2, "duration": 5,
+        "description": "The enemy takes {(mult-1)*100}% more damage for {duration}s" },
+      { "id": "retreat", "key": "e", "name": "Retreat", "cooldown": 10, "add": 0.5, "duration": 2,
+        "description": "+{add*100}% dodge chance for {duration}s" },
+      { "id": "headshot", "key": "r", "name": "Headshot", "ultimate": true, "windup": 2, "fraction": 0.4,
+        "description": "After a {windup}s wind-up, hits for {fraction*100}% of the enemy's current HP" }
+    ]
+  }
+]

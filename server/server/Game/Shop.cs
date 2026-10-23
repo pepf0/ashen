@@ -29,11 +29,11 @@ public class Shop
     /// Rolls a fresh shop. <paramref name="unavailableSpecials"/> are specials that can't appear
     /// (already obtained by this player, or by anyone in "per lobby" mode).
     /// </summary>
-    public static List<ShopSlot> Roll(Player player, ISet<string> unavailableSpecials, Random rng)
+    public static List<ShopSlot> Roll(Player player, ISet<string> unavailableSpecials, Random rng, string? modifier = null)
     {
         var slots = new List<ShopSlot>();
         var inShop = new HashSet<string>();
-        double specialChance = player.SpecialChance;
+        double specialChance = player.SpecialChanceWith(modifier);
         var generics = GameData.Generics
             .Where(g => player.FindOwned(g.Id) is not { Level: >= OwnedItem.MaxLevel })
             .ToList();
@@ -52,7 +52,8 @@ public class Shop
                 pick = generics[rng.Next(generics.Count)];
             if (pick is null) continue;
             if (pick.IsSpecial) inShop.Add(pick.Id);
-            slots.Add(new ShopSlot { ItemId = pick.Id });
+            // Clearance: everything 30% off this round.
+            slots.Add(new ShopSlot { ItemId = pick.Id, Price = modifier == "clearance" ? (int)Math.Round(pick.Price * 0.7) : null });
         }
         return slots;
     }

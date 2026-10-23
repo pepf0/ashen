@@ -14,6 +14,7 @@ public class LobbyMember
     public string Name { get; set; } = "";
     public Connection? Connection { get; set; }
     public bool Connected => Connection is not null;
+    public string Kit { get; set; } = Ashen.Kit.Default;
 }
 
 public record ChatMessage(long UserId, string Name, string Text, long At);
@@ -28,8 +29,9 @@ public class Lobby
     public const int MinPlayers = 2;
     public const int FlawlessBonus = 5;
     public const double ResultsSeconds = 5;
-    /// <summary>Extra time on top of the longest fight before the results screen starts anyway.</summary>
-    public const double ReplayGraceSeconds = 15;
+    public const double CountdownSeconds = 3;
+    public const int InterestPer = 10;
+    public const int MaxInterest = 5;
 
     private readonly object sync = new();
     private readonly LobbyManager manager;
@@ -52,9 +54,10 @@ public class Lobby
     private int round;
     private DateTime phaseEndsAt;
     private DateTime matchStartedAt;
-    private DateTime combatStartedAt;
-    private readonly Dictionary<long, (CombatResult Result, int Index)> roundFights = new();
-    private readonly HashSet<long> replayDone = new();
+    private DateTime fightsStartAt;
+    private readonly List<LiveFight> fights = new();
+    private int nextFightId;
+    private RoundModifier? modifier;
     private readonly List<string> pendingAnnouncements = new();
     private object? lastGameOver;
     private BalanceLog? log;
@@ -134,8 +137,9 @@ public class Lobby
         if (InMatch)
         {
             SendState(member);
-            if (State == LobbyState.Combat && roundFights.TryGetValue(member.UserId, out var fight) && !replayDone.Contains(member.UserId))
-                SendCombat(member, fight.Result, fight.Index);
+            var own = FightOf(member.UserId);
+            if (State == LobbyState.Combat && own is not null && !own.Ended)
+                SendFightStart(member, own, own.IndexOf(member.UserId));
         }
     }
 
@@ -322,7 +326,8 @@ public class Lobby
                     Money = Settings.StartMoney,
                     Lives = Settings.Lives,
                     MaxHealth = Settings.StartHp,
-                    Connected = m.Connected
+                    Connected = m.Connected,
+                    Kit = m.Kit
                 });
             }
             log?.Dispose();
@@ -356,15 +361,26 @@ public class Lobby
                 await WaitUntil(() => DateTime.UtcNow >= phaseEndsAt || AlivePlayers().Count() <= 1
                     || (AlivePlayers().Any(p => p.Connected) && AlivePlayers().All(p => p.Ready || !p.Connected)));
 
-                double longest;
                 lock (sync)
                 {
                     if (CheckGameOver()) return;
-                    longest = BeginCombat();
+                    BeginCombat();
                 }
-                var replayDeadline = DateTime.UtcNow.AddSeconds(longest + ReplayGraceSeconds);
-                await WaitUntil(() => DateTime.UtcNow >= replayDeadline || AlivePlayers().Count() <= 1
-                    || roundFights.Keys.All(id => replayDone.Contains(id) || FindPlayer(id) is not { Connected: true }));
+                await WaitUntil(() => DateTime.UtcNow >= fightsStartAt);
+
+                // Real-time fights: every fight catches up to the ticks it should have done by now.
+                using (var timer = new PeriodicTimer(TimeSpan.FromSeconds(Combat.SPT)))
+                {
+                    while (true)
+                    {
+                        lock (sync)
+                        {
+                            if (State == LobbyState.Waiting) throw new OperationCanceledException();
+                            if (TickFights()) break;
+                        }
+                        await timer.WaitForNextTickAsync();
+                    }
+                }
 
                 lock (sync)
                 {
@@ -412,20 +428,51 @@ public class Lobby
     private ISet<string> UnavailableSpecials(Player p) =>
         Settings.SpecialMode == SpecialMode.PerLobby ? lobbySpecials : p.ObtainedSpecials;
 
+    private FightRules Rules => new() { Modifier = modifier?.Id };
+
+    /// <summary>From round 2, 70% of rounds get a random modifier.</summary>
+    private void RollModifier()
+    {
+        modifier = round >= 2 && rng.NextDouble() >= RoundModifier.CalmChance && RoundModifier.All.Count > 0
+            ? RoundModifier.All[rng.Next(RoundModifier.All.Count)]
+            : null;
+        if (modifier is not null) AddSystemChat($"Round {round}: {modifier.Name}. {modifier.Description}.");
+    }
+
+    /// <summary>Income, interest on saved money, loss-streak bonus and Tax, applied when a shop opens.</summary>
+    private void PayIncome(Player p)
+    {
+        var income = new Dictionary<string, int>();
+        if (round > 1)
+        {
+            income["interest"] = Math.Min(MaxInterest, p.Money / InterestPer);
+            income["income"] = Settings.Income * (modifier?.Id == "gold_rush" ? 2 : 1);
+            if (p.LossStreak >= 2) income["lossStreak"] = 10 + 5 * (p.LossStreak - 2);
+        }
+        p.Money += income.Values.Sum();
+        if (modifier?.Id == "tax")
+        {
+            income["tax"] = -(int)Math.Floor(p.Money * 0.1);
+            p.Money += income["tax"];
+        }
+        p.LastIncome = income.Where(kv => kv.Value != 0).ToDictionary();
+    }
+
     private void BeginShop()
     {
         round++;
         State = LobbyState.Shop;
         phaseEndsAt = DateTime.UtcNow.AddSeconds(Settings.ShopSeconds);
-        roundFights.Clear();
-        replayDone.Clear();
+        fights.Clear();
+        RollModifier();
+        log?.Write("round", new { round, modifier = modifier?.Id, alive = AlivePlayers().Count() });
         foreach (var p in AlivePlayers())
         {
-            if (round > 1) p.Money += Settings.Income;
+            PayIncome(p);
             p.Ready = false;
             p.Shop.RerollsLeft = Shop.FreeRerolls;
             p.Shop.Locked = false;
-            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng);
+            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng, modifier?.Id);
             p.Shop.Pity = round == Shop.PityRound && p.EarlyWeaponlessFights >= 2
                 ? Shop.PityOffer(UnavailableSpecials(p), rng)
                 : new List<ShopSlot>();
@@ -436,6 +483,9 @@ public class Lobby
                 player = p.Id,
                 name = p.Name,
                 money = p.Money,
+                income = p.LastIncome,
+                kit = p.Kit,
+                lossStreak = p.LossStreak,
                 lives = p.Lives,
                 maxHp = Math.Round(p.MaxHealth, 2),
                 hpUpgrades = p.HpUpgrades,
@@ -458,7 +508,8 @@ public class Lobby
         round,
         player = p.Id,
         reroll,
-        specialChance = p.SpecialChance,
+        specialChance = p.SpecialChanceWith(modifier?.Id),
+        modifier = modifier?.Id,
         items = p.Shop.Items.Select(i => i.ItemId)
     });
 
@@ -484,55 +535,128 @@ public class Lobby
                 attacks = result.Events.OfType<DamageEvent>().Count(e => e.WeaponAttack && e.Source == i),
                 crits = result.Events.OfType<DamageEvent>().Count(e => e.WeaponAttack && e.Source == i && e.CritMultiplier is not null),
                 dodged = result.Events.OfType<DamageEvent>().Count(e => e.WeaponAttack && e.Target == i && e.Dodged),
-                stunsLanded = result.Events.OfType<StunEvent>().Count(e => e.Source == i && !e.Blocked)
+                stunsLanded = result.Events.OfType<StunEvent>().Count(e => e.Source == i && !e.Blocked),
+                kit = f.Kit,
+                bot = b is null && i == 1,
+                abilities = result.Events.OfType<AbilityEvent>().Where(e => e.Source == i).GroupBy(e => e.Ability)
+                    .ToDictionary(g => g.Key, g => g.Count()),
+                healed = Math.Round(result.Events.OfType<HealEvent>().Where(e => e.Source == i).Sum(e => e.Amount), 1),
+                absorbed = Math.Round(result.Events.OfType<DamageEvent>().Where(e => e.Target == i).Sum(e => e.Absorbed), 1)
             }),
+            modifier = modifier?.Id,
             winner = result.Winner,
             duration = result.Duration,
             suddenDeath = result.Duration >= Combat.SuddenDeathStart
         });
     }
 
-    /// <summary>Pairs everyone, simulates all fights and applies the results. Returns the longest fight's duration.</summary>
-    private double BeginCombat()
+    /// <summary>Pairs everyone and starts the live fights after a short countdown.</summary>
+    private void BeginCombat()
     {
         State = LobbyState.Combat;
-        combatStartedAt = DateTime.UtcNow;
+        fightsStartAt = DateTime.UtcNow.AddSeconds(CountdownSeconds);
         var alive = AlivePlayers().ToList();
         var (pairs, ghostFor) = MakePairs(alive);
-        double longest = 0;
-        if (round <= 2)
-            foreach (var p in alive.Where(p => p.Weapon is null)) p.EarlyWeaponlessFights++;
+        var rules = Rules;
+        fights.Clear();
 
         foreach (var (a, b) in pairs)
         {
-            var result = Combat.CalculateCombatResults(a.ToLoadout(), b.ToLoadout());
             a.TimesFought[b.Id] = a.TimesFought.GetValueOrDefault(b.Id) + 1;
             b.TimesFought[a.Id] = b.TimesFought.GetValueOrDefault(a.Id) + 1;
-            ApplyResult(a, result, 0);
-            ApplyResult(b, result, 1);
-            roundFights[a.Id] = (result, 0);
-            roundFights[b.Id] = (result, 1);
-            LogFight(a, b, result);
-            longest = Math.Max(longest, result.Duration);
+            fights.Add(new LiveFight
+            {
+                Id = ++nextFightId,
+                Fight = new Fight(a.ToLoadout(), b.ToLoadout(), rules, rng.Next()),
+                Players = new Player?[] { a, b }
+            });
         }
         if (ghostFor is not null)
         {
             var others = alive.Where(p => p != ghostFor).ToList();
             var copy = others[rng.Next(others.Count)];
-            var result = Combat.CalculateCombatResults(ghostFor.ToLoadout(), copy.ToLoadout(ghost: true));
             ghostFor.GhostFights++;
-            ApplyResult(ghostFor, result, 0);
-            roundFights[ghostFor.Id] = (result, 0);
-            LogFight(ghostFor, null, result);
-            longest = Math.Max(longest, result.Duration);
+            var fight = new Fight(ghostFor.ToLoadout(), copy.ToLoadout(ghost: true), rules, rng.Next());
+            fight.SetBot(1, true);
+            fights.Add(new LiveFight { Id = ++nextFightId, Fight = fight, Players = new Player?[] { ghostFor, null } });
         }
+        if (round <= 2)
+            foreach (var p in alive.Where(p => p.Weapon is null)) p.EarlyWeaponlessFights++;
 
-        foreach (var m in Members)
-        {
-            if (roundFights.TryGetValue(m.UserId, out var fight)) SendCombat(m, fight.Result, fight.Index);
-        }
+        foreach (var fight in fights)
+            for (int i = 0; i < 2; i++)
+                if (fight.Players[i] is { } p && MemberOf(p.Id) is { } m) SendFightStart(m, fight, i);
         BroadcastState();
-        return longest;
+    }
+
+    private LobbyMember? MemberOf(long userId) => Members.FirstOrDefault(m => m.UserId == userId);
+
+    private LiveFight? FightOf(long playerId) => fights.FirstOrDefault(f => f.IndexOf(playerId) is not null);
+
+    /// <summary>Advances every running fight to the current time and streams the new ticks. Returns true when all ended.</summary>
+    private bool TickFights()
+    {
+        int target = (int)((DateTime.UtcNow - fightsStartAt).TotalSeconds * Combat.TPS);
+        foreach (var lf in fights.Where(f => !f.Ended))
+        {
+            for (int i = 0; i < 2; i++)
+                if (lf.Players[i] is { } p) lf.Fight.SetBot(i, !p.Connected);
+
+            int steps = 0;
+            while (lf.TicksDone < target && !lf.Fight.Finished && steps++ < Combat.TPS)
+            {
+                lf.Fight.Step();
+                lf.TicksDone++;
+            }
+            var tick = new { type = "fightTick", fightId = lf.Id, events = lf.Fight.TakeNewEvents(), snap = lf.Fight.Snapshot() };
+            foreach (var m in Watchers(lf)) m.Connection?.Send(tick);
+
+            if (lf.Fight.Finished)
+            {
+                lf.Ended = true;
+                var result = lf.Fight.Result!;
+                for (int i = 0; i < 2; i++)
+                    if (lf.Players[i] is { } p) ApplyResult(p, result, i);
+                LogFight(lf.Players[0]!, lf.Players[1], result);
+                var end = new { type = "fightEnd", fightId = lf.Id, result = ResultSummary(result) };
+                foreach (var m in Watchers(lf)) m.Connection?.Send(end);
+                BroadcastState();
+            }
+        }
+        return fights.All(f => f.Ended);
+    }
+
+    private IEnumerable<LobbyMember> Watchers(LiveFight lf) =>
+        Members.Where(m => lf.IndexOf(m.UserId) is not null || lf.Spectators.Contains(m.UserId));
+
+    /// <summary>Result without the event list (the clients already got the events live).</summary>
+    private static object ResultSummary(CombatResult r) => new
+    {
+        winner = r.Winner,
+        duration = r.Duration,
+        endHp = r.EndHp,
+        damageDealt = r.DamageDealt,
+        damageTaken = r.DamageTaken,
+        earnings = r.Earnings,
+        fighters = r.Fighters.Select(f => new { name = f.Name, maxHp = f.MaxHp })
+    };
+
+    private void SendFightStart(LobbyMember member, LiveFight lf, int? you)
+    {
+        member.Connection?.Send(new
+        {
+            type = "fightStart",
+            fightId = lf.Id,
+            round,
+            you,
+            countdown = Math.Max(0, (fightsStartAt - DateTime.UtcNow).TotalSeconds),
+            modifier,
+            fighters = new[] { lf.Fight.Info(0), lf.Fight.Info(1) },
+            buffs = new[] { lf.Fight.ActiveBuffs(0), lf.Fight.ActiveBuffs(1) },
+            snap = lf.Fight.Snapshot(),
+            ended = lf.Ended,
+            result = lf.Ended ? ResultSummary(lf.Fight.Result!) : null
+        });
     }
 
     private void ApplyResult(Player p, CombatResult result, int index)
@@ -541,6 +665,8 @@ public class Lobby
         p.Money += result.Earnings[index];
         p.LastFightHpPercent = result.EndHp[index] / Math.Max(1, result.Fighters[index].MaxHp);
         p.LastFightDamageDealt = result.DamageDealt[index];
+        if (won || result.Winner == -1) p.LossStreak = 0;
+        else p.LossStreak++;
         if (won)
         {
             p.Wins++;
@@ -717,7 +843,7 @@ public class Lobby
             if (p.Shop.Locked) return "You already bought from this roll.";
             if (p.Shop.RerollsLeft <= 0) return "No rerolls left.";
             p.Shop.RerollsLeft--;
-            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng);
+            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng, modifier?.Id);
             LogRoll(p, Shop.FreeRerolls - p.Shop.RerollsLeft);
             SendState(p.Id);
             return null;
@@ -847,12 +973,62 @@ public class Lobby
         }
     }
 
-    public void ReplayFinished(Connection conn)
+    /// <summary>Q/W/E/R pressed during your fight.</summary>
+    public void UseAbility(Connection conn, int slot)
     {
         lock (sync)
         {
-            if (State == LobbyState.Combat) replayDone.Add(conn.User.Id);
+            if (State != LobbyState.Combat) return;
+            var lf = FightOf(conn.User.Id);
+            if (lf is null || lf.Ended || lf.IndexOf(conn.User.Id) is not int index) return;
+            lf.Fight.Queue(index, slot);
         }
+    }
+
+    /// <summary>Watch another fight: allowed once you're eliminated or your own fight is over.</summary>
+    public string? Spectate(Connection conn, int fightId)
+    {
+        lock (sync)
+        {
+            if (State is not (LobbyState.Combat or LobbyState.Results)) return "There are no fights right now.";
+            var own = FightOf(conn.User.Id);
+            if (own is { Ended: false }) return "Finish your own fight first.";
+            var lf = fights.FirstOrDefault(f => f.Id == fightId);
+            if (lf is null) return "That fight doesn't exist.";
+            foreach (var f in fights) f.Spectators.Remove(conn.User.Id);
+            if (lf.IndexOf(conn.User.Id) is null) lf.Spectators.Add(conn.User.Id);
+            if (MemberOf(conn.User.Id) is { } m) SendFightStart(m, lf, lf.IndexOf(conn.User.Id));
+            return null;
+        }
+    }
+
+    /// <summary>Kit choice in the waiting room (free).</summary>
+    public string? PickKit(Connection conn, string kit)
+    {
+        lock (sync)
+        {
+            if (!GameData.Kits.ContainsKey(kit)) return "Unknown kit.";
+            if (InMatch) return ChangeKitInShop(conn, kit);
+            if (MemberOf(conn.User.Id) is not { } m) return "You are not in this lobby.";
+            m.Kit = kit;
+            BroadcastLobby();
+            return null;
+        }
+    }
+
+    /// <summary>Changing kits during the match costs money and only works in the shop.</summary>
+    private string? ChangeKitInShop(Connection conn, string kit)
+    {
+        var p = ShopPlayer(conn, out var error);
+        if (p is null) return error;
+        if (p.Kit == kit) return null;
+        if (p.Money < Kit.SwapCost) return "Not enough money.";
+        p.Money -= Kit.SwapCost;
+        log?.Write("kit_change", new { round, player = p.Id, from = p.Kit, to = kit, cost = Kit.SwapCost });
+        p.Kit = kit;
+        if (MemberOf(p.Id) is { } m) m.Kit = kit;
+        SendState(p.Id);
+        return null;
     }
 
     // ================= lobby events =================
@@ -917,7 +1093,7 @@ public class Lobby
         state = State,
         inMatch = InMatch,
         settings = Settings,
-        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected })
+        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected, kit = m.Kit })
     };
 
     private void BroadcastLobby()
@@ -952,6 +1128,9 @@ public class Lobby
                 round,
                 phaseRemaining = remaining,
                 settings = Settings,
+                modifier,
+                fights = State is LobbyState.Combat or LobbyState.Results ? fights.Select(f => f.Summary()) : null,
+                kitSwapCost = Kit.SwapCost,
                 you = p is null ? null : new
                 {
                     id = p.Id,
@@ -962,12 +1141,16 @@ public class Lobby
                     ready = p.Ready,
                     maxHp = Math.Round(p.MaxHealth, 1),
                     hpUpgradeCost = HpUpgradeCost(p),
-                    specialChance = p.SpecialChance,
+                    specialChance = p.SpecialChanceWith(modifier?.Id),
+                    kit = p.Kit,
+                    income = p.LastIncome,
+                    lossStreak = p.LossStreak,
+                    canSpectate = State is LobbyState.Combat or LobbyState.Results && (p.Eliminated || FightOf(p.Id) is not { Ended: false }),
                     weapon = p.Weapon is { } w ? new ItemView(w.Id, w.Level, "weapon") : null,
                     shirt = p.Shirt is { } s ? new ItemView(s.Id, s.Level, "shirt") : null,
                     dynamics = p.Dynamics.Select((d, i) => d is null ? null : new ItemView(d.Id, d.Level, $"dynamic{i}")),
                     shop = new { items = p.Shop.Items, pity = p.Shop.Pity, rerollsLeft = p.Shop.RerollsLeft, locked = p.Shop.Locked },
-                    stats = Combat.PreviewStats(p.ToLoadout()),
+                    stats = Combat.PreviewStats(p.ToLoadout(), Rules),
                     titles = p.Titles,
                     wins = p.Wins,
                     losses = p.Losses
@@ -993,15 +1176,4 @@ public class Lobby
         });
     }
 
-    private void SendCombat(LobbyMember member, CombatResult result, int index)
-    {
-        member.Connection?.Send(new
-        {
-            type = "combat",
-            round,
-            you = index,
-            elapsed = (DateTime.UtcNow - combatStartedAt).TotalSeconds,
-            result
-        });
-    }
 }

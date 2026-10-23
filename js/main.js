@@ -24,6 +24,7 @@ const app = {
 app.lobbyView = createLobbyView(app);
 app.game = createGameView(app);
 app.combat = createCombatView(app);
+app.showGame = () => { if (app.mode === "match") showView("Game"); };
 
 const tabs = [...document.querySelectorAll("#tabs .tab")];
 let activeTab = "menu";
@@ -150,11 +151,13 @@ app.socket
             showView("Game");
         }
     })
-    .on("combat", msg => {
+    .on("fightStart", msg => {
         if (app.mode !== "match") setMode("match");
         showView("Combat");
-        app.combat.play(msg);
+        app.combat.start(msg);
     })
+    .on("fightTick", msg => app.combat.tick(msg))
+    .on("fightEnd", msg => app.combat.end(msg))
     .on("gameOver", msg => {
         app.combat.stop();
         renderGameOver(msg, app);

@@ -325,8 +325,14 @@ public static class GameSocket
             case "ready":
                 error = lobby?.SetReady(conn, msg.GetProperty("ready").GetBoolean());
                 break;
-            case "replayDone":
-                lobby?.ReplayFinished(conn);
+            case "ability":
+                lobby?.UseAbility(conn, msg.GetProperty("slot").GetInt32());
+                break;
+            case "spectate":
+                error = lobby?.Spectate(conn, msg.GetProperty("fightId").GetInt32());
+                break;
+            case "kit":
+                error = lobby?.PickKit(conn, msg.GetProperty("kit").GetString() ?? "") ?? (lobby is null ? "You are not in a lobby." : null);
                 break;
             case "ping":
                 conn.Send(new { type = "pong" });
