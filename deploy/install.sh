@@ -19,10 +19,19 @@ die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "Run as root (pipe into 'sudo bash')."
 
-log "Installing packages (git, curl, sqlite3)"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq git curl ca-certificates sqlite3 >/dev/null
+missing=""
+for pkg in git curl sqlite3; do command -v "$pkg" >/dev/null 2>&1 || missing="$missing $pkg"; done
+if [ -n "$missing" ]; then
+    log "Installing packages:$missing"
+    # A broken third-party apt source shouldn't stop the install.
+    apt-get update -qq || echo "Warning: apt-get update reported errors, trying to install anyway."
+    apt-get install -y -qq ca-certificates $missing >/dev/null
+fi
+
+if command -v nginx >/dev/null 2>&1 && [ "${ASHEN_FORCE:-}" != "1" ] && ! systemctl is-active --quiet "$SERVICE"; then
+    die "This looks like the nginx VPS, not the Raspberry Pi. Run this on the Pi (or set ASHEN_FORCE=1 to install here anyway)."
+fi
 
 # Refuse to take a port another program already uses.
 if ! systemctl is-active --quiet "$SERVICE" && ss -ltn "( sport = :$PORT )" | grep -q ":$PORT"; then
