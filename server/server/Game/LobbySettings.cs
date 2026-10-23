@@ -21,6 +21,8 @@ public class LobbySettings
     public double HpUpgradeMult { get; set; } = 1.2;
     public int HpUpgradeCost { get; set; } = 10;
     public int HpUpgradeCostIncrease { get; set; } = 5;
+    /// <summary>Multiplies every player's special item chance in the shop.</summary>
+    public double SpecialChanceMult { get; set; } = 1;
 
     /// <summary>Clamps every value into a sane range so a host can't break the game.</summary>
     public LobbySettings Sanitized() => new()
@@ -35,6 +37,7 @@ public class LobbySettings
         StartHp = Math.Clamp(double.IsFinite(StartHp) ? StartHp : 100, 1, 1_000_000),
         HpUpgradeMult = Math.Clamp(double.IsFinite(HpUpgradeMult) ? HpUpgradeMult : 1.2, 1, 10),
         HpUpgradeCost = Math.Clamp(HpUpgradeCost, 0, 10000),
-        HpUpgradeCostIncrease = Math.Clamp(HpUpgradeCostIncrease, 0, 10000)
+        HpUpgradeCostIncrease = Math.Clamp(HpUpgradeCostIncrease, 0, 10000),
+        SpecialChanceMult = Math.Clamp(double.IsFinite(SpecialChanceMult) ? SpecialChanceMult : 1, 0, 100)
     };
 }

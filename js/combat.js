@@ -3,6 +3,7 @@ import { data, el, item, itemCard, abilityById, abilityTooltip, attachTooltip, a
 import { formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl, portraitEl } from "./profile.js";
+import { simControls } from "./game.js";
 import { Arena } from "./arena.js";
 import { sfx } from "./fx.js";
 import { skinApplies, skinnedUrl } from "./skins.js";
@@ -344,6 +345,11 @@ export function createCombatView(app) {
         updateWait(app.game.state);
     }
 
+    function renderSimBar(state) {
+        const bar = document.getElementById("simBar");
+        bar.replaceChildren(state?.sim ? simControls(state.sim, app) : "");
+    }
+
     function updateWait(state) {
         const wait = document.getElementById("resultWait");
         const list = document.getElementById("resultFights");
@@ -393,6 +399,6 @@ export function createCombatView(app) {
         stop,
         get active() { return !!fight; },
         get spectating() { return fight?.you == null; },
-        onState(state) { if (fight?.ended || fight?.you == null) updateWait(state); }
+        onState(state) { renderSimBar(state); if (fight?.ended || fight?.you == null) updateWait(state); }
     };
 }

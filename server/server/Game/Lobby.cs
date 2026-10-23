@@ -22,6 +22,8 @@ public class LobbyMember
     public BotDifficulty? Difficulty { get; set; }
     public Appearance? Appearance { get; set; }
     public Connection? BotIdentity { get; set; }
+    /// <summary>Admin watching a simulation: in the lobby, but not a player.</summary>
+    public bool Observer { get; set; }
 }
 
 public record ChatMessage(long UserId, string Name, string Text, long At);
@@ -387,7 +389,7 @@ public partial class Lobby
             if (conn.User.Id != HostId) return "Only the host can start the match.";
             if (InMatch) return "The match is already running.";
             foreach (var m in Members.Where(m => !m.Connected && !m.IsBot).ToList()) RemoveMember(m, $"{m.Name} left.");
-            if (Members.Count < MinPlayers) return $"You need at least {MinPlayers} players (add bots for a solo game).";
+            if (Members.Count(m => !m.Observer) < MinPlayers) return $"You need at least {MinPlayers} players (add bots for a solo game).";
 
             players.Clear();
             claimedEvents.Clear();
@@ -402,10 +404,10 @@ public partial class Lobby
             matchStartedAt = DateTime.UtcNow;
             mutators.Clear();
             replays.Clear();
-            mutators.AddRange(Mutator.All.OrderBy(_ => rng.Next()).Take(Mutator.PerMatch));
+            if (!Simulation || SimMutators) mutators.AddRange(Mutator.All.OrderBy(_ => rng.Next()).Take(Mutator.PerMatch));
             int lives = Settings.Lives + (Mut("long_haul") ? 2 : 0) - (Mut("hardcore") ? 2 : 0);
             if (Mut("hardcore")) lives = Math.Max(Math.Min(2, Settings.Lives), lives);
-            foreach (var m in Members)
+            foreach (var m in Members.Where(m => !m.Observer))
             {
                 var player = new Player
                 {
@@ -459,7 +461,7 @@ public partial class Lobby
                 // Ends early once every alive player is ready (disconnected players count as ready), but never
                 // while nobody is connected at all, so a server hiccup doesn't fast-forward the whole match.
                 await WaitUntil(() => DateTime.UtcNow >= phaseEndsAt || AlivePlayers().Count() <= 1
-                    || ((AlivePlayers().Any(p => p.Connected) || AlivePlayers().All(p => p.Id < 0))
+                    || (!Simulation && (AlivePlayers().Any(p => p.Connected) || AlivePlayers().All(p => p.Id < 0))
                         && AlivePlayers().All(p => p.Ready || !p.Connected)));
 
                 lock (sync)
@@ -468,6 +470,7 @@ public partial class Lobby
                     BeginCombat();
                 }
                 await WaitUntil(() => DateTime.UtcNow >= fightsStartAt);
+                simFightClock = 0;
 
                 // Real-time fights: every fight catches up to the ticks it should have done by now.
                 using (var timer = new PeriodicTimer(TimeSpan.FromSeconds(Combat.SPT)))
@@ -486,7 +489,7 @@ public partial class Lobby
                 lock (sync)
                 {
                     State = LobbyState.Results;
-                    phaseEndsAt = DateTime.UtcNow.AddSeconds(ResultsSeconds);
+                    phaseEndsAt = DateTime.UtcNow.AddSeconds(SimSeconds(ResultsSeconds));
                     BroadcastState();
                 }
                 await WaitUntil(() => DateTime.UtcNow >= phaseEndsAt);
@@ -512,14 +515,19 @@ public partial class Lobby
 
     private async Task WaitUntil(Func<bool> condition)
     {
+        var last = DateTime.UtcNow;
         while (true)
         {
             lock (sync)
             {
                 if (State == LobbyState.Waiting) throw new OperationCanceledException();
+                // A paused simulation pushes every deadline back by the time it was paused.
+                var now = DateTime.UtcNow;
+                if (Simulation && SimSpeed <= 0) { phaseEndsAt += now - last; fightsStartAt += now - last; }
+                last = now;
                 if (condition()) return;
             }
-            await Task.Delay(200);
+            await Task.Delay(Simulation ? 50 : 200);
         }
     }
 
@@ -543,7 +551,7 @@ public partial class Lobby
         Slots = Mut("big_shops") ? 8 : Shop.Slots,
         MaxLevel = MaxLevel,
         NoShirts = Mut("no_shirts"),
-        SpecialMult = Mut("special_frenzy") ? 2 : 1,
+        SpecialMult = (Mut("special_frenzy") ? 2 : 1) * Settings.SpecialChanceMult,
         Discount = Math.Clamp(p.AugmentMods.Get("shop_discount"), 0, 0.9)
     };
 
@@ -584,7 +592,7 @@ public partial class Lobby
     {
         round++;
         State = LobbyState.Shop;
-        phaseEndsAt = DateTime.UtcNow.AddSeconds(Settings.ShopSeconds);
+        phaseEndsAt = DateTime.UtcNow.AddSeconds(Simulation ? SimSeconds(SimShopSeconds) : Settings.ShopSeconds);
         fights.Clear();
         RollModifier();
         log?.Write("round", new { round, modifier = modifier?.Id, alive = AlivePlayers().Count() });
@@ -691,7 +699,7 @@ public partial class Lobby
     private void BeginCombat()
     {
         State = LobbyState.Combat;
-        fightsStartAt = DateTime.UtcNow.AddSeconds(CountdownSeconds);
+        fightsStartAt = DateTime.UtcNow.AddSeconds(SimSeconds(CountdownSeconds));
         foreach (var p in players)
         {
             p.AugmentOffer = null;
@@ -728,6 +736,7 @@ public partial class Lobby
         foreach (var fight in fights)
             for (int i = 0; i < 2; i++)
                 if (fight.Players[i] is { } p && MemberOf(p.Id) is { } m) SendFightStart(m, fight, i);
+        FollowFights();
         BroadcastState();
     }
 
@@ -745,14 +754,16 @@ public partial class Lobby
     /// <summary>Advances every running fight to the current time and streams the new ticks. Returns true when all ended.</summary>
     private bool TickFights()
     {
-        int target = (int)((DateTime.UtcNow - fightsStartAt).TotalSeconds * Combat.TPS);
+        if (Simulation) simFightClock += Combat.SPT * SimSpeed;
+        int target = Simulation ? (int)(simFightClock * Combat.TPS) : (int)((DateTime.UtcNow - fightsStartAt).TotalSeconds * Combat.TPS);
+        int maxSteps = Combat.TPS * Math.Max(1, (int)Math.Ceiling(Simulation ? SimSpeed : 1));
         foreach (var lf in fights.Where(f => !f.Ended))
         {
             for (int i = 0; i < 2; i++)
                 if (lf.Players[i] is { } p) lf.Fight.SetBot(i, !p.Connected);
 
             int steps = 0;
-            while (lf.TicksDone < target && !lf.Fight.Finished && steps++ < Combat.TPS)
+            while (lf.TicksDone < target && !lf.Fight.Finished && steps++ < maxSteps)
             {
                 lf.Fight.Step();
                 lf.TicksDone++;
@@ -1016,7 +1027,7 @@ public partial class Lobby
         try
         {
             // Bots are never stored; matches with fewer than 2 humans are kept in history but don't count.
-            long? matchId = database?.SaveMatch(new MatchRecord
+            long? matchId = Simulation ? null : database?.SaveMatch(new MatchRecord
             {
                 LobbyCode = Code,
                 StartedAt = matchStartedAt,
@@ -1570,7 +1581,7 @@ public partial class Lobby
                     ready = p.Ready,
                     maxHp = Math.Round(p.MaxHealth, 1),
                     hpUpgradeCost = HpUpgradeCost(p),
-                    specialChance = p.SpecialChanceWith(modifier?.Id),
+                    specialChance = p.SpecialChanceWith(modifier?.Id, RollOptions(p).SpecialMult),
                     kit = p.Kit,
                     income = p.LastIncome,
                     lossStreak = p.LossStreak,
@@ -1589,6 +1600,7 @@ public partial class Lobby
                     wins = p.Wins,
                     losses = p.Losses
                 },
+                sim = member.Observer ? SimView() : null,
                 players = players.Select(o => new
                 {
                     id = o.Id,

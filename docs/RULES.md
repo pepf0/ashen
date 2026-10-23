@@ -27,6 +27,7 @@ lobby host.
   | HP upgrade multiplier | ×1.2 |
   | HP upgrade base cost | 10 $ |
   | HP upgrade cost increase | +5 $ per purchase |
+  | Special chance multiplier | ×1 (multiplies everyone's special item chance) |
 - After a match, everybody returns to the same lobby so the host can start a
   rematch.
 

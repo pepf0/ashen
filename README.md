@@ -153,7 +153,12 @@ ls /var/lib/ashen/backups       # database backups
 - Friends with invites, leaderboard, match history with per-round fight
   replays (newest 100 matches).
 - Admin tab for `ASHEN_ADMINS`: live lobbies, bans, a validated JSON editor
-  with hot reload, statistics.
+  with hot reload, statistics, and **Simulate**: a bot-only match with
+  tweakable settings (bots and difficulties, lives, money, income, HP, HP
+  upgrades, special chance multiplier, mutators) that you watch as an
+  observer, with every bot's build per round and its fights at
+  pause / 0.5× … 16× speed. Simulations aren't saved to the match history but
+  are written to the balancing logs.
 
 ## Editing game data
 

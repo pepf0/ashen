@@ -14,7 +14,8 @@ const FIELDS = [
     { key: "startHp", label: "Starting HP", min: 1, max: 1000000 },
     { key: "hpUpgradeMult", label: "HP upgrade multiplier", min: 1, max: 10, step: 0.05 },
     { key: "hpUpgradeCost", label: "HP upgrade cost", min: 0, max: 10000 },
-    { key: "hpUpgradeCostIncrease", label: "HP cost increase", min: 0, max: 10000 }
+    { key: "hpUpgradeCostIncrease", label: "HP cost increase", min: 0, max: 10000 },
+    { key: "specialChanceMult", label: "Special chance ×", min: 0, max: 100, step: 0.25 }
 ];
 
 export function createLobbyView(app) {

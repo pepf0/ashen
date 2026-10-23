@@ -405,6 +405,29 @@ public static class GameSocket
                         Enum.TryParse<BotDifficulty>(msg.GetProperty("difficulty").GetString(), true, out var d) ? d : BotDifficulty.Normal);
                 break;
             }
+            case "simStart":
+            {
+                if (!Admin.IsAdmin(conn.User)) { error = "Admins only."; break; }
+                var created = lobbies.Create();
+                error = lobbies.Join(conn, created);
+                if (error is not null) break;
+                var settings = msg.TryGetProperty("settings", out var ss) ? ss.Deserialize<LobbySettings>(Protocol.Json) ?? new LobbySettings() : new LobbySettings();
+                var diffs = msg.TryGetProperty("difficulties", out var ds) && ds.ValueKind == JsonValueKind.Array
+                    ? ds.EnumerateArray().Select(x => Enum.TryParse<BotDifficulty>(x.GetString(), true, out var bd2) ? bd2 : BotDifficulty.Normal).ToArray()
+                    : new[] { BotDifficulty.Normal };
+                error = created.StartSimulation(conn, settings,
+                    msg.TryGetProperty("bots", out var nb) ? nb.GetInt32() : 4, diffs,
+                    !msg.TryGetProperty("mutators", out var mu) || mu.GetBoolean(),
+                    msg.TryGetProperty("speed", out var sp) ? sp.GetDouble() : 1);
+                if (error is not null) created.AdminClose();
+                break;
+            }
+            case "simSpeed":
+                error = lobby?.SetSimSpeed(conn, msg.GetProperty("speed").GetDouble()) ?? (lobby is null ? "You are not in a lobby." : null);
+                break;
+            case "simFollow":
+                error = lobby?.SimFollow(conn, msg.GetProperty("playerId").GetInt64()) ?? (lobby is null ? "You are not in a lobby." : null);
+                break;
             case "addBot":
                 error = lobby?.AddBot(conn, msg.TryGetProperty("difficulty", out var bd) && Enum.TryParse<BotDifficulty>(bd.GetString(), true, out var diff) ? diff : BotDifficulty.Normal)
                         ?? (lobby is null ? "You are not in a lobby." : null);

@@ -934,3 +934,17 @@ body[data-fx="0"] .embers { display: none; }
 .player-list li .grow { display: flex; flex-direction: column; }
 .arena-clock { margin-bottom: 4px; }
 .arena-modifier { margin: 0 0 4px; }
+
+/* ---------------- admin simulation ---------------- */
+body[data-observer="1"] #shopPanel, body[data-observer="1"] .build, body[data-observer="1"] #augmentPanel,
+body[data-observer="1"] #mysteryPanel, body[data-observer="1"] #eliminatedPanel { display: none !important; }
+.sim-panel { border-color: rgba(64, 224, 208, 0.45); }
+.sim-controls { gap: 4px; }
+.sim-table td { vertical-align: middle; }
+.sim-table tr.dead td { opacity: 0.45; }
+.sim-table .mini-build { margin: 2px 0; }
+.sim-fields { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin-bottom: 12px; }
+.sim-bar:empty { display: none; }
+.spectator-bar { flex-wrap: wrap; }
+body[data-observer="1"] .game-top .stat-pill.money, body[data-observer="1"] .game-top .stat-pill:nth-child(4),
+body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }

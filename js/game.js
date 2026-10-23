@@ -8,6 +8,14 @@ import { sfx } from "./fx.js";
 const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
 const hint = action => el("span", { class: "kb-hint", text: keyLabelOf(action) });
 
+/** Speed buttons for a running simulation (pause, 0.5x … 16x) and Stop. */
+export function simControls(sim, app) {
+    return el("div", { class: "row sim-controls" },
+        sim.speeds.map(v => el("button", { class: "btn btn-small" + (sim.speed === v ? " btn-primary" : ""), text: v === 0 ? "Pause" : `${v}×`,
+            onclick: () => app.socket.send("simSpeed", { speed: v }) })),
+        el("button", { class: "btn btn-small btn-danger", text: "Stop", onclick: () => app.socket.send("leave") }));
+}
+
 export function createGameView(app) {
     let state = null;
     let timerEnd = 0;
@@ -320,6 +328,32 @@ export function createGameView(app) {
                 el("div", { class: "small muted", text: e.claimedBy ? `${e.special ? "Taken" : "Claimed"} by ${e.claimedBy}` : e.description }))));
     }
 
+    /** Observer overview of a bot simulation: speed controls and every bot's build. */
+    function renderSim() {
+        const panel = document.getElementById("simPanel");
+        const sim = state.sim;
+        document.body.dataset.observer = sim ? "1" : "";
+        panel.hidden = !sim;
+        if (!sim) return;
+        const bots = [...sim.bots].sort((a, b) => (a.eliminated - b.eliminated) || (b.lives - a.lives) || (b.wins - a.wins));
+        panel.replaceChildren(
+            el("div", { class: "row spread" }, el("h3", { text: `Simulation · round ${state.round}` }), simControls(sim, app)),
+            el("table", { class: "table sim-table" },
+                el("thead", {}, el("tr", {}, ["Bot", "Lives", "W / L", "Money", "HP", "Special %", "Build", ""].map(h => el("th", { text: h })))),
+                el("tbody", {}, bots.map(b => el("tr", { class: (b.eliminated ? "dead" : "") + (sim.follow === b.id ? " me" : "") },
+                    el("td", {}, el("span", { class: "row nowrap" }, portraitEl(b.kit, null, "xs"),
+                        el("span", {}, el("b", { text: b.name }), el("div", { class: "muted small", text: `${data.kits[b.kit]?.name ?? b.kit} · ${b.difficulty ?? ""}` })))),
+                    el("td", { text: b.eliminated ? `out (#${b.placement})` : `${b.lives}` }),
+                    el("td", { text: `${b.wins} / ${b.losses}` }),
+                    el("td", { text: `${b.money}$` }),
+                    el("td", { text: `${b.maxHp}`, title: `${b.hpUpgrades} upgrades` }),
+                    el("td", { text: `${Math.round(b.specialChance * 1000) / 10}%` }),
+                    el("td", {}, el("div", { class: "mini-build" }, b.build.map(it => itemCard(it.id, { level: it.level, size: "small" }))),
+                        b.augments?.length ? el("div", { class: "mini-build" }, b.augments.map(id => augmentCard(id, { small: true }))) : null),
+                    el("td", {}, b.eliminated ? null : el("button", { class: "btn btn-small", text: sim.follow === b.id ? "Following" : "Follow",
+                        onclick: () => app.socket.send("simFollow", { playerId: b.id }) })))))));
+    }
+
     const view = {
         get state() { return state; },
         render(next) {
@@ -329,6 +363,7 @@ export function createGameView(app) {
             document.getElementById("gRound").textContent = state.round;
             document.getElementById("gPhase").textContent = { shop: "Shop", combat: "Fighting", results: "Results" }[state.phase] ?? state.phase;
             document.getElementById("gTimer").textContent = state.phaseRemaining == null ? "–" : formatTime(state.phaseRemaining);
+            renderSim();
             renderSide();
             renderModifier();
             renderMutators();

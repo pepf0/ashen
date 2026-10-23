@@ -3,11 +3,27 @@ import { api, getToken } from "./net.js";
 import { el, data } from "./data.js";
 import { toast, openDialog } from "./ui.js";
 
-export function createAdmin() {
+const SIM_FIELDS = [
+    { key: "bots", label: "Bots", value: 6, min: 2, max: 8 },
+    { key: "lives", label: "Starting lives", value: 5, min: 1, max: 20, setting: true },
+    { key: "startMoney", label: "Starting money", value: 100, min: 0, max: 10000, setting: true },
+    { key: "income", label: "Income per round", value: 20, min: 0, max: 1000, setting: true },
+    { key: "winBonus", label: "Win bonus", value: 10, min: 0, max: 1000, setting: true },
+    { key: "startHp", label: "Starting HP", value: 100, min: 1, max: 1000000, setting: true },
+    { key: "hpUpgradeMult", label: "HP upgrade multiplier", value: 1.2, min: 1, max: 10, step: 0.05, setting: true },
+    { key: "hpUpgradeCost", label: "HP upgrade cost", value: 10, min: 0, max: 10000, setting: true },
+    { key: "hpUpgradeCostIncrease", label: "HP cost increase", value: 5, min: 0, max: 10000, setting: true },
+    { key: "specialChanceMult", label: "Special chance ×", value: 1, min: 0, max: 100, step: 0.25, setting: true }
+];
+
+function loadSimPrefs() { try { return JSON.parse(localStorage.getItem("ashen.sim") ?? "{}"); } catch { return {}; } }
+function saveSimPrefs(p) { try { localStorage.setItem("ashen.sim", JSON.stringify(p)); } catch { /* ignore */ } }
+
+export function createAdmin(app) {
     const root = document.getElementById("adminRoot");
     let tab = "lobbies";
 
-    const tabs = ["lobbies", "users", "data", "stats"];
+    const tabs = ["lobbies", "simulate", "users", "data", "stats"];
     function header() {
         return el("div", { class: "admin-tabs" }, tabs.map(t => el("button", {
             class: "btn btn-small" + (t === tab ? " btn-primary" : ""), text: t[0].toUpperCase() + t.slice(1),
@@ -18,7 +34,7 @@ export function createAdmin() {
     async function render() {
         root.replaceChildren(header(), el("p", { class: "muted", text: "Loading…" }));
         try {
-            const body = await ({ lobbies, users, data: dataEditor, stats }[tab])();
+            const body = await ({ lobbies, simulate, users, data: dataEditor, stats }[tab])();
             root.replaceChildren(header(), body);
         } catch (err) {
             root.replaceChildren(header(), el("p", { class: "form-error", text: err.message }));
@@ -42,6 +58,51 @@ export function createAdmin() {
                 el("button", { class: "btn btn-small btn-ghost", text: "Kick", onclick: async () => {
                     await api(`admin/lobbies/${l.code}/kick`, { method: "POST", body: { userId: m.id } }); render();
                 } })))))));
+    }
+
+    /** Bot-only match with tweakable settings, watched live at adjustable speed. */
+    async function simulate() {
+        const prefs = loadSimPrefs();
+        const inputs = {};
+        const fields = SIM_FIELDS.map(f => {
+            const input = el("input", { type: "number", min: f.min, max: f.max, step: f.step ?? 1, value: String(prefs[f.key] ?? f.value) });
+            inputs[f.key] = input;
+            return el("label", { class: "field" }, el("span", { text: f.label }), input);
+        });
+        const diffs = ["easy", "normal", "hard"].map(d => {
+            const box = el("input", { type: "checkbox" });
+            box.checked = (prefs.difficulties ?? ["normal", "hard"]).includes(d);
+            return { d, box };
+        });
+        const special = el("select", {}, el("option", { value: "perPlayer", text: "Per player" }), el("option", { value: "perLobby", text: "Per lobby" }));
+        special.value = prefs.specialMode ?? "perPlayer";
+        const mutators = el("input", { type: "checkbox" });
+        mutators.checked = prefs.mutators ?? true;
+        const speed = el("select", {}, [0.5, 1, 2, 4, 8, 16].map(v => el("option", { value: String(v), text: `${v}×` })));
+        speed.value = String(prefs.speed ?? 4);
+        const start = () => {
+            const settings = { public: false, specialMode: special.value, shopSeconds: 60 };
+            const p = { difficulties: diffs.filter(x => x.box.checked).map(x => x.d), specialMode: special.value, mutators: mutators.checked, speed: Number(speed.value) };
+            for (const f of SIM_FIELDS) {
+                p[f.key] = Number(inputs[f.key].value);
+                if (f.setting) settings[f.key] = p[f.key];
+            }
+            if (!p.difficulties.length) p.difficulties = ["normal"];
+            saveSimPrefs(p);
+            app.socket.send("simStart", { settings, bots: p.bots, difficulties: p.difficulties, mutators: p.mutators, speed: p.speed });
+        };
+        return el("div", { class: "panel sim-setup" },
+            el("h3", { text: "Bot simulation" }),
+            el("p", { class: "muted small", text: "Starts a match with only bots. You watch as an observer: every bot's build and stats each round, and its fights at the speed you pick (change it or pause any time). Simulations are not saved to the history, but they are written to the balancing logs." }),
+            el("div", { class: "settings-fields sim-fields" }, fields,
+                el("label", { class: "field" }, el("span", { text: "Special items unique" }), special),
+                el("label", { class: "field" }, el("span", { text: "Starting speed" }), speed)),
+            el("div", { class: "row" }, el("span", { class: "muted small", text: "Bot difficulties:" }),
+                diffs.map(x => el("label", { class: "check small" }, x.box, x.d)),
+                el("label", { class: "check small" }, mutators, "Random mutators")),
+            el("div", { class: "row end" },
+                el("button", { class: "btn", text: "Reset", onclick: () => { saveSimPrefs({}); render(); } }),
+                el("button", { class: "btn btn-primary", text: "Start simulation", onclick: start })));
     }
 
     async function users() {

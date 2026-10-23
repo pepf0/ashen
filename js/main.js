@@ -34,7 +34,7 @@ app.game = createGameView(app);
 app.combat = createCombatView(app);
 app.showGame = () => { if (app.mode === "match") showView("Game"); };
 app.friends = createFriends(app);
-app.admin = createAdmin();
+app.admin = createAdmin(app);
 app.troll = createTroll(app);
 
 const tabs = [...document.querySelectorAll("#tabs .tab")];
