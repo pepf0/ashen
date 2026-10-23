@@ -127,6 +127,11 @@
                     <button class="btn" type="submit">Change password</button>
                     <p class="form-note" id="passwordNote"></p>
                 </form>
+                <div class="panel locker-panel">
+                    <h2>Cosmetics</h2>
+                    <p class="muted small">Unlocked with levels and achievements. Purely visual.</p>
+                    <div id="lockerPanel"></div>
+                </div>
                 <div class="panel keybind-panel">
                     <h2>Keybinds</h2>
                     <p class="muted small">Click a key, then press the new one. Esc cancels. Saved to your account.</p>
@@ -299,6 +304,7 @@
         <section id="viewGameOver" class="view" hidden>
             <canvas id="confetti"></canvas>
             <h2 class="gameover-title">Match over</h2>
+            <div class="panel progress-panel" id="progressPanel" hidden></div>
             <div class="podium" id="podium"></div>
             <div class="panel standings">
                 <table class="table" id="standingsTable">

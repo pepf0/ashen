@@ -14,6 +14,8 @@ public static class GameData
     public static IReadOnlyList<Augment> Augments { get; private set; } = new List<Augment>();
     public static IReadOnlyList<Mutator> Mutators { get; private set; } = new List<Mutator>();
     public static IReadOnlyList<Arena> Arenas { get; private set; } = new List<Arena>();
+    public static IReadOnlyList<Achievement> Achievements { get; private set; } = new List<Achievement>();
+    public static IReadOnlyList<Cosmetic> Cosmetics { get; private set; } = new List<Cosmetic>();
 
     private static readonly object loadLock = new();
     private static bool loaded;
@@ -59,6 +61,11 @@ public static class GameData
             var augments = ItemLoader.ListFromJson<Augment>(File.ReadAllText(Path.Combine(json, "augments.json")), "augments.json");
             var mutators = ItemLoader.ListFromJson<Mutator>(File.ReadAllText(Path.Combine(json, "mutators.json")), "mutators.json");
             var arenas = ItemLoader.ListFromJson<Arena>(File.ReadAllText(Path.Combine(json, "arenas.json")), "arenas.json");
+            var achievements = ItemLoader.ListFromJson<Achievement>(File.ReadAllText(Path.Combine(json, "achievements.json")), "achievements.json");
+            var cosmetics = ItemLoader.ListFromJson<Cosmetic>(File.ReadAllText(Path.Combine(json, "cosmetics.json")), "cosmetics.json");
+            foreach (var c in cosmetics)
+                if (c.Unlock.Achievement is string a && !achievements.Any(x => x.Id == a))
+                    throw new InvalidDataException($"Cosmetic {c.Id}: unknown achievement '{a}'");
             foreach (var kit in kits)
                 if (kit.Abilities.Count != 4 || kit.Abilities.Count(a => a.Ultimate) != 1 || !kit.Abilities[3].Ultimate)
                     throw new InvalidDataException($"Kit {kit.Id}: needs 3 skills followed by 1 ultimate.");
@@ -92,6 +99,8 @@ public static class GameData
             Augments = augments;
             Mutators = mutators;
             Arenas = arenas;
+            Achievements = achievements;
+            Cosmetics = cosmetics;
             loaded = true;
         }
     }

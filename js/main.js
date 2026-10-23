@@ -9,6 +9,7 @@ import { createGameView } from "./game.js";
 import { createCombatView } from "./combat.js";
 import { renderGameOver } from "./gameover.js";
 import { loadKeybinds, renderKeybindSettings, onKeybindsChanged } from "./keybinds.js";
+import { openProfile, renderLocker, nameEl, loadAchievements } from "./profile.js";
 
 // Relative URLs (api/, ws, json/) need the page URL to end in "/" when hosted under a sub-path.
 if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) {
@@ -36,7 +37,7 @@ function setTab(name) {
     if (name === "menu") return showPlay();
     if (name === "compendium") showView("Compendium");
     if (name === "leaderboard") { showView("Leaderboard"); loadLeaderboard(); }
-    if (name === "settings") { showView("Settings"); fillSettings(); }
+    if (name === "settings") { showView("Settings"); fillSettings(); renderLocker(document.getElementById("lockerPanel")); }
 }
 
 tabs.forEach(t => t.addEventListener("click", () => setTab(t.dataset.tab)));
@@ -160,6 +161,7 @@ app.socket
     })
     .on("fightTick", msg => app.combat.tick(msg))
     .on("fightEnd", msg => app.combat.end(msg))
+    .on("progress", msg => showProgress(msg.progress))
     .on("gameOver", msg => {
         app.combat.stop();
         renderGameOver(msg, app);
@@ -172,6 +174,24 @@ renderKeybindSettings(document.getElementById("keybindSettings"));
 onKeybindsChanged(() => { if (app.lobby && !app.lobby.inMatch) app.lobbyView.render(app.lobby); });
 
 document.getElementById("backToLobby").addEventListener("click", () => setMode(app.lobby ? "lobby" : "menu"));
+document.getElementById("userChip").addEventListener("click", () => { if (app.user) openProfile(app.user.id); });
+
+async function showProgress(p) {
+    const panel = document.getElementById("progressPanel");
+    const ach = await loadAchievements();
+    const cosmetic = id => id.replace(/^(name|frame|victory)_/, "").replace(/_/g, " ");
+    const pct = p.nextLevelXp ? Math.min(100, (p.levelXp / p.nextLevelXp) * 100) : 100;
+    panel.replaceChildren(
+        el("div", { class: "row spread" }, el("b", { text: `+${p.xpGained} XP` }),
+            el("span", { text: p.levelsGained > 0 ? `Level up! Level ${p.level}` : `Level ${p.level}` })),
+        el("div", { class: "xp-bar" }, el("div", { class: "xp-fill grow-in", style: `width:${pct}%` }),
+            el("span", { text: p.nextLevelXp ? `${p.levelXp} / ${p.nextLevelXp} XP` : "Max level" })),
+        p.newAchievements.length ? el("div", { class: "new-unlocks" }, el("span", { class: "muted small", text: "Achievements: " }),
+            ...p.newAchievements.map(id => el("span", { class: "unlock-chip", text: ach.list.find(a => a.id === id)?.name ?? id }))) : null,
+        p.newCosmetics.length ? el("div", { class: "new-unlocks" }, el("span", { class: "muted small", text: "New cosmetics: " }),
+            ...p.newCosmetics.map(id => el("span", { class: "unlock-chip cosmetic", text: cosmetic(id) }))) : null);
+    panel.hidden = false;
+}
 
 // ---------------- menu ----------------
 
@@ -218,7 +238,7 @@ async function loadLeaderboard() {
         ]);
         document.querySelector("#leaderboardTable tbody").replaceChildren(...(board.length ? board.map((r, i) =>
             el("tr", { class: r.id === app.user?.id ? "me" : "" },
-                el("td", { text: `${i + 1}` }), el("td", {}, el("b", { text: r.name }), r.mastery ? el("div", { class: "mastery", text: r.mastery }) : null),
+                el("td", { text: `${i + 1}` }), el("td", {}, nameEl(r.name, null, r.id), r.mastery ? el("div", { class: "mastery", text: r.mastery }) : null),
                 el("td", { text: `${r.wins}` }), el("td", { text: `${r.games}` }),
                 el("td", { text: `${Math.round(r.winRate * 100)}%` }), el("td", { text: `${r.top3}` }),
                 el("td", { text: `${r.avgPlacement}` })))

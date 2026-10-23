@@ -20,6 +20,7 @@ public class LobbyMember
     /// <summary>Bots have negative ids, no socket, and play through <see cref="BotIdentity"/>.</summary>
     public bool IsBot => Difficulty is not null;
     public BotDifficulty? Difficulty { get; set; }
+    public Appearance? Appearance { get; set; }
     public Connection? BotIdentity { get; set; }
 }
 
@@ -125,7 +126,11 @@ public partial class Lobby
             }
             if (InMatch) return "This match is already running.";
             if (Members.Count >= MaxPlayers) return "This lobby is full.";
-            var member = new LobbyMember { UserId = conn.User.Id, Name = conn.User.DisplayName, Mastery = database?.MasteryTitle(conn.User.Id) };
+            var member = new LobbyMember
+            {
+                UserId = conn.User.Id, Name = conn.User.DisplayName,
+                Mastery = database?.MasteryTitle(conn.User.Id), Appearance = database?.GetAppearance(conn.User.Id)
+            };
             Members.Add(member);
             if (Members.Count == 1) HostId = member.UserId;
             Attach(member, conn);
@@ -345,8 +350,10 @@ public partial class Lobby
                     Lives = Math.Max(1, lives),
                     MaxHealth = Settings.StartHp * (Mut("fragile_start") ? 0.6 : 1),
                     Connected = m.Connected,
-                    Kit = m.Kit
+                    Kit = m.Kit,
+                    Appearance = m.Appearance
                 };
+                player.Stats.MinLives = player.Lives;
                 if (Mut("armed_start"))
                 {
                     var weapons = GameData.Generics.Where(i => i.Type == ItemType.Weapon).ToList();
@@ -518,6 +525,7 @@ public partial class Lobby
         foreach (var p in AlivePlayers())
         {
             PayIncome(p);
+            p.Stats.MaxMoney = Math.Max(p.Stats.MaxMoney, p.Money);
             p.Ready = false;
             p.Shop.RerollsLeft = Shop.FreeRerolls + (int)p.AugmentMods.Get("rerolls_add");
             p.Shop.Locked = false;
@@ -695,6 +703,8 @@ public partial class Lobby
                     if (lf.Players[i] is { } p) ApplyResult(p, result, i, lf.Players[1 - i], bounties[1 - i]);
                 for (int i = 0; i < 2; i++)
                     if (lf.Players[i] is { } p && result.Winner != i) p.WinStreak = 0;
+                for (int i = 0; i < 2; i++)
+                    if (lf.Players[i] is { } p) TrackFight(p, result, i);
                 LogFight(lf.Players[0]!, lf.Players[1], result);
                 var end = new { type = "fightEnd", fightId = lf.Id, result = ResultSummary(result) };
                 foreach (var m in Watchers(lf)) m.Connection?.Send(end);
@@ -702,6 +712,33 @@ public partial class Lobby
             }
         }
         return fights.All(f => f.Ended);
+    }
+
+    private void TrackFight(Player p, CombatResult result, int i)
+    {
+        var s = p.Stats;
+        bool won = result.Winner == i;
+        var mine = result.Events.Where(e => e.Source == i).ToList();
+        s.MaxFightDamage = Math.Max(s.MaxFightDamage, result.DamageDealt[i]);
+        s.Stuns += mine.OfType<StunEvent>().Count(e => !e.Blocked && e.Target != i);
+        var abilities = mine.OfType<AbilityEvent>().Where(e => e.Ability != "second_wind").ToList();
+        s.Abilities += abilities.Count;
+        s.Ultimates += abilities.Count(e => e.Slot == 3);
+        if (won)
+        {
+            s.FightsWon++;
+            s.FightWinKits.Add(p.Kit);
+            if (result.DamageTaken[i] <= 0) s.Flawless++;
+            if (result.EndHp[i] / Math.Max(1, result.Fighters[i].MaxHp) <= 0.05) s.Clutch = true;
+            if (mine.OfType<AbilityEvent>().Any(e => e.Ability == "second_wind")) s.SecondWindWin = true;
+            if (result.KillingBlow[1 - i] == "headshot") s.HeadshotFinish = true;
+            if (result.KillingBlow[1 - i] == "xxzweiradxx.staff.smash") s.SmashFinish = true;
+        }
+        s.MaxWinStreak = Math.Max(s.MaxWinStreak, p.WinStreak);
+        s.MaxBounty = Math.Max(s.MaxBounty, p.Bounty);
+        s.MinLives = Math.Min(s.MinLives, Math.Max(0, p.Lives));
+        if (!won) s.LivesLost++;
+        s.MaxMoney = Math.Max(s.MaxMoney, p.Money);
     }
 
     private IEnumerable<LobbyMember> Watchers(LiveFight lf) =>
@@ -747,6 +784,7 @@ public partial class Lobby
             if (opponent is { } victim && opponentBounty > 0)
             {
                 p.Money += opponentBounty;
+                p.Stats.BountiesCollected++;
                 log?.Write("bounty", new { round, player = p.Id, from = victim.Id, amount = opponentBounty });
                 AddSystemChat($"{p.Name} collected the {opponentBounty}$ bounty on {victim.Name}!");
             }
@@ -912,12 +950,51 @@ public partial class Lobby
             Console.Error.WriteLine($"[lobby {Code}] could not save match: {e.Message}");
         }
 
+        ApplyProgression();
         State = LobbyState.Waiting;
         players.Clear();
-        foreach (var m in Members) m.Mastery = database?.MasteryTitle(m.UserId);
+        foreach (var m in Members.Where(m => !m.IsBot))
+        {
+            m.Mastery = database?.MasteryTitle(m.UserId);
+            m.Appearance = database?.GetAppearance(m.UserId);
+        }
         foreach (var m in Members.Where(m => !m.Connected && !m.IsBot).ToList()) RemoveMember(m, $"{m.Name} left.");
         AddSystemChat("The match is over. The host can start a rematch.");
         BroadcastLobby();
+    }
+
+    /// <summary>XP, achievements and cosmetics for every human, sent to their game over screen.</summary>
+    private void ApplyProgression()
+    {
+        if (database is null) return;
+        int humans = players.Count(p => p.Id > 0);
+        bool soloVsHard = humans == 1 && Members.Where(m => m.IsBot).All(m => m.Difficulty == BotDifficulty.Hard) && players.Count > 1;
+        foreach (var p in players.Where(p => p.Id > 0))
+        {
+            try
+            {
+                p.Stats.MaxMoney = Math.Max(p.Stats.MaxMoney, p.Money);
+                p.Stats.MaxHp = Math.Max(p.Stats.MaxHp, p.MaxHealth);
+                var result = database.ApplyMatch(p.Id, p.Stats, p.Placement ?? players.Count, players.Count, humans, soloVsHard, p.Augments.Count);
+                MemberOf(p.Id)?.Connection?.Send(new { type = "progress", progress = result });
+                log?.Write("progress", new { player = p.Id, result.XpGained, result.Level, result.NewAchievements });
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"[lobby {Code}] progression failed for {p.Id}: {e.Message}");
+            }
+        }
+    }
+
+    public void RefreshAppearance(long userId)
+    {
+        lock (sync)
+        {
+            if (MemberOf(userId) is not { } m) return;
+            m.Appearance = database?.GetAppearance(userId);
+            if (FindPlayer(userId) is { } p) p.Appearance = m.Appearance;
+            BroadcastLobby();
+        }
     }
 
     // ================= shop actions =================
@@ -941,6 +1018,7 @@ public partial class Lobby
             if (p.Shop.Locked) return "You already bought from this roll.";
             if (p.Shop.RerollsLeft <= 0) return "No rerolls left.";
             p.Shop.RerollsLeft--;
+            p.Stats.Rerolls++;
             p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng, RollOptions(p));
             LogRoll(p, p.Shop.RerollsLeft);
             SendState(p.Id);
@@ -1012,6 +1090,14 @@ public partial class Lobby
 
             p.Money -= price;
             shopSlot.Bought = true;
+            var st = p.Stats;
+            st.Spent += price;
+            if (item.Id == Shop.DragonId) st.OwnedDragon = true;
+            if (item.Type == ItemType.Shirt) st.EverShirt = true;
+            if (pity && shopSlot.Source == "weaponless") st.WeaponlessTaken = true;
+            if (p.FindOwned(item.Id) is { } nowOwned && nowOwned.Level >= MaxLevel) st.MaxLevelReached = true;
+            if (p.AllItems().Where(x => x.Item.IsSpecial).GroupBy(x => x.Item.Pack).Any(g => g.Select(x => x.Id).Distinct().Count() >= 5))
+                st.FullPack = true;
             if (!pity) p.Shop.Locked = true;
             if (item.IsSpecial)
             {
@@ -1051,6 +1137,7 @@ public partial class Lobby
             p.Money -= cost;
             p.HpUpgrades++;
             p.MaxHealth *= Settings.HpUpgradeMult;
+            p.Stats.MaxHp = Math.Max(p.Stats.MaxHp, p.MaxHealth);
             log?.Write("hp_upgrade", new { round, player = p.Id, cost, upgrades = p.HpUpgrades, maxHp = Math.Round(p.MaxHealth, 2) });
             SendState(p.Id);
             return null;
@@ -1106,6 +1193,7 @@ public partial class Lobby
             int slots = (int)aug.Mods.Get("dynamic_slots_add");
             if (slots > 0) p.Dynamics = p.Dynamics.Concat(new OwnedItem?[slots]).ToArray();
             log?.Write("augment_pick", new { round, player = p.Id, augment = id, tier = aug.Tier });
+            if (aug.Tier == AugmentTier.Prismatic) p.Stats.Prismatic = true;
             SendState(p.Id);
             return null;
         }
@@ -1138,6 +1226,8 @@ public partial class Lobby
                     if (!int.TryParse(arg, out int i) || i < 0 || i >= m.Choices.Count) return "Pick a special item.";
                     if (p.Lives <= 1) return "You need more than 1 life.";
                     p.Lives--;
+                    p.Stats.Shrine = true;
+                    p.Stats.MinLives = Math.Min(p.Stats.MinLives, p.Lives);
                     p.Shop.Pity.Add(new ShopSlot { ItemId = m.Choices[i], Price = 0, Source = "shrine" });
                     m.Result = $"You sacrificed a life for {GameData.Items[m.Choices[i]].Name}. Take it from your bonus offers.";
                     break;
@@ -1148,6 +1238,7 @@ public partial class Lobby
                     if (bet > p.Money / 2) return "You can bet at most half your money.";
                     bool won = rng.NextDouble() < 0.5;
                     p.Money += won ? bet : -bet;
+                    if (won) p.Stats.GambleBestWin = Math.Max(p.Stats.GambleBestWin, bet);
                     m.Result = won ? $"You won {bet}$!" : $"You lost {bet}$.";
                     break;
                 }
@@ -1276,6 +1367,7 @@ public partial class Lobby
 
             claimedEvents[ev.Id] = p.Id;
             log?.Write("event_claimed", new { round, player = p.Id, eventId = ev.Id });
+            p.Stats.EventsClaimed++;
             p.Money += ev.RewardMoney ?? 0;
             p.BonusEffects.AddRange(ev.RewardEffects ?? new List<string>());
             p.Titles.Add(ev.Name);
@@ -1313,7 +1405,7 @@ public partial class Lobby
         state = State,
         inMatch = InMatch,
         settings = Settings,
-        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected || m.IsBot, kit = m.Kit, mastery = m.Mastery, bot = m.Difficulty })
+        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected || m.IsBot, kit = m.Kit, mastery = m.Mastery, bot = m.Difficulty, appearance = m.Appearance })
     };
 
     private void BroadcastLobby()
@@ -1391,6 +1483,7 @@ public partial class Lobby
                     connected = o.Connected,
                     titles = o.Titles,
                     bounty = o.Bounty,
+                    appearance = o.Appearance,
                     mastery = MemberOf(o.Id)?.Mastery
                 }),
                 events = GameData.Events.Select(e => new

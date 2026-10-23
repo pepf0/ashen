@@ -36,6 +36,9 @@ public class Player
     /// <summary>What the player got when the current shop opened (shown in the shop).</summary>
     public Dictionary<string, int> LastIncome { get; set; } = new();
     public List<string> Augments { get; } = new();
+    public MatchStats Stats { get; } = new();
+    /// <summary>Cosmetics shown to others (null for bots).</summary>
+    public Appearance? Appearance { get; set; }
     /// <summary>Augments offered in this shop (rounds 3/6/9), or null.</summary>
     public List<string>? AugmentOffer { get; set; }
     /// <summary>Mystery event offered in this shop, or null.</summary>
@@ -96,6 +99,7 @@ public class Player
         Kit = Kit,
         Bot = ghost,
         AugmentMods = AugmentMods,
+        Appearance = ghost ? null : Appearance,
         AugmentIds = Augments.ToList()
     };
 

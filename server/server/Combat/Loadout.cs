@@ -21,6 +21,7 @@ public class Loadout
     /// <summary>Combined augment mods (see Augment.Combine).</summary>
     public Dictionary<string, double> AugmentMods { get; set; } = new();
     public List<string> AugmentIds { get; set; } = new();
+    public Appearance? Appearance { get; set; }
     /// <summary>Extra always-on effects, e.g. lobby event rewards.</summary>
     public List<string> BonusEffects { get; set; } = new();
 

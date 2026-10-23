@@ -2,6 +2,7 @@
 import { el, item, itemCard, statPretty, kitCard, augmentCard, data } from "./data.js";
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
+import { nameEl } from "./profile.js";
 
 const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
 const hint = action => el("span", { class: "kb-hint", text: keyLabelOf(action) });
@@ -257,7 +258,7 @@ export function createGameView(app) {
         document.getElementById("gPlayers").replaceChildren(...state.players.map(p =>
             el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") },
                 el("span", { class: "dot" + (p.connected ? " on" : "") }),
-                el("span", { class: "grow" }, p.name, p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null,
+                el("span", { class: "grow" }, nameEl(p.name, p.appearance, p.id, { showTitle: false }), p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null,
                     p.mastery ? el("div", { class: "mastery", text: p.mastery }) : null),
                 p.bounty > 0 ? el("span", { class: "tag bounty", title: "Beat them to collect it", text: `Bounty ${p.bounty}$` }) : null,
                 !p.alive ? el("span", { class: "tag dead", text: "Out" })

@@ -200,6 +200,7 @@ public sealed class Fight
     private readonly double suddenDeathStart;
     private readonly FighterInfo[] infos;
     private double nextLightning = 5;
+    private readonly string?[] killingBlow = new string?[2];
 
     public string? Arena => rules.Arena;
     public bool Finished { get; private set; }
@@ -306,7 +307,8 @@ public sealed class Fight
             Events = events,
             Winner = winner,
             Duration = Math.Round(Time, 2),
-            Arena = rules.Arena
+            Arena = rules.Arena,
+            KillingBlow = killingBlow.ToArray()
         };
         for (int i = 0; i < 2; i++)
         {
@@ -366,6 +368,7 @@ public sealed class Fight
             Ghost = f.Loadout.Ghost,
             Kit = f.Kit?.Id,
             Augments = f.Loadout.AugmentIds.ToList(),
+            Appearance = f.Loadout.Appearance,
             MaxHp = Math.Round(f.MaxHealth, 1),
             DamageReduction = Math.Round(DamageReduction(f), 4),
             DodgeChance = Math.Round(DodgeChance(f), 4)
@@ -683,6 +686,8 @@ public sealed class Fight
         }
         attacker.DamageDealt += damage;
         defender.DamageTaken += damage;
+        if (defender.Health <= 0 && killingBlow[defender.Index] is null)
+            killingBlow[defender.Index] = ev.AbilitySource ?? ev.EffectSource ?? (ev.SuddenDeath ? "sudden_death" : "weapon");
         ev.Damage = Math.Round(damage, 2);
         Emit(ev);
         if (chargeUlt && damage > 0)

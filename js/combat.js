@@ -2,6 +2,7 @@
 import { data, el, item, itemCard, abilityById } from "./data.js";
 import { formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
+import { nameEl } from "./profile.js";
 
 const STAT_NAMES = {
     damage: "Damage", cooldown: "Cooldown", crit_chance: "Crit chance", crit_damage: "Crit damage",
@@ -62,7 +63,7 @@ export function createCombatView(app) {
 
         root.replaceChildren(
             el("div", { class: "fighter-head" },
-                el("h3", {}, info.name,
+                el("h3", {}, nameEl(info.name, info.appearance, info.playerId ?? 0),
                     isYou ? el("span", { class: "tag", text: "You" }) : null,
                     info.ghost ? el("span", { class: "tag", text: "Ghost" }) : null,
                     kit ? el("span", { class: "tag", text: kit.name }) : null),
@@ -79,6 +80,8 @@ export function createCombatView(app) {
             floats);
         root.classList.toggle("you", isYou);
         root.classList.remove("stunned", "invulnerable", "sudden", "dead");
+        root.className = root.className.replace(/\bframe-\S+/g, "").trim();
+        if (info.appearance?.frame) root.classList.add(`frame-${info.appearance.frame}`);
         return { root, hpFill, hpGhost, hpShield, hpText, status, cdFill, weaponCard, buffs, floats, info, abilities };
     }
 
@@ -266,10 +269,27 @@ export function createCombatView(app) {
         else { ot.textContent = ""; ot.className = "overtime"; }
     }
 
+    function victoryEffect(index) {
+        const effect = fight.fighters[index]?.appearance?.victory;
+        if (!effect || effect === "victory_none") return;
+        const panel = fight.panel(index);
+        const fx = el("div", { class: `victory-fx ${effect}` });
+        for (let i = 0; i < 24; i++) {
+            const p = el("span");
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.animationDelay = `${Math.random() * 0.6}s`;
+            p.style.setProperty("--x", Math.random().toFixed(2));
+            fx.append(p);
+        }
+        panel.root.append(fx);
+        setTimeout(() => fx.remove(), 2600);
+    }
+
     function end(msg) {
         if (!fight || msg.fightId !== fight.id) return;
         fight.ended = true;
         const r = msg.result;
+        if (r.winner >= 0) victoryEffect(r.winner);
         if (fight.you == null) {
             const title = document.getElementById("cOvertime");
             title.textContent = r.winner === -1 ? "Draw" : `${r.fighters[r.winner].name} wins`;

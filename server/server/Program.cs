@@ -153,6 +153,26 @@ public class Program
         api.MapPut("/me/keybinds", (Dictionary<string, string> body, HttpContext ctx) =>
             Authenticate(ctx, db) is { } user ? Results.Json(db.SetKeybinds(user.Id, body)) : Error("Not logged in.", 401));
 
+        api.MapGet("/me/locker", (HttpContext ctx) =>
+            Authenticate(ctx, db) is { } user ? Results.Json(db.GetLocker(user.Id)) : Error("Not logged in.", 401));
+
+        api.MapPut("/me/locker", (Dictionary<string, string?> body, HttpContext ctx) =>
+        {
+            if (Authenticate(ctx, db) is not { } user) return Error("Not logged in.", 401);
+            db.SetEquipped(user.Id, body);
+            lobbies.LobbyOf(user.Id)?.RefreshAppearance(user.Id);
+            return Results.Json(db.GetLocker(user.Id));
+        });
+
+        api.MapGet("/profile/{id:long}", (long id) =>
+            db.Profile(id) is { } profile ? Results.Json(profile) : Error("Player not found.", 404));
+
+        api.MapGet("/achievements", () => Results.Json(new
+        {
+            achievements = GameData.Achievements,
+            rarity = db.AchievementRarity()
+        }));
+
         api.MapGet("/lobbies", () => Results.Json(lobbies.PublicLobbies()));
         api.MapGet("/leaderboard", () => Results.Json(db.Leaderboard()));
         api.MapGet("/matches", (int? limit, long? user) =>

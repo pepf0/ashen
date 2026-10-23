@@ -31,7 +31,7 @@ public class MatchPlayerRecord
 }
 
 /// <summary>SQLite storage for accounts, sessions and match history. The schema is created on startup.</summary>
-public class Database
+public partial class Database
 {
     private const int HashIterations = 100_000;
     public static readonly TimeSpan SessionLifetime = TimeSpan.FromDays(30);
@@ -104,6 +104,7 @@ public class Database
         cmd.ExecuteNonQuery();
         AddColumnIfMissing(conn, "match_players", "kit", "TEXT");
         AddColumnIfMissing(conn, "match_players", "augments", "TEXT NOT NULL DEFAULT '[]'");
+        MigrateProgress(conn);
     }
 
     private static void AddColumnIfMissing(SqliteConnection conn, string table, string column, string type)
