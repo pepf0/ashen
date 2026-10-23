@@ -197,3 +197,39 @@ public class BalanceSim
             o.WriteLine($"  {kv.Key,-30} {kv.Value.W / kv.Value.N * 100,5:F1}%   (n={kv.Value.N})");
     }
 }
+
+public class GenericComboSim
+{
+    private readonly ITestOutputHelper o;
+    public GenericComboSim(ITestOutputHelper o) { this.o = o; TestHelpers.Init(); }
+
+    [Fact]
+    public void F_GenericCombos()
+    {
+        if (Environment.GetEnvironmentVariable("ASHEN_SIM") != "1") return;
+        var weapons = new[] { "sword", "hammer", "frying_pan", "bow" };
+        var shirts = new[] { "band_shirt", "brown_shirt", "beige_shirt", "mike_shirt" };
+        var dyns = new[] { new[] { "knight", "horseshoe" }, new[] { "knight" }, new[] { "horseshoe" } };
+        var builds = new List<(string Name, Func<Loadout> Make)>();
+        foreach (var w in weapons) foreach (var s in shirts) foreach (var d in dyns)
+            builds.Add(($"{w} + {s} + {string.Join("/", d)}", () =>
+            {
+                var l = new Loadout { Name = "g", MaxHealth = 250, Weapon = TestHelpers.Own("generic." + w, 3), Shirt = TestHelpers.Own("generic." + s, 3) };
+                for (int i = 0; i < d.Length; i++) l.Dynamics[i] = TestHelpers.Own("generic." + d[i], 3);
+                return l;
+            }));
+        var wins = new double[builds.Count]; int n = 8;
+        for (int i = 0; i < builds.Count; i++)
+        for (int j = i + 1; j < builds.Count; j++)
+        for (int s = 0; s < n; s++)
+        {
+            bool swap = s % 2 == 1;
+            var r = Combat.CalculateCombatResults(swap ? builds[j].Make() : builds[i].Make(), swap ? builds[i].Make() : builds[j].Make(), s * 997 + i * 61 + j).Winner;
+            if (r == -1) { wins[i] += .5; wins[j] += .5; } else if ((r == 0) != swap) wins[i]++; else wins[j]++;
+        }
+        int games = (builds.Count - 1) * n;
+        o.WriteLine("=== Generic-only builds (each item once), all level 3, 250 HP, no kit ===");
+        foreach (var k in Enumerable.Range(0, builds.Count).OrderByDescending(k => wins[k]))
+            o.WriteLine($"  {builds[k].Name,-55} {wins[k] / games * 100,5:F1}%");
+    }
+}
