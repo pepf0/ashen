@@ -1002,7 +1002,8 @@ public partial class Lobby
                 titles = p.Titles,
                 build = p.BuildView(),
                 kit = p.Kit,
-                augments = p.Augments
+                augments = p.Augments,
+                appearance = p.Appearance
             })
             .ToList();
         var events = claimedEvents.Select(kv => new { id = kv.Key, by = kv.Value }).ToList();
@@ -1596,6 +1597,7 @@ public partial class Lobby
                     alive = !o.Eliminated,
                     connected = o.Connected || o.Id < 0,
                     bot = o.Id < 0,
+                    kit = o.Kit,
                     titles = o.Titles,
                     bounty = o.Bounty,
                     appearance = o.Appearance,

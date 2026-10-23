@@ -1,5 +1,7 @@
 // End of match: podium, standings and a bit of confetti.
 import { el, itemCard, augmentCard } from "./data.js";
+import { nameEl, portraitEl } from "./profile.js";
+import { sfx } from "./fx.js";
 
 const PACK_COLORS = ["#40e0d0", "#e0407a", "#a8ff40", "#6040e0", "#c0c0ff"];
 
@@ -13,15 +15,17 @@ export function renderGameOver(msg, app) {
         const place = ["second", "first", "third"][i];
         if (!s) return el("div", { class: `podium-spot ${place} empty` });
         return el("div", { class: `podium-spot ${place}`, style: `animation-delay: ${[0.5, 1.1, 0.2][i]}s` },
-            el("div", { class: "podium-name" }, s.name, s.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null),
-            el("div", { class: "podium-build" }, s.build.slice(0, 3).map(b => itemCard(b.id, { level: b.level }))),
+            place === "first" ? el("div", { class: "podium-crown", "aria-hidden": "true" }) : null,
+            portraitEl(s.kit, s.appearance, "lg"),
+            el("div", { class: "podium-name" }, nameEl(s.name, s.appearance, s.id), s.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null),
+            el("div", { class: "podium-build" }, s.build.slice(0, 3).map(b => itemCard(b.id, { level: b.level, skin: s.appearance?.weaponSkin }))),
             el("div", { class: "podium-block" }, el("span", { text: `${s.placement}` })));
     }));
 
     const tbody = document.querySelector("#standingsTable tbody");
     tbody.replaceChildren(...standings.map(s => el("tr", { class: s.id === app.user.id ? "me" : "" },
         el("td", { text: `${s.placement}` }),
-        el("td", {}, el("b", { text: s.name })),
+        el("td", {}, el("span", { class: "row nowrap" }, portraitEl(s.kit, s.appearance, "xs"), nameEl(s.name, s.appearance, s.id))),
         el("td", {}, el("div", { class: "mini-build" }, s.build.map(b => itemCard(b.id, { level: b.level, size: "small" }))),
             el("div", { class: "mini-build" }, (s.augments ?? []).map(id => augmentCard(id, { small: true })))),
         el("td", { text: `${s.wins} / ${s.losses}` }),
@@ -31,6 +35,7 @@ export function renderGameOver(msg, app) {
     const winner = standings.find(s => s.placement === 1);
     document.querySelector(".gameover-title").textContent = winner ? `${winner.name} wins!` : "Match over";
     confetti(document.getElementById("confetti"));
+    setTimeout(() => sfx(winner?.id === app.user.id ? "victory" : "announce"), 1200);
 }
 
 function confetti(canvas) {

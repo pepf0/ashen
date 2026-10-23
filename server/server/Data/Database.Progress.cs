@@ -150,13 +150,16 @@ public partial class Database
             var c = GameData.Cosmetics.FirstOrDefault(x => x.Id == id && x.Kind == kind);
             return c is not null && Progression.Unlocked(c, level, achievements) ? c.Id : null;
         }
-        string? title = equipped.TryGetValue("title", out var t) && AvailableTitles(userId, achievements).Contains(t) ? t : null;
-        return new Appearance(Pick("name_color"), Pick("frame"), Pick("victory"), title, level);
+        string? title = equipped.TryGetValue("title", out var t) && AvailableTitles(userId, level, achievements).Contains(t) ? t : null;
+        return new Appearance(Pick("name_color"), Pick("frame"), Pick("victory"), title, level,
+            Pick("name_border"), Pick("border"), Pick("weapon_skin"));
     }
 
-    private List<string> AvailableTitles(long userId, ISet<string> achievements)
+    /// <summary>Achievement names, the kit mastery title and unlocked title cosmetics.</summary>
+    private List<string> AvailableTitles(long userId, int level, ISet<string> achievements)
     {
         var titles = GameData.Achievements.Where(a => achievements.Contains(a.Id)).Select(a => a.Name).ToList();
+        titles.AddRange(GameData.Cosmetics.Where(c => c.Kind == "title" && Progression.Unlocked(c, level, achievements)).Select(c => c.Name));
         if (MasteryTitle(userId) is { } mastery) titles.Insert(0, mastery);
         return titles;
     }
@@ -175,7 +178,7 @@ public partial class Database
             levelXp = into,
             nextLevelXp = needed,
             equipped = ReadEquipped(conn, userId),
-            titles = AvailableTitles(userId, achievements),
+            titles = AvailableTitles(userId, level, achievements).Distinct(),
             cosmetics = GameData.Cosmetics.Select(c => new
             {
                 c.Id, c.Kind, c.Name, c.Unlock,
@@ -189,7 +192,7 @@ public partial class Database
         using var conn = Open();
         int level = Progression.LevelOf(ReadXp(conn, userId)).Level;
         var achievements = ReadAchievements(conn, userId);
-        var titles = AvailableTitles(userId, achievements);
+        var titles = AvailableTitles(userId, level, achievements);
         var equipped = new Dictionary<string, string>();
         foreach (var (kind, id) in wanted)
         {

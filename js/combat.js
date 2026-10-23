@@ -2,7 +2,10 @@
 import { data, el, item, itemCard, abilityById, abilityTooltip, attachTooltip, abilityPretty } from "./data.js";
 import { formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
-import { nameEl } from "./profile.js";
+import { nameEl, portraitEl } from "./profile.js";
+import { Arena } from "./arena.js";
+import { sfx } from "./fx.js";
+import { skinApplies, skinnedUrl } from "./skins.js";
 
 const STAT_NAMES = {
     damage: "Damage", cooldown: "Cooldown", crit_chance: "Crit chance", crit_damage: "Crit damage",
@@ -55,20 +58,21 @@ export function createCombatView(app) {
         const status = el("div", { class: "status-row" });
         const cdFill = el("div", { class: "cd-fill" });
         const weapon = info.items.find(i => i.slot === "weapon");
-        const weaponCard = weapon ? itemCard(weapon.id, { level: weapon.level, size: "large" }) : el("div", { class: "slot-empty big", text: "No weapon" });
+        const weaponCard = weapon ? itemCard(weapon.id, { level: weapon.level, size: "large", skin: info.appearance?.weaponSkin }) : el("div", { class: "slot-empty big", text: "No weapon" });
         const others = info.items.filter(i => i.slot !== "weapon");
         const buffs = el("ul", { class: "buff-list" });
-        const floats = el("div", { class: "floats" });
         const kit = info.kit ? data.kits[info.kit] : null;
         const abilities = kit ? kit.abilities.map((a, i) => abilityButton(a, i, isYou && fight?.you != null)) : [];
 
         root.replaceChildren(
             el("div", { class: "fighter-head" },
+                portraitEl(info.kit, info.appearance, "md"),
                 el("h3", {}, nameEl(info.name, info.appearance, info.playerId ?? 0),
                     isYou ? el("span", { class: "tag", text: "You" }) : null,
                     info.ghost ? el("span", { class: "tag", text: "Ghost" }) : null,
                     kit ? el("span", { class: "tag", text: kit.name }) : null),
                 el("div", { class: "hp-bar" }, hpGhost, hpFill, hpShield, hpText)),
+            
             status,
             el("div", { class: "fighter-body" },
                 el("div", { class: "weapon-box" }, weaponCard, el("div", { class: "cd-bar" }, cdFill)),
@@ -77,26 +81,18 @@ export function createCombatView(app) {
                 `DR ${Math.round(info.damageReduction * 100)}% · Dodge ${Math.round(info.dodgeChance * 100)}%` }),
             abilities.length ? el("div", { class: "ability-bar" + (isYou && fight?.you != null ? " mine" : "") }, abilities.map(a => a.btn)) : null,
             el("h4", { text: "Buffs" }),
-            buffs,
-            floats);
+            buffs);
         root.classList.toggle("you", isYou);
         root.classList.remove("stunned", "invulnerable", "sudden", "dead");
         root.className = root.className.replace(/\bframe-\S+/g, "").trim();
         if (info.appearance?.frame) root.classList.add(`frame-${info.appearance.frame}`);
-        return { root, hpFill, hpGhost, hpShield, hpText, status, cdFill, weaponCard, buffs, floats, info, abilities };
+        return { root, hpFill, hpGhost, hpShield, hpText, status, cdFill, weaponCard, buffs, info, abilities };
     }
 
-    function float(panel, text, cls) {
-        const node = el("div", { class: `float ${cls}`, text });
-        node.style.left = `${15 + Math.random() * 65}%`;
-        panel.floats.append(node);
-        setTimeout(() => node.remove(), 1100);
-    }
-
-    function shake(panel) {
-        panel.root.classList.remove("shake");
+    function hurt(panel) {
+        panel.root.classList.remove("hurt");
         void panel.root.offsetWidth;
-        panel.root.classList.add("shake");
+        panel.root.classList.add("hurt");
     }
 
     /** fightStart: build both panels. `you` is null when spectating. */
@@ -120,10 +116,16 @@ export function createCombatView(app) {
             (msg.buffs?.[i] ?? msg.fighters[i].startBuffs).forEach(b => fight.buffs[i].set(b.effectSource, { ...b, t: msg.snap?.t ?? 0 }));
         }
         fight.panel = i => fight.panels[fight.sideOf(i)];
+        fight.arena = new Arena(document.getElementById("arenaStage"), {
+            fighters: msg.fighters.map(f => ({ name: f.name, kit: f.kit, appearance: f.appearance, items: f.items })),
+            left, arenaId: msg.arena?.id, seed: typeof msg.fightId === "number" ? msg.fightId : 7
+        });
+        document.getElementById("arenaName").textContent = msg.arena?.name ?? "The Ashen Wastes";
+        fight.lastCount = null;
         document.getElementById("cRound").textContent = msg.you == null ? `Round ${msg.round} · spectating` : `Round ${msg.round}`;
         const mod = document.getElementById("cModifier");
         mod.textContent = [msg.modifier ? `${msg.modifier.name}: ${msg.modifier.description}` : null,
-            msg.arena ? `Arena: ${msg.arena.name} (${msg.arena.description})` : null].filter(Boolean).join("  ·  ");
+            msg.arena ? msg.arena.description : null].filter(Boolean).join("  ·  ");
         mod.className = "arena-modifier " + (msg.modifier ? (msg.modifier.positive ? "good" : "bad") : "");
         document.getElementById("resultScreen").hidden = true;
         document.getElementById("spectatorBar").hidden = msg.you != null;
@@ -134,6 +136,7 @@ export function createCombatView(app) {
 
     function stop() {
         if (fight?.raf) cancelAnimationFrame(fight.raf);
+        fight?.arena?.destroy();
         if (replay?.raf) cancelAnimationFrame(replay.raf);
         replay = null;
         fight = null;
@@ -195,8 +198,17 @@ export function createCombatView(app) {
         const left = (fight.countdownEnd - performance.now()) / 1000;
         const cd = document.getElementById("countdown");
         if (left > -0.6) {
-            cd.hidden = false;
-            cd.textContent = left > 0 ? `${Math.ceil(left)}` : "Fight!";
+            const text = left > 0 ? `${Math.ceil(left)}` : "Fight!";
+            if (text !== fight.lastCount) {
+                fight.lastCount = text;
+                cd.hidden = false;
+                cd.textContent = text;
+                cd.classList.toggle("go", left <= 0);
+                cd.classList.remove("pop");
+                void cd.offsetWidth;
+                cd.classList.add("pop");
+                sfx(left > 0 ? "tick" : "go");
+            }
         } else cd.hidden = true;
         fight.raf = requestAnimationFrame(loop);
     }
@@ -209,6 +221,7 @@ export function createCombatView(app) {
     }
 
     function apply(ev) {
+        fight.arena?.event(ev);
         const target = fight.panel(ev.target);
         const source = fight.panel(ev.source);
         switch (ev.kind) {
@@ -218,39 +231,8 @@ export function createCombatView(app) {
                     void source.weaponCard.offsetWidth;
                     source.weaponCard.classList.add("swing");
                 }
-                if (ev.suddenDeath) target.root.classList.add("sudden");
-                else if (ev.blocked) float(target, "Blocked", "blocked");
-                else if (ev.parried) float(target, "Parried!", "blocked");
-                else if (ev.missed) float(target, "Miss", "dodge");
-                else if (ev.dodged) float(target, "Dodge", "dodge");
-                else if (ev.reflected) float(target, `${ev.abilitySource === "thorns" ? "Thorns" : "Reflect"} ${Math.round(ev.damage * 10) / 10}`, "smash");
-                else if (ev.abilitySource === "lightning") { float(target, `Lightning ${Math.round(ev.damage)}`, "stun"); shake(target); }
-                else if (ev.abilitySource === "headshot") { float(target, `Headshot ${Math.round(ev.damage)}`, "smash"); shake(target); }
-                else if (ev.effectSource) { float(target, `Smash ${Math.round(ev.damage)}`, "smash"); shake(target); }
-                else if (ev.critMultiplier) { float(target, `${Math.round(ev.damage * 10) / 10}!`, "crit"); shake(target); }
-                else float(target, `${Math.round(ev.damage * 10) / 10}`, "hit");
-                if (ev.absorbed > 0) float(target, `-${Math.round(ev.absorbed)} shield`, "invuln");
+                if (!ev.dodged && !ev.blocked && !ev.missed && !ev.parried && ev.damage > 0 && !ev.suddenDeath) hurt(target);
                 break;
-            case "stun":
-                if (ev.blocked) float(target, "Stun blocked", "blocked");
-                else float(target, ev.crit ? `Stunned ${ev.duration}s!` : `Stunned ${ev.duration}s`, "stun");
-                break;
-            case "invulnerability":
-                float(target, "Invulnerable", "invuln");
-                break;
-            case "money":
-                if (ev.payout != null) float(source, ev.won ? `Chip ×2 (${Math.round(ev.payout)}$)` : `Chip ×0.5 (${Math.round(ev.payout)}$)`, "money");
-                else if (ev.gain > 0) float(source, `+${Math.round(ev.gain * 10) / 10}$`, "money");
-                break;
-            case "heal":
-                float(source, `+${Math.round(ev.amount * 10) / 10}`, "heal");
-                break;
-            case "ability": {
-                if (ev.ability === "second_wind") { float(source, "Second Wind!", "ult"); break; }
-                const a = abilityById(ev.ability);
-                float(source, a?.name ?? ev.ability, a?.ultimate ? "ult" : "ability");
-                break;
-            }
             case "buff":
                 if (ev.stacks > 0) fight.buffs[ev.source].set(ev.effectSource, { ...ev });
                 else fight.buffs[ev.source].delete(ev.effectSource);
@@ -261,6 +243,7 @@ export function createCombatView(app) {
     function render() {
         const snap = fight.snap;
         if (!snap) return;
+        fight.arena?.snap(snap);
         for (let i = 0; i < 2; i++) {
             const p = fight.panel(i);
             const s = snap.f[i];
@@ -329,27 +312,11 @@ export function createCombatView(app) {
         else { ot.textContent = ""; ot.className = "overtime"; }
     }
 
-    function victoryEffect(index) {
-        const effect = fight.fighters[index]?.appearance?.victory;
-        if (!effect || effect === "victory_none") return;
-        const panel = fight.panel(index);
-        const fx = el("div", { class: `victory-fx ${effect}` });
-        for (let i = 0; i < 24; i++) {
-            const p = el("span");
-            p.style.left = `${Math.random() * 100}%`;
-            p.style.animationDelay = `${Math.random() * 0.6}s`;
-            p.style.setProperty("--x", Math.random().toFixed(2));
-            fx.append(p);
-        }
-        panel.root.append(fx);
-        setTimeout(() => fx.remove(), 2600);
-    }
-
     function end(msg) {
         if (!fight || msg.fightId !== fight.id) return;
         fight.ended = true;
         const r = msg.result;
-        if (r.winner >= 0) victoryEffect(r.winner);
+        fight.arena?.finish(r.winner);
         if (fight.you == null) {
             const title = document.getElementById("cOvertime");
             title.textContent = r.winner === -1 ? "Draw" : `${r.fighters[r.winner].name} wins`;
@@ -360,6 +327,7 @@ export function createCombatView(app) {
         const won = r.winner === you, draw = r.winner === -1;
         const title = document.getElementById("resultTitle");
         title.textContent = draw ? "Draw" : won ? "Victory" : "Defeat";
+        setTimeout(() => sfx(won ? "victory" : "defeat"), 500);
         title.className = draw ? "draw" : won ? "win" : "lose";
         const opp = 1 - you;
         const rows = [
@@ -372,7 +340,7 @@ export function createCombatView(app) {
         if (won && r.damageTaken[you] <= 0) rows.push(["Flawless victory", "Yes"]);
         document.getElementById("resultStats").replaceChildren(...rows.map(([k, v]) =>
             el("li", {}, el("span", { class: "muted", text: k }), el("b", { text: String(v) }))));
-        setTimeout(() => { if (fight?.ended && fight.you != null) document.getElementById("resultScreen").hidden = false; }, 900);
+        setTimeout(() => { if (fight?.ended && fight.you != null) document.getElementById("resultScreen").hidden = false; }, 2100);
         updateWait(app.game.state);
     }
 

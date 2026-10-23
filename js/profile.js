@@ -1,4 +1,5 @@
 // Player profiles, styled names (cosmetics) and the cosmetics locker in Settings.
+import { portraitUrl } from "./sprites.js";
 import { api } from "./net.js";
 import { el, data, itemCard } from "./data.js";
 import { openDialog, toast } from "./ui.js";
@@ -21,12 +22,20 @@ export async function loadAchievements() {
  * appearance: { nameColor, frame, victory, title, level } from the server, or null.
  */
 export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
-    const node = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "") }, name);
+    const node = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "")
+        + (appearance?.nameBorder && appearance.nameBorder !== "nb_none" ? ` nb ${appearance.nameBorder}` : "") }, name);
     const wrap = el("span", { class: "name-wrap" + (userId > 0 ? " clickable" : ""), onclick: userId > 0 ? e => { e.stopPropagation(); openProfile(userId); } : undefined },
         appearance?.level ? el("span", { class: "level-badge-sm", text: `${appearance.level}` }) : null,
         node,
         showTitle && appearance?.title ? el("span", { class: "player-title", text: appearance.title }) : null);
     return wrap;
+}
+
+/** Pixel portrait of the player's kit inside their portrait border cosmetic. size: "sm" | "md" | "lg". */
+export function portraitEl(kit, appearance, size = "sm") {
+    const border = appearance?.border && appearance.border !== "pb_none" ? appearance.border : "pb_default";
+    return el("span", { class: `portrait ${size} ${border}`, dataset: { kit: kit ?? "none" } },
+        el("img", { src: portraitUrl(kit ?? "none", 4), alt: "", draggable: "false" }));
 }
 
 function bar(into, needed) {
@@ -41,9 +50,10 @@ export async function openProfile(userId) {
         const unlocked = new Map(p.achievements.map(a => [a.id, a.at]));
         const body = el("div", { class: "profile" },
             el("div", { class: "profile-head" },
+                portraitEl(p.kits?.[0]?.kit ?? "none", p.appearance, "lg"),
                 el("div", { class: "profile-level", text: `${p.level}` }),
                 el("div", { class: "grow" },
-                    el("div", { class: "profile-name" }, el("span", { class: "player-name" + (p.appearance?.nameColor ? ` nc-${p.appearance.nameColor}` : ""), text: p.name })),
+                    el("div", { class: "profile-name" }, el("span", { class: "player-name" + (p.appearance?.nameColor ? ` nc-${p.appearance.nameColor}` : "") + (p.appearance?.nameBorder && p.appearance.nameBorder !== "nb_none" ? ` nb ${p.appearance.nameBorder}` : ""), text: p.name })),
                     el("div", { class: "muted small" }, `@${p.username}`, p.appearance?.title ? ` · ${p.appearance.title}` : "", p.mastery ? ` · ${p.mastery}` : ""),
                     bar(p.levelXp, p.nextLevelXp))),
             el("div", { class: "profile-stats" }, [
@@ -79,9 +89,12 @@ export async function openProfile(userId) {
 
 const KINDS = [
     { kind: "name_color", label: "Name color" },
+    { kind: "name_border", label: "Name border" },
+    { kind: "title", label: "Title" },
+    { kind: "border", label: "Portrait border" },
     { kind: "frame", label: "Fighter frame" },
-    { kind: "victory", label: "Victory effect" },
-    { kind: "title", label: "Title" }
+    { kind: "weapon_skin", label: "Generic weapon skin" },
+    { kind: "victory", label: "Victory effect" }
 ];
 
 export async function renderLocker(root, onChange) {
@@ -103,7 +116,8 @@ export async function renderLocker(root, onChange) {
             el("div", { class: "locker-level" }, el("b", { text: `Level ${locker.level}` }), bar(locker.levelXp, locker.nextLevelXp)),
             ...KINDS.map(({ kind, label }) => {
                 const options = kind === "title"
-                    ? [{ id: null, name: "No title", unlocked: true }, ...locker.titles.map(t => ({ id: t, name: t, unlocked: true }))]
+                    ? [{ id: null, name: "No title", unlocked: true }, ...locker.titles.map(t => ({ id: t, name: t, unlocked: true })),
+                        ...locker.cosmetics.filter(c => c.kind === "title" && !c.unlocked).map(c => ({ ...c, id: c.name }))]
                     : locker.cosmetics.filter(c => c.kind === kind);
                 return el("div", { class: "locker-group" },
                     el("h4", { text: label }),
@@ -117,7 +131,11 @@ export async function renderLocker(root, onChange) {
                             onclick: () => equip(kind, o.id)
                         },
                             kind === "name_color" ? el("span", { class: `player-name nc-${o.id}`, text: o.name })
+                                : kind === "name_border" ? el("span", { class: `player-name ${o.id === "nb_none" ? "" : `nb ${o.id}`}`, text: o.name })
+                                : kind === "border" ? el("span", { class: "row" }, portraitEl(locker.kit ?? "duelist", { border: o.id }, "sm"), o.name)
+                                : kind === "weapon_skin" ? el("span", { class: "row" }, itemCard("generic.sword", { size: "small", skin: o.id }), o.name)
                                 : kind === "frame" ? el("span", { class: `frame-swatch frame-${o.id}` }, o.name)
+                                : kind === "title" ? el("span", { class: "player-title", text: o.name })
                                 : el("span", { text: o.name }),
                             o.unlocked ? null : el("span", { class: "muted small", text: hint }));
                     })));

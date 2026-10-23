@@ -145,8 +145,11 @@ ls /var/lib/ashen/backups       # database backups
 - Live fights with kits (Q/W/E/R, rebindable), augments, round modifiers,
   match mutators, arenas, mystery events, bounties and first-to events.
 - Solo vs bots and bot seats in lobbies (Easy / Normal / Hard).
-- Accounts with levels, 40 achievements, cosmetics (name colors, frames,
-  victory effects, titles), kit mastery and profiles.
+- Animated pixel-art fights (items fly and strike in themed arenas), screen
+  shake, hit-stop and synthesized sound effects, with an effects/volume setting.
+- Accounts with levels, 40 achievements, cosmetics (animated name colors, name
+  borders, titles, portrait borders, fighter frames, generic weapon skins,
+  victory effects), kit mastery and profiles.
 - Friends with invites, leaderboard, match history with per-round fight
   replays (newest 100 matches).
 - Admin tab for `ASHEN_ADMINS`: live lobbies, bans, a validated JSON editor

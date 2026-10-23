@@ -2,7 +2,8 @@
 import { el, item, itemCard, statPretty, kitCard, augmentCard, data, abilityPretty, abilityTooltip, attachTooltip } from "./data.js";
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
-import { nameEl } from "./profile.js";
+import { nameEl, portraitEl } from "./profile.js";
+import { sfx } from "./fx.js";
 
 const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
 const hint = action => el("span", { class: "kb-hint", text: keyLabelOf(action) });
@@ -11,11 +12,31 @@ export function createGameView(app) {
     let state = null;
     let timerEnd = 0;
     let rerender = () => {};
+    // For "juice": what changed since the last render (new roll, bought slot, level up, money).
+    let lastRoll = "", lastBought = new Set(), lastLevels = new Map(), shownMoney = null, moneyAnim = 0;
+    const mySkin = () => state?.players?.find(p => p.id === app.user?.id)?.appearance?.weaponSkin;
 
-    document.getElementById("rerollButton").addEventListener("click", () => app.socket.send("reroll"));
+    function animateMoney(target) {
+        const node = document.getElementById("gMoney");
+        if (shownMoney === null || shownMoney === target) { shownMoney = target; node.textContent = `${target}$`; return; }
+        const from = shownMoney, start = performance.now();
+        node.parentElement.classList.remove("gain", "spend");
+        void node.offsetWidth;
+        node.parentElement.classList.add(target > from ? "gain" : "spend");
+        cancelAnimationFrame(moneyAnim);
+        const step = now => {
+            const k = Math.min(1, (now - start) / 450);
+            shownMoney = Math.round(from + (target - from) * (1 - Math.pow(1 - k, 3)));
+            node.textContent = `${shownMoney}$`;
+            if (k < 1) moneyAnim = requestAnimationFrame(step);
+        };
+        moneyAnim = requestAnimationFrame(step);
+    }
+
+    document.getElementById("rerollButton").addEventListener("click", () => { sfx("reroll"); app.socket.send("reroll"); });
     document.getElementById("hpButton").addEventListener("click", () => app.socket.send("buyHp"));
     document.getElementById("readyButton").addEventListener("click", () => {
-        if (state?.you) app.socket.send("ready", { ready: !state.you.ready });
+        if (state?.you) { if (!state.you.ready) sfx("ready"); app.socket.send("ready", { ready: !state.you.ready }); }
     });
     document.getElementById("forfeit").addEventListener("click", async () => {
         const eliminated = state?.you?.eliminated;
@@ -135,6 +156,13 @@ export function createGameView(app) {
         const grid = document.getElementById("shopGrid");
         const open = state.phase === "shop" && !you.eliminated;
         renderPity(you, open);
+        const rollKey = `${state.round}|${you.shop.items.map(x => x.itemId).join(",")}`;
+        const newRoll = rollKey !== lastRoll;
+        const bought = new Set(you.shop.items.map((x, i) => x.bought ? i : -1).filter(i => i >= 0));
+        const justBought = newRoll ? new Set() : new Set([...bought].filter(i => !lastBought.has(i)));
+        if (justBought.size) sfx("buy");
+        lastRoll = rollKey;
+        lastBought = bought;
         grid.replaceChildren(...you.shop.items.map((slot, i) => {
             const it = item(slot.itemId);
             const mine = owned(you, it.id);
@@ -143,9 +171,10 @@ export function createGameView(app) {
             const canBuy = open && !slot.bought && !maxed && you.money >= price;
             const label = slot.bought ? "Bought" : maxed ? "Max level" : mine ? `Lv ${mine.level + 1}` : `Buy`;
             const syn = slot.bought ? [] : synergies(you, it);
-            return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? " special" : "") + (syn.length ? " synergy" : "") },
+            return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? ` special pack-${it.pack}` : "") + (syn.length ? " synergy" : "")
+                + (newRoll ? " deal" : "") + (justBought.has(i) ? " just-bought" : ""), style: `--i:${i}`, dataset: { pack: it.pack } },
                 syn.length ? el("span", { class: "synergy-tag", title: syn.join(", "), text: syn[0] + (syn.length > 1 ? ` +${syn.length - 1}` : "") }) : null,
-                itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large" }),
+                itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large", skin: mySkin() }),
                 el("div", { class: "shop-name", text: it.name }),
                 el("div", { class: "shop-type muted small", text: it.pack !== "generic" ? `Special ${it.type}` : it.type }),
                 i < 6 ? el("span", { class: "kb-hint slot-hint", text: keyLabelOf(`buy${i + 1}`) }) : null,
@@ -175,8 +204,14 @@ export function createGameView(app) {
     }
 
     function renderBuild(you) {
+        const levels = new Map([you.weapon, you.shirt, ...you.dynamics].filter(Boolean).map(x => [x.id, x.level]));
+        const grown = [...levels].filter(([id, lv]) => lastLevels.has(id) ? lv > lastLevels.get(id) : lastLevels.size > 0).map(([id]) => id);
+        if (grown.some(id => lastLevels.has(id))) sfx("levelup");
+        lastLevels = levels;
         const slot = (target, entry, label) => {
-            target.replaceChildren(entry ? itemCard(entry.id, { level: entry.level }) : el("div", { class: "slot-empty", text: label }));
+            const card = entry ? itemCard(entry.id, { level: entry.level, skin: mySkin() }) : null;
+            if (card && grown.includes(entry.id)) card.classList.add("level-up");
+            target.replaceChildren(card ?? el("div", { class: "slot-empty", text: label }));
         };
         slot(document.getElementById("slotWeapon"), you.weapon, "No weapon");
         slot(document.getElementById("slotShirt"), you.shirt, "No shirt");
@@ -273,7 +308,7 @@ export function createGameView(app) {
     function renderSide() {
         document.getElementById("gPlayers").replaceChildren(...state.players.map(p =>
             el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") },
-                el("span", { class: "dot" + (p.connected ? " on" : "") }),
+                portraitEl(p.kit, p.appearance, "xs"),
                 el("span", { class: "grow" }, nameEl(p.name, p.appearance, p.id, { showTitle: false }), p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null,
                     p.mastery ? el("div", { class: "mastery", text: p.mastery }) : null),
                 p.bounty > 0 ? el("span", { class: "tag bounty", title: "Beat them to collect it", text: `Bounty ${p.bounty}$` }) : null,
@@ -318,7 +353,7 @@ export function createGameView(app) {
             const changeKit = document.getElementById("changeKit");
             changeKit.textContent = `Change kit (${state.kitSwapCost}$)`;
             changeKit.disabled = state.phase !== "shop" || you.eliminated || you.money < state.kitSwapCost;
-            document.getElementById("gMoney").textContent = `${you.money}$`;
+            animateMoney(you.money);
             document.getElementById("gLives").textContent = you.eliminated ? "0" : `${you.lives}`;
             document.getElementById("gMaxHp").textContent = Math.round(you.maxHp);
             document.getElementById("forfeit").textContent = you.eliminated ? "Leave" : "Forfeit";

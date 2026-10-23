@@ -10,13 +10,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/theme.css" />
 </head>
 
 <body>
     <div class="backdrop" aria-hidden="true"></div>
 
     <header id="header">
-        <h1>Ashen</h1>
+        <h1 class="logo" data-text="Ashen">Ashen</h1>
         <nav class="tab-container" id="tabs">
             <button class="tab active" data-tab="menu">Play</button>
             <button class="tab" data-tab="compendium">Compendium</button>
@@ -49,6 +50,12 @@
 
         <!-- Main menu -->
         <section id="viewMenu" class="view" hidden>
+            <div class="menu-hero">
+                <div class="arena-stage hero-stage" id="heroStage"></div>
+                <div class="hero-text">
+                    <p class="hero-tag">Build. Battle. Burn.</p>
+                </div>
+            </div>
             <div class="menu-grid">
                 <div class="panel">
                     <h2>Create a lobby</h2>
@@ -138,6 +145,16 @@
                     <h2>Keybinds</h2>
                     <p class="muted small">Click a key, then press the new one. Esc cancels. Saved to your account.</p>
                     <div id="keybindSettings"></div>
+                </div>
+                <div class="panel">
+                    <h2>Effects &amp; sound</h2>
+                    <label class="field-row">Visual effects
+                        <select id="fxLevel"><option value="2">Full</option><option value="1">Normal</option><option value="0">Reduced (faster)</option></select>
+                    </label>
+                    <label class="field-row">Sound volume
+                        <input type="range" id="fxVolume" min="0" max="1" step="0.05" />
+                    </label>
+                    <p class="muted small">Saved on this device.</p>
                 </div>
                 <div class="panel">
                     <h2>Account</h2>
@@ -298,6 +315,10 @@
                         <button class="btn btn-small" id="replayRestart">Restart</button>
                     </span>
                     <button class="btn btn-small" id="leaveSpectate">Back</button>
+                </div>
+                <div class="arena-frame">
+                    <div class="arena-stage" id="arenaStage"></div>
+                    <div class="arena-name" id="arenaName"></div>
                 </div>
                 <div class="fighters">
                     <div class="fighter panel" id="fighter0"></div>

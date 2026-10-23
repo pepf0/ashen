@@ -14,7 +14,8 @@ public class CosmeticUnlock
     public string? Achievement { get; set; }
 }
 
-/// <summary>Purely visual reward (name color, fighter frame, victory effect). No gameplay effect.</summary>
+/// <summary>Purely visual reward (name color, name border, portrait border, fighter frame, victory effect,
+/// generic weapon skin or title). No gameplay effect.</summary>
 public class Cosmetic
 {
     public string Id { get; set; } = "";
@@ -24,7 +25,8 @@ public class Cosmetic
 }
 
 /// <summary>What a player shows to others: chosen cosmetics and title.</summary>
-public record Appearance(string? NameColor, string? Frame, string? Victory, string? Title, int Level);
+public record Appearance(string? NameColor, string? Frame, string? Victory, string? Title, int Level,
+    string? NameBorder = null, string? Border = null, string? WeaponSkin = null);
 
 /// <summary>Everything that happened to one player in one match, for XP and achievements.</summary>
 public class MatchStats

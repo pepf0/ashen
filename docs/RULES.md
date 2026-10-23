@@ -331,10 +331,32 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
   new achievement. Each level needs 10 % more XP than the last (max level 50).
 - 40 achievements (`json/achievements.json`), with the share of players who
   have each.
-- Cosmetics (`json/cosmetics.json`) unlock with levels or achievements: name
-  colors, fighter frames and victory effects; any unlocked achievement or kit
-  mastery can be shown as your title. Purely visual, no gameplay effect.
+- Cosmetics (`json/cosmetics.json`) unlock with levels or achievements. Purely
+  visual, no gameplay effect:
+  - **Name colors** (many animated: Ember Glow, Blood Moon, Spectral, Molten
+    Gold, Hellfire, …) and **name borders** (Iron Plate, Runed, Inferno,
+    Prismatic, …).
+  - **Titles**: unlocked title cosmetics, any achievement name or your kit
+    mastery, shown next to your name.
+  - **Portrait borders** around your kit portrait (lobby, player list, fight
+    panel, podium, profile) and **fighter frames** around your fight panel.
+  - **Generic weapon skins** (Rusted, Obsidian, Frostforged, Emberforged,
+    Gilded, Voidtouched, Prismatic, …): recolor and add a glow to generic
+    weapons (Sword, Hammer, Frying Pan, Bow) in the shop, your build and fights.
+  - **Victory effects** played in the arena when you win a fight (Confetti,
+    Fireworks, Lightning, Meteor, Soul Harvest, Ash Storm, …).
 - Click any player name to see their profile.
+
+## Fights on screen
+
+- Fights play out in an animated pixel arena matching the rolled arena (Lava
+  Pit, Frozen Hall, Storm, Forge, Colosseum, Void, …). Each player's items
+  float on their side: the weapon flies over to strike (bows shoot arrows, the
+  Guitar shoots notes, the Whip lashes), shirts and charms hover and orbit,
+  and an item pulses whenever its effect fires. The loser's items fall and
+  crumble to ash.
+- Settings → **Effects & sound**: visual effects Full / Normal / Reduced (for
+  slow PCs) and the sound volume, saved per device.
 
 ## Friends, history & replays
 

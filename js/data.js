@@ -1,5 +1,7 @@
 // Item/effect data and text formatting shared by the compendium, shop and combat views.
 import { label as keyLabelOf, SKILL_ACTIONS } from "./keybinds.js";
+import { skinApplies, skinnedUrl } from "./skins.js";
+import { portraitUrl } from "./sprites.js";
 
 export const data = { items: {}, effects: {}, kits: {}, modifiers: {}, augments: {}, mutators: {}, arenas: {} };
 
@@ -107,8 +109,10 @@ export function abilityTooltip(a, key) {
 /** A kit card: name, description and its four abilities with keys. */
 export function kitCard(kitId, { selected = false, onclick, footer } = {}) {
     const kit = data.kits[kitId];
-    return el("div", { class: "kit-card" + (selected ? " selected" : "") + (onclick ? " clickable" : ""), onclick },
-        el("div", { class: "kit-name", text: kit.name }),
+    return el("div", { class: "kit-card" + (selected ? " selected" : "") + (onclick ? " clickable" : ""), onclick, dataset: { kit: kitId } },
+        el("div", { class: "kit-head" },
+            el("img", { class: "kit-portrait", src: portraitUrl(kitId, 4), alt: "", draggable: "false" }),
+            el("div", { class: "kit-name", text: kit.name })),
         el("div", { class: "muted small", text: kit.description }),
         el("ul", { class: "kit-abilities" }, kit.abilities.map((a, i) => el("li", {},
             el("span", { class: "key" + (a.ultimate ? " ult" : ""), text: keyLabelOf(SKILL_ACTIONS[i]) }),
@@ -147,11 +151,14 @@ export function el(tag, attrs = {}, ...children) {
 }
 
 /** Small square item card with the pack-colored border used everywhere. */
-export function itemCard(id, { level, size = "", onclick, extra } = {}) {
+export function itemCard(id, { level, size = "", onclick, extra, skin } = {}) {
     const it = data.items[id];
-    const card = el("div", { class: `item-card ${size}`, dataset: { pack: it?.pack ?? "generic" }, onclick },
-        el("img", { src: sprite(id), alt: it?.name ?? id, draggable: "false" }));
-    if (level > 1) card.append(el("span", { class: "level-badge", text: `Lv ${level}` }));
+    const skinned = skin && skinApplies(id, skin);
+    const card = el("div", { class: `item-card ${size}` + (skinned ? ` skinned skin-${skin}` : ""), dataset: { pack: it?.pack ?? "generic", type: it?.type ?? "" }, onclick },
+        el("img", { src: skinned ? skinnedUrl(id, skin) : sprite(id), alt: it?.name ?? id, draggable: "false" }));
+    if (skinned && !card.firstChild.src.startsWith("data:"))
+        card.firstChild.addEventListener("load", function retry() { const url = skinnedUrl(id, skin); if (url.startsWith("data:")) card.firstChild.src = url; }, { once: true });
+    if (level > 1) card.append(el("span", { class: "level-badge", title: `Level ${level}` }, ...Array.from({ length: level }, () => el("i"))));
     if (extra) card.append(extra);
     attachTooltip(card, () => itemTooltip(id, level ?? 1));
     return card;

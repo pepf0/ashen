@@ -13,6 +13,9 @@ import { openProfile, renderLocker, nameEl, loadAchievements } from "./profile.j
 import { createFriends } from "./friends.js";
 import { createAdmin } from "./admin.js";
 import { createTroll } from "./troll.js";
+import { startEmbers, sfx, effectsLevel, setEffectsLevel, getVolume, setVolume } from "./fx.js";
+import { preloadSkins } from "./skins.js";
+import { startDemo } from "./demo.js";
 
 // Relative URLs (api/, ws, json/) need the page URL to end in "/" when hosted under a sub-path.
 if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) {
@@ -131,7 +134,10 @@ app.socket
     .on("open", () => document.body.classList.remove("offline"))
     .on("error", msg => toast(msg.message))
     .on("chat", msg => addChat(msg.messages))
-    .on("announce", msg => msg.text ? announce(msg.text) : announce(`${msg.player} claimed ${msg.name}${msg.reward && msg.reward !== "Title" ? ` (${msg.reward})` : ""}`))
+    .on("announce", msg => {
+        sfx("announce");
+        announce(msg.text ? msg.text : `${msg.player} claimed ${msg.name}${msg.reward && msg.reward !== "Title" ? ` (${msg.reward})` : ""}`);
+    })
     .on("kicked", () => toast("You were kicked from the lobby.", "info"))
     .on("left", () => {
         app.lobby = null;
@@ -194,7 +200,7 @@ document.getElementById("userChip").addEventListener("click", () => { if (app.us
 async function showProgress(p) {
     const panel = document.getElementById("progressPanel");
     const ach = await loadAchievements();
-    const cosmetic = id => id.replace(/^(name|frame|victory)_/, "").replace(/_/g, " ");
+    const cosmetic = id => id.replace(/^(name|frame|victory|nb|pb|ws|t)_/, "").replace(/_/g, " ");
     const pct = p.nextLevelXp ? Math.min(100, (p.levelXp / p.nextLevelXp) * 100) : 100;
     panel.replaceChildren(
         el("div", { class: "row spread" }, el("b", { text: `+${p.xpGained} XP` }),
@@ -206,6 +212,7 @@ async function showProgress(p) {
         p.newCosmetics.length ? el("div", { class: "new-unlocks" }, el("span", { class: "muted small", text: "New cosmetics: " }),
             ...p.newCosmetics.map(id => el("span", { class: "unlock-chip cosmetic", text: cosmetic(id) }))) : null);
     panel.hidden = false;
+    if (p.levelsGained > 0) setTimeout(() => sfx("levelup"), 800);
 }
 
 // ---------------- menu ----------------
@@ -306,6 +313,16 @@ async function showMatch(id) {
 
 // ---------------- settings ----------------
 
+const fxLevel = document.getElementById("fxLevel"), fxVolume = document.getElementById("fxVolume");
+fxLevel.value = String(effectsLevel());
+fxVolume.value = String(getVolume());
+fxLevel.addEventListener("change", () => setEffectsLevel(Number(fxLevel.value)));
+fxVolume.addEventListener("input", () => setVolume(Number(fxVolume.value)));
+fxVolume.addEventListener("change", () => sfx("coin"));
+
+// Soft click on every button: tiny, but it makes the UI feel alive.
+document.addEventListener("click", e => { if (e.target.closest(".btn, .tab, .ab, .kit-card.clickable, .locker-option")) sfx("click", 0.03); });
+
 function fillSettings() {
     document.getElementById("displayName").value = app.user?.displayName ?? "";
     document.getElementById("settingsUsername").textContent = app.user?.username ?? "";
@@ -354,6 +371,9 @@ document.getElementById("logoutButton").addEventListener("click", async () => {
 
 (async function start() {
     await loadData();
+    startEmbers();
+    preloadSkins();
+    startDemo(document.getElementById("heroStage"));
     renderCompendium();
     if (!getToken()) return showAuth();
     try {
