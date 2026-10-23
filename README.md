@@ -59,6 +59,8 @@ Environment variables:
 | `ASHEN_DB` | `<root>/data/ashen.db` | SQLite database file |
 | `ASHEN_TRUSTED_PROXIES` | – | Comma-separated proxy IPs whose `X-Forwarded-For` is trusted |
 | `ASHEN_LOGS` | `logs/` next to the database | Folder for the balancing logs |
+| `ASHEN_ADMINS` | `pepf` | Comma-separated usernames with access to the Admin tab |
+| `ASHEN_DATA_OVERRIDES` | `json-overrides/` next to the database | Where admin-edited data files are stored |
 
 Run the tests:
 
@@ -130,11 +132,26 @@ sudo systemctl restart ashen    # restart
 ls /var/lib/ashen/backups       # database backups
 ```
 
+## Features at a glance
+
+- Live fights with kits (Q/W/E/R, rebindable), augments, round modifiers,
+  match mutators, arenas, mystery events, bounties and first-to events.
+- Solo vs bots and bot seats in lobbies (Easy / Normal / Hard).
+- Accounts with levels, 40 achievements, cosmetics (name colors, frames,
+  victory effects, titles), kit mastery and profiles.
+- Friends with invites, leaderboard, match history with per-round fight
+  replays (newest 100 matches).
+- Admin tab for `ASHEN_ADMINS`: live lobbies, bans, a validated JSON editor
+  with hot reload, statistics.
+
 ## Editing game data
 
 Items, effects, lobby events, kits (`kits.json`), round modifiers
 (`modifiers.json`), augments (`augments.json`), match mutators
-(`mutators.json`) and arenas (`arenas.json`) live in `json/`. The server validates every
+(`mutators.json`), arenas (`arenas.json`), achievements and cosmetics live
+in `json/`. On the live server you can also edit them in the **Admin** tab:
+edits are validated, stored in `/var/lib/ashen/json-overrides/` (so updates
+don't overwrite them) and reloaded as soon as no match is running. The server validates every
 reference on startup (unknown effect IDs or event items stop it with a clear
 error), and the compendium reads the same files. Restart the service after
 changing them.

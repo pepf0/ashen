@@ -309,6 +309,35 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
 | Dragon Tamer | First to own The Dragon | Title |
 | Tycoon | First to hold 250 $ | Title |
 
+## Bots
+
+- **Solo vs bots** (menu) starts a private match against 1–7 bots right away.
+- Hosts can **add bots** to empty seats in any lobby.
+- Easy bots buy randomly and press abilities at random; Normal bots commit to
+  packs, level items, keep a reserve and use abilities when ready; Hard bots
+  also reroll for good items, save for interest and time defensive skills.
+- Matches with fewer than 2 humans are kept in your history but don't count
+  for the leaderboard or kit mastery. XP and achievements are earned in all
+  matches.
+
+## Levels, achievements & cosmetics
+
+- XP per match: 100, +50 per placement above last, +10 per fight won, +25 per
+  new achievement. Each level needs 10 % more XP than the last (max level 50).
+- 40 achievements (`json/achievements.json`), with the share of players who
+  have each.
+- Cosmetics (`json/cosmetics.json`) unlock with levels or achievements: name
+  colors, fighter frames and victory effects; any unlocked achievement or kit
+  mastery can be shown as your title. Purely visual, no gameplay effect.
+- Click any player name to see their profile.
+
+## Friends, history & replays
+
+- Add friends by username; see who's online, in a lobby or in a match; invite
+  friends to your lobby or join theirs.
+- Every match is stored in history; the fights of the newest 100 matches can
+  be replayed (pause, 1×/2×/4×) from the match details.
+
 ## Keybinds
 
 Skills, ultimate, reroll, ready, +HP and buying shop slots 1–6 have keybinds

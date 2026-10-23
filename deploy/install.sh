@@ -8,6 +8,7 @@ REPO="${ASHEN_REPO:-https://github.com/pepf0/ashen.git}"
 BRANCH="${ASHEN_BRANCH:-ccode}"
 PORT="${ASHEN_PORT:-6769}"
 TRUSTED_PROXIES="${ASHEN_TRUSTED_PROXIES:-10.10.0.1}"
+ADMINS="${ASHEN_ADMINS:-pepf}"
 PREFIX="/opt/ashen"
 DATA="/var/lib/ashen"
 DOTNET_DIR="/opt/dotnet"
@@ -75,6 +76,7 @@ Environment=ASHEN_ROOT=$PREFIX/src
 Environment=ASHEN_DB=$DATA/ashen.db
 Environment=ASPNETCORE_URLS=http://0.0.0.0:$PORT
 Environment=ASHEN_TRUSTED_PROXIES=$TRUSTED_PROXIES
+Environment=ASHEN_ADMINS=$ADMINS
 Environment=DOTNET_ROOT=$DOTNET_DIR
 Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
