@@ -948,3 +948,4 @@ body[data-observer="1"] #mysteryPanel, body[data-observer="1"] #eliminatedPanel 
 .spectator-bar { flex-wrap: wrap; }
 body[data-observer="1"] .game-top .stat-pill.money, body[data-observer="1"] .game-top .stat-pill:nth-child(4),
 body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
+#standingsTable td:nth-child(4), #standingsTable td:nth-child(5) { white-space: nowrap; }
