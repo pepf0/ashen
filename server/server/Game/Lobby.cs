@@ -17,6 +17,10 @@ public class LobbyMember
     public string Kit { get; set; } = Ashen.Kit.Default;
     /// <summary>Best kit mastery title (e.g. "Duelist Adept"), from the database.</summary>
     public string? Mastery { get; set; }
+    /// <summary>Bots have negative ids, no socket, and play through <see cref="BotIdentity"/>.</summary>
+    public bool IsBot => Difficulty is not null;
+    public BotDifficulty? Difficulty { get; set; }
+    public Connection? BotIdentity { get; set; }
 }
 
 public record ChatMessage(long UserId, string Name, string Text, long At);
@@ -25,7 +29,7 @@ public record ChatMessage(long UserId, string Name, string Text, long At);
 /// A lobby and the match running in it. Every public method locks <see cref="sync"/>; the match loop
 /// only holds the lock while it changes state, never while it waits.
 /// </summary>
-public class Lobby
+public partial class Lobby
 {
     public const int MaxPlayers = 8;
     public const int MinPlayers = 2;
@@ -220,13 +224,15 @@ public class Lobby
         Members.Remove(member);
         manager.Unbind(member.UserId, this);
         member.Connection?.Send(new { type = "left" });
-        if (Members.Count == 0)
+        if (!Members.Any(m => !m.IsBot))
         {
+            // Only bots left: close the lobby.
+            Members.Clear();
             manager.Remove(this);
             return;
         }
         if (member.UserId == HostId)
-            HostId = (Members.FirstOrDefault(m => m.Connected) ?? Members[0]).UserId;
+            HostId = (Members.FirstOrDefault(m => m.Connected) ?? Members.First(m => !m.IsBot)).UserId;
         AddSystemChat(message);
         BroadcastLobby();
         if (InMatch) BroadcastState();
@@ -315,9 +321,8 @@ public class Lobby
         {
             if (conn.User.Id != HostId) return "Only the host can start the match.";
             if (InMatch) return "The match is already running.";
-            var connected = Members.Where(m => m.Connected).ToList();
-            if (connected.Count < MinPlayers) return $"You need at least {MinPlayers} players.";
-            foreach (var m in Members.Where(m => !m.Connected).ToList()) RemoveMember(m, $"{m.Name} left.");
+            foreach (var m in Members.Where(m => !m.Connected && !m.IsBot).ToList()) RemoveMember(m, $"{m.Name} left.");
+            if (Members.Count < MinPlayers) return $"You need at least {MinPlayers} players (add bots for a solo game).";
 
             players.Clear();
             claimedEvents.Clear();
@@ -381,7 +386,8 @@ public class Lobby
                 // Ends early once every alive player is ready (disconnected players count as ready), but never
                 // while nobody is connected at all, so a server hiccup doesn't fast-forward the whole match.
                 await WaitUntil(() => DateTime.UtcNow >= phaseEndsAt || AlivePlayers().Count() <= 1
-                    || (AlivePlayers().Any(p => p.Connected) && AlivePlayers().All(p => p.Ready || !p.Connected)));
+                    || ((AlivePlayers().Any(p => p.Connected) || AlivePlayers().All(p => p.Id < 0))
+                        && AlivePlayers().All(p => p.Ready || !p.Connected)));
 
                 lock (sync)
                 {
@@ -554,6 +560,7 @@ public class Lobby
             if (p.Shop.Pity.Count > 0)
                 log?.Write("pity_offer", new { round, player = p.Id, items = p.Shop.Pity });
         }
+        BotsTakeShop();
         FlushAnnouncements();
         BroadcastState();
     }
@@ -627,7 +634,7 @@ public class Lobby
             fights.Add(new LiveFight
             {
                 Id = ++nextFightId,
-                Fight = new Fight(a.ToLoadout(), b.ToLoadout(), rules.WithArena(RollArena()), rng.Next()),
+                Fight = new Fight(BotLoadout(a), BotLoadout(b), rules.WithArena(RollArena()), rng.Next()),
                 Players = new Player?[] { a, b }
             });
         }
@@ -636,7 +643,7 @@ public class Lobby
             var others = alive.Where(p => p != ghostFor).ToList();
             var copy = others[rng.Next(others.Count)];
             ghostFor.GhostFights++;
-            var fight = new Fight(ghostFor.ToLoadout(), copy.ToLoadout(ghost: true), rules.WithArena(RollArena()), rng.Next());
+            var fight = new Fight(BotLoadout(ghostFor), copy.ToLoadout(ghost: true), rules.WithArena(RollArena()), rng.Next());
             fight.SetBot(1, true);
             fights.Add(new LiveFight { Id = ++nextFightId, Fight = fight, Players = new Player?[] { ghostFor, null } });
         }
@@ -647,6 +654,13 @@ public class Lobby
             for (int i = 0; i < 2; i++)
                 if (fight.Players[i] is { } p && MemberOf(p.Id) is { } m) SendFightStart(m, fight, i);
         BroadcastState();
+    }
+
+    private Loadout BotLoadout(Player p)
+    {
+        var l = p.ToLoadout();
+        l.BotSkill = BotSkill(p);
+        return l;
     }
 
     private LobbyMember? MemberOf(long userId) => Members.FirstOrDefault(m => m.UserId == userId);
@@ -870,6 +884,8 @@ public class Lobby
 
         try
         {
+            // Only matches with 2+ humans count for the leaderboard; bots are never stored.
+            if (players.Count(p => p.Id > 0) >= 2)
             database?.SaveMatch(new MatchRecord
             {
                 LobbyCode = Code,
@@ -877,7 +893,7 @@ public class Lobby
                 EndedAt = DateTime.UtcNow,
                 Rounds = round,
                 Settings = Settings,
-                Players = players.Select(p => new MatchPlayerRecord
+                Players = players.Where(p => p.Id > 0).Select(p => new MatchPlayerRecord
                 {
                     UserId = p.Id,
                     DisplayName = p.Name,
@@ -899,7 +915,7 @@ public class Lobby
         State = LobbyState.Waiting;
         players.Clear();
         foreach (var m in Members) m.Mastery = database?.MasteryTitle(m.UserId);
-        foreach (var m in Members.Where(m => !m.Connected).ToList()) RemoveMember(m, $"{m.Name} left.");
+        foreach (var m in Members.Where(m => !m.Connected && !m.IsBot).ToList()) RemoveMember(m, $"{m.Name} left.");
         AddSystemChat("The match is over. The host can start a rematch.");
         BroadcastLobby();
     }
@@ -1297,7 +1313,7 @@ public class Lobby
         state = State,
         inMatch = InMatch,
         settings = Settings,
-        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected, kit = m.Kit, mastery = m.Mastery })
+        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected || m.IsBot, kit = m.Kit, mastery = m.Mastery, bot = m.Difficulty })
     };
 
     private void BroadcastLobby()

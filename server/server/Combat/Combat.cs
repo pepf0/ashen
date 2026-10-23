@@ -1032,6 +1032,24 @@ public sealed class Fight
     private void BotThink(Fighter f)
     {
         if (f.Kit is null) return;
+        int skill = f.Loadout.BotSkill;
+        if (skill <= 0)
+        {
+            // Easy: presses something random now and then.
+            if (f.Rng.NextDouble() < 0.03)
+            {
+                int slot = f.Rng.Next(4);
+                if (CanUse(f, slot)) f.Inputs.Enqueue(slot);
+            }
+            return;
+        }
+        if (skill == 1)
+        {
+            // Normal: uses everything as soon as it's ready, no timing.
+            for (int slot = 0; slot < 4; slot++)
+                if (CanUse(f, slot) && (f.Kit.Abilities[slot].Id != "cleanse" || f.Stunned)) f.Inputs.Enqueue(slot);
+            return;
+        }
         var enemy = Opponent(f);
         bool enemySwingSoon = enemy.Weapon is not null && !enemy.Stunned && enemy.WeaponTimer <= 0.25;
         bool threat = enemySwingSoon || (enemy.HeadshotAt is double h && h - Time <= 0.3) || enemy.FlurryAttacks.Count > 0;

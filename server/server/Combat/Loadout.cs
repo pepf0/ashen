@@ -16,6 +16,8 @@ public class Loadout
     public string? Kit { get; set; }
     /// <summary>Abilities are pressed by the built-in bot (ghosts, disconnected players, tests).</summary>
     public bool Bot { get; set; }
+    /// <summary>How well the bot uses abilities: 0 = easy, 1 = normal, 2 = hard (also used for ghosts and disconnected players).</summary>
+    public int BotSkill { get; set; } = 2;
     /// <summary>Combined augment mods (see Augment.Combine).</summary>
     public Dictionary<string, double> AugmentMods { get; set; } = new();
     public List<string> AugmentIds { get; set; } = new();

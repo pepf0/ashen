@@ -52,6 +52,8 @@ export function createLobbyView(app) {
         } catch { /* clipboard blocked */ }
     });
     document.getElementById("startMatch").addEventListener("click", () => app.socket.send("start"));
+    document.getElementById("addBot").addEventListener("click", () =>
+        app.socket.send("addBot", { difficulty: document.getElementById("botDifficulty").value }));
     document.getElementById("leaveLobby").addEventListener("click", () => app.socket.send("leave"));
 
     return {
@@ -63,6 +65,7 @@ export function createLobbyView(app) {
                 el("li", { class: m.connected ? "" : "offline" },
                     el("span", { class: "dot" + (m.connected ? " on" : "") }),
                     el("span", { class: "grow" }, m.name, m.mastery ? el("span", { class: "mastery", text: ` ${m.mastery}` }) : null),
+                    m.bot ? el("span", { class: "tag bot", text: `Bot · ${m.bot}` }) : null,
                     el("span", { class: "tag", text: data.kits[m.kit]?.name ?? m.kit }),
                     m.id === lobby.hostId ? el("span", { class: "tag", text: "Host" }) : null,
                     isHost && m.id !== app.user.id
@@ -71,8 +74,9 @@ export function createLobbyView(app) {
             const start = document.getElementById("startMatch");
             start.hidden = !isHost;
             start.disabled = lobby.members.filter(m => m.connected).length < 2;
+            document.getElementById("addBotRow").hidden = !isHost || lobby.members.length >= 8;
             document.getElementById("lobbyHint").textContent = isHost
-                ? (start.disabled ? "Waiting for at least one more player." : "Start whenever everyone is here.")
+                ? (start.disabled ? "Waiting for at least one more player (or add a bot)." : "Start whenever everyone is here.")
                 : "Waiting for the host to start the match.";
             const mine = lobby.members.find(m => m.id === app.user.id)?.kit;
             document.getElementById("kitGrid").replaceChildren(...Object.keys(data.kits).map(id =>

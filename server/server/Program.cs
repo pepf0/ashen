@@ -287,6 +287,19 @@ public static class GameSocket
                 error = lobbies.Join(conn, created);
                 break;
             }
+            case "solo":
+            {
+                var created = lobbies.Create();
+                error = lobbies.Join(conn, created);
+                if (error is null)
+                    error = created.StartSolo(conn, msg.GetProperty("bots").GetInt32(),
+                        Enum.TryParse<BotDifficulty>(msg.GetProperty("difficulty").GetString(), true, out var d) ? d : BotDifficulty.Normal);
+                break;
+            }
+            case "addBot":
+                error = lobby?.AddBot(conn, msg.TryGetProperty("difficulty", out var bd) && Enum.TryParse<BotDifficulty>(bd.GetString(), true, out var diff) ? diff : BotDifficulty.Normal)
+                        ?? (lobby is null ? "You are not in a lobby." : null);
+                break;
             case "join":
             {
                 var target = lobbies.Find(msg.GetProperty("code").GetString() ?? "");

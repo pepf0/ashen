@@ -55,6 +55,19 @@
                     <button class="btn btn-primary" id="createLobby">Create</button>
                 </div>
                 <div class="panel">
+                    <h2>Solo vs bots</h2>
+                    <p class="muted">A full match against bots. Doesn't count for the leaderboard.</p>
+                    <div class="row">
+                        <label class="inline">Bots
+                            <select id="soloBots"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+                        </label>
+                        <label class="inline">Difficulty
+                            <select id="soloDifficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select>
+                        </label>
+                        <button class="btn btn-primary" id="soloStart">Play</button>
+                    </div>
+                </div>
+                <div class="panel">
                     <h2>Join with code</h2>
                     <form id="joinForm" class="row">
                         <input type="text" id="joinCode" placeholder="ABCDE" maxlength="5" autocomplete="off" />
@@ -143,6 +156,10 @@
                     </div>
                     <h3>Players <span class="muted" id="playerCount"></span></h3>
                     <ul class="member-list" id="memberList"></ul>
+                    <div class="row add-bot" id="addBotRow">
+                        <select id="botDifficulty"><option value="easy">Easy bot</option><option value="normal" selected>Normal bot</option><option value="hard">Hard bot</option></select>
+                        <button class="btn btn-small" id="addBot">Add bot</button>
+                    </div>
                     <p class="muted small" id="lobbyHint"></p>
                 </div>
                 <form class="panel lobby-settings" id="settingsForm">

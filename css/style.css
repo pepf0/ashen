@@ -880,3 +880,9 @@ button.ab.ready:hover { border-color: var(--text); }
 .player-list li .grow .mastery { white-space: normal; }
 .player-list li { flex-wrap: wrap; }
 .event-list li, .chat-log li { overflow-wrap: anywhere; }
+
+label.inline { display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); }
+label.inline select { width: auto; }
+.add-bot { margin-top: 10px; }
+.add-bot select { width: auto; }
+.tag.bot { color: #9fd4ff; border-color: rgba(159, 212, 255, 0.4); text-transform: capitalize; }

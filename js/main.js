@@ -176,6 +176,10 @@ document.getElementById("backToLobby").addEventListener("click", () => setMode(a
 // ---------------- menu ----------------
 
 document.getElementById("createLobby").addEventListener("click", () => app.socket.send("create"));
+document.getElementById("soloStart").addEventListener("click", () => app.socket.send("solo", {
+    bots: Number(document.getElementById("soloBots").value),
+    difficulty: document.getElementById("soloDifficulty").value
+}));
 document.getElementById("joinForm").addEventListener("submit", e => {
     e.preventDefault();
     const code = document.getElementById("joinCode").value.trim().toUpperCase();
