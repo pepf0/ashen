@@ -36,6 +36,8 @@ public class Program
 
         var app = builder.Build();
         var database = new Database(dbPath);
+        BalanceLog.Directory = Environment.GetEnvironmentVariable("ASHEN_LOGS")
+            ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? root, "logs");
         var lobbies = new LobbyManager(database);
         var limiter = new RateLimiter();
         _ = lobbies.SweepAsync(app.Lifetime.ApplicationStopping);
@@ -309,6 +311,12 @@ public static class GameSocket
             {
                 int? replace = msg.TryGetProperty("replace", out var r) && r.ValueKind == JsonValueKind.Number ? r.GetInt32() : null;
                 error = lobby?.Buy(conn, msg.GetProperty("slot").GetInt32(), replace);
+                break;
+            }
+            case "buyPity":
+            {
+                int? replace = msg.TryGetProperty("replace", out var r) && r.ValueKind == JsonValueKind.Number ? r.GetInt32() : null;
+                error = lobby?.BuyPity(conn, msg.GetProperty("slot").GetInt32(), replace);
                 break;
             }
             case "buyHp":

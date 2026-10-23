@@ -57,6 +57,7 @@ public class Lobby
     private readonly HashSet<long> replayDone = new();
     private readonly List<string> pendingAnnouncements = new();
     private object? lastGameOver;
+    private BalanceLog? log;
 
     public Lobby(string code, LobbyManager manager, Database? database)
     {
@@ -286,6 +287,8 @@ public class Lobby
         {
             State = LobbyState.Waiting;
             players.Clear();
+            log?.Dispose();
+            log = null;
         }
     }
 
@@ -322,6 +325,14 @@ public class Lobby
                     Connected = m.Connected
                 });
             }
+            log?.Dispose();
+            log = BalanceLog.Open(Code);
+            log.Write("match_start", new
+            {
+                lobby = Code,
+                settings = Settings,
+                players = players.Select(p => new { id = p.Id, name = p.Name })
+            });
             AddSystemChat("The match has started. Good luck!");
             State = LobbyState.Shop;
             _ = Task.Run(RunMatchAsync);
@@ -415,10 +426,70 @@ public class Lobby
             p.Shop.RerollsLeft = Shop.FreeRerolls;
             p.Shop.Locked = false;
             p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng);
+            p.Shop.Pity = round == Shop.PityRound && p.EarlyWeaponlessFights >= 2
+                ? Shop.PityOffer(UnavailableSpecials(p), rng)
+                : new List<ShopSlot>();
             CheckEvents(p, null);
+            log?.Write("snapshot", new
+            {
+                round,
+                player = p.Id,
+                name = p.Name,
+                money = p.Money,
+                lives = p.Lives,
+                maxHp = Math.Round(p.MaxHealth, 2),
+                hpUpgrades = p.HpUpgrades,
+                specialChance = p.SpecialChance,
+                wins = p.Wins,
+                losses = p.Losses,
+                titles = p.Titles,
+                build = BalanceLog.Build(p)
+            });
+            LogRoll(p, 0);
+            if (p.Shop.Pity.Count > 0)
+                log?.Write("pity_offer", new { round, player = p.Id, items = p.Shop.Pity });
         }
         FlushAnnouncements();
         BroadcastState();
+    }
+
+    private void LogRoll(Player p, int reroll) => log?.Write("roll", new
+    {
+        round,
+        player = p.Id,
+        reroll,
+        specialChance = p.SpecialChance,
+        items = p.Shop.Items.Select(i => i.ItemId)
+    });
+
+    private void LogFight(Player a, Player? b, CombatResult result)
+    {
+        log?.Write("fight", new
+        {
+            round,
+            ghost = b is null,
+            fighters = result.Fighters.Select((f, i) => new
+            {
+                player = f.PlayerId,
+                name = f.Name,
+                ghost = f.Ghost,
+                maxHp = f.MaxHp,
+                damageReduction = f.DamageReduction,
+                dodgeChance = f.DodgeChance,
+                items = f.Items,
+                endHp = result.EndHp[i],
+                damageDealt = result.DamageDealt[i],
+                damageTaken = result.DamageTaken[i],
+                earnings = result.Earnings[i],
+                attacks = result.Events.OfType<DamageEvent>().Count(e => e.WeaponAttack && e.Source == i),
+                crits = result.Events.OfType<DamageEvent>().Count(e => e.WeaponAttack && e.Source == i && e.CritMultiplier is not null),
+                dodged = result.Events.OfType<DamageEvent>().Count(e => e.WeaponAttack && e.Target == i && e.Dodged),
+                stunsLanded = result.Events.OfType<StunEvent>().Count(e => e.Source == i && !e.Blocked)
+            }),
+            winner = result.Winner,
+            duration = result.Duration,
+            suddenDeath = result.Duration >= Combat.SuddenDeathStart
+        });
     }
 
     /// <summary>Pairs everyone, simulates all fights and applies the results. Returns the longest fight's duration.</summary>
@@ -429,6 +500,8 @@ public class Lobby
         var alive = AlivePlayers().ToList();
         var (pairs, ghostFor) = MakePairs(alive);
         double longest = 0;
+        if (round <= 2)
+            foreach (var p in alive.Where(p => p.Weapon is null)) p.EarlyWeaponlessFights++;
 
         foreach (var (a, b) in pairs)
         {
@@ -439,6 +512,7 @@ public class Lobby
             ApplyResult(b, result, 1);
             roundFights[a.Id] = (result, 0);
             roundFights[b.Id] = (result, 1);
+            LogFight(a, b, result);
             longest = Math.Max(longest, result.Duration);
         }
         if (ghostFor is not null)
@@ -449,6 +523,7 @@ public class Lobby
             ghostFor.GhostFights++;
             ApplyResult(ghostFor, result, 0);
             roundFights[ghostFor.Id] = (result, 0);
+            LogFight(ghostFor, null, result);
             longest = Math.Max(longest, result.Duration);
         }
 
@@ -550,6 +625,7 @@ public class Lobby
                 && ranked[i].LastFightHpPercent == ranked[i - 1].LastFightHpPercent
                 && ranked[i].LastFightDamageDealt == ranked[i - 1].LastFightDamageDealt;
             ranked[i].Placement = tiedWithPrevious ? ranked[i - 1].Placement : aliveAfter + 1 + i;
+            log?.Write("elimination", new { round, player = ranked[i].Id, placement = ranked[i].Placement, build = BalanceLog.Build(ranked[i]) });
         }
     }
 
@@ -582,6 +658,9 @@ public class Lobby
             .ToList();
         var events = claimedEvents.Select(kv => new { id = kv.Key, by = kv.Value }).ToList();
         lastGameOver = new { type = "gameOver", rounds = round, standings, events };
+        log?.Write("match_end", new { rounds = round, standings, events });
+        log?.Dispose();
+        log = null;
         Broadcast(lastGameOver);
 
         try
@@ -639,42 +718,60 @@ public class Lobby
             if (p.Shop.RerollsLeft <= 0) return "No rerolls left.";
             p.Shop.RerollsLeft--;
             p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng);
+            LogRoll(p, Shop.FreeRerolls - p.Shop.RerollsLeft);
             SendState(p.Id);
             return null;
         }
     }
 
-    public string? Buy(Connection conn, int slot, int? replace)
+    public string? Buy(Connection conn, int slot, int? replace) => BuyFrom(conn, slot, replace, pity: false);
+
+    public string? BuyPity(Connection conn, int slot, int? replace) => BuyFrom(conn, slot, replace, pity: true);
+
+    /// <summary>Buys from the shop roll (locks rerolls) or from the pity offer (a third of the price, no lock).</summary>
+    private string? BuyFrom(Connection conn, int slot, int? replace, bool pity)
     {
         lock (sync)
         {
             var p = ShopPlayer(conn, out var error);
             if (p is null) return error;
-            if (slot < 0 || slot >= p.Shop.Items.Count) return "Invalid shop slot.";
-            var shopSlot = p.Shop.Items[slot];
+            var slots = pity ? p.Shop.Pity : p.Shop.Items;
+            if (slot < 0 || slot >= slots.Count) return "Invalid shop slot.";
+            var shopSlot = slots[slot];
             if (shopSlot.Bought) return "Already bought.";
             var item = GameData.Items[shopSlot.ItemId];
-            if (p.Money < item.Price) return "Not enough money.";
-            if (item.IsSpecial && Settings.SpecialMode == SpecialMode.PerLobby && lobbySpecials.Contains(item.Id))
+            int price = shopSlot.Price ?? item.Price;
+            if (p.Money < price) return "Not enough money.";
+            if (item.IsSpecial && p.ObtainedSpecials.Contains(item.Id))
+                return "You already got this special item.";
+            if (item.IsSpecial && UnavailableSpecials(p).Contains(item.Id))
             {
                 shopSlot.Bought = true;
                 SendState(p.Id);
                 return "Someone else already got this special item.";
             }
 
+            int moneyBefore = p.Money;
+            string kind;
+            string? replaced = null;
             var owned = p.FindOwned(item.Id);
             if (owned is not null)
             {
                 if (owned.Level >= OwnedItem.MaxLevel) return "That item is already at max level.";
                 owned.Level++;
+                kind = "level_up";
             }
             else if (item.Type == ItemType.Weapon)
             {
+                replaced = p.Weapon?.Id;
                 p.Weapon = new OwnedItem(item);
+                kind = replaced is null ? "new" : "replace";
             }
             else if (item.Type == ItemType.Shirt)
             {
+                replaced = p.Shirt?.Id;
                 p.Shirt = new OwnedItem(item);
+                kind = replaced is null ? "new" : "replace";
             }
             else
             {
@@ -683,18 +780,35 @@ public class Lobby
                 {
                     if (replace is not int r || r < 0 || r >= p.Dynamics.Length) return "Choose an item to replace.";
                     free = r;
+                    replaced = p.Dynamics[r]?.Id;
                 }
                 p.Dynamics[free] = new OwnedItem(item);
+                kind = replaced is null ? "new" : "replace";
             }
 
-            p.Money -= item.Price;
+            p.Money -= price;
             shopSlot.Bought = true;
-            p.Shop.Locked = true;
+            if (!pity) p.Shop.Locked = true;
             if (item.IsSpecial)
             {
                 p.ObtainedSpecials.Add(item.Id);
                 lobbySpecials.Add(item.Id);
             }
+            log?.Write("purchase", new
+            {
+                round,
+                player = p.Id,
+                item = item.Id,
+                price,
+                pity,
+                kind,
+                replaced,
+                level = p.FindOwned(item.Id)?.Level ?? 1,
+                moneyBefore,
+                moneyAfter = p.Money,
+                rerollsUsed = Shop.FreeRerolls - p.Shop.RerollsLeft,
+                shopSecondsLeft = Math.Round(Math.Max(0, (phaseEndsAt - DateTime.UtcNow).TotalSeconds), 1)
+            });
             CheckEvents(p, null);
             FlushAnnouncements();
             SendState(p.Id);
@@ -713,6 +827,7 @@ public class Lobby
             p.Money -= cost;
             p.HpUpgrades++;
             p.MaxHealth *= Settings.HpUpgradeMult;
+            log?.Write("hp_upgrade", new { round, player = p.Id, cost, upgrades = p.HpUpgrades, maxHp = Math.Round(p.MaxHealth, 2) });
             SendState(p.Id);
             return null;
         }
@@ -764,6 +879,7 @@ public class Lobby
             if (!met) continue;
 
             claimedEvents[ev.Id] = p.Id;
+            log?.Write("event_claimed", new { round, player = p.Id, eventId = ev.Id });
             p.Money += ev.RewardMoney ?? 0;
             p.BonusEffects.AddRange(ev.RewardEffects ?? new List<string>());
             p.Titles.Add(ev.Name);
@@ -850,7 +966,7 @@ public class Lobby
                     weapon = p.Weapon is { } w ? new ItemView(w.Id, w.Level, "weapon") : null,
                     shirt = p.Shirt is { } s ? new ItemView(s.Id, s.Level, "shirt") : null,
                     dynamics = p.Dynamics.Select((d, i) => d is null ? null : new ItemView(d.Id, d.Level, $"dynamic{i}")),
-                    shop = new { items = p.Shop.Items, rerollsLeft = p.Shop.RerollsLeft, locked = p.Shop.Locked },
+                    shop = new { items = p.Shop.Items, pity = p.Shop.Pity, rerollsLeft = p.Shop.RerollsLeft, locked = p.Shop.Locked },
                     stats = Combat.PreviewStats(p.ToLoadout()),
                     titles = p.Titles,
                     wins = p.Wins,

@@ -65,3 +65,39 @@ public class ShopTests
             Assert.DoesNotContain(Shop.Roll(p, new HashSet<string>(), rng), s => s.ItemId == "generic.sword");
     }
 }
+
+public class PityTests
+{
+    public PityTests() => TestHelpers.Init();
+
+    [Fact]
+    public void PityOfferIsSpecialWeaponPlusItsPackBuffAtAThird()
+    {
+        var rng = new Random(5);
+        for (int i = 0; i < 50; i++)
+        {
+            var offer = Shop.PityOffer(new HashSet<string>(), rng);
+            Assert.Equal(2, offer.Count);
+            var weapon = GameData.Items[offer[0].ItemId];
+            var buff = GameData.Items[offer[1].ItemId];
+            Assert.Equal(ItemType.Weapon, weapon.Type);
+            Assert.True(weapon.IsSpecial);
+            Assert.Equal(ItemType.Buff, buff.Type);
+            Assert.Equal(weapon.Pack, buff.Pack);
+            Assert.Equal((int)Math.Ceiling(weapon.Price / 3.0), offer[0].Price);
+            Assert.Equal((int)Math.Ceiling(buff.Price / 3.0), offer[1].Price);
+        }
+    }
+
+    [Fact]
+    public void PityOfferSkipsUnavailableSpecials()
+    {
+        var weapons = GameData.Specials.Where(i => i.Type == ItemType.Weapon).Select(i => i.Id).ToList();
+        var blocked = weapons.Where(id => id != "pepf.guitar").Append("pepf.pick").ToHashSet();
+        var offer = Shop.PityOffer(blocked, new Random(1));
+        Assert.Single(offer);
+        Assert.Equal("pepf.guitar", offer[0].ItemId);
+
+        Assert.Empty(Shop.PityOffer(weapons.ToHashSet(), new Random(1)));
+    }
+}

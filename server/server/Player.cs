@@ -30,6 +30,8 @@ public class Player
     /// <summary>How often this player fought each opponent (for rotating pairings).</summary>
     public Dictionary<long, int> TimesFought { get; } = new();
     public int GhostFights { get; set; }
+    /// <summary>Fights in rounds 1 and 2 fought without a weapon (2 = gets the pity offer in shop 3).</summary>
+    public int EarlyWeaponlessFights { get; set; }
     /// <summary>Set after a fight, used to rank players eliminated in the same round.</summary>
     public double LastFightHpPercent { get; set; }
     public double LastFightDamageDealt { get; set; }

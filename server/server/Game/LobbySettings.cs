@@ -17,7 +17,7 @@ public class LobbySettings
     public int Income { get; set; } = 20;
     public int WinBonus { get; set; } = 10;
     public SpecialMode SpecialMode { get; set; } = SpecialMode.PerPlayer;
-    public double StartHp { get; set; } = 250;
+    public double StartHp { get; set; } = 100;
     public double HpUpgradeMult { get; set; } = 1.2;
     public int HpUpgradeCost { get; set; } = 10;
     public int HpUpgradeCostIncrease { get; set; } = 5;
@@ -32,7 +32,7 @@ public class LobbySettings
         Income = Math.Clamp(Income, 0, 1000),
         WinBonus = Math.Clamp(WinBonus, 0, 1000),
         SpecialMode = SpecialMode,
-        StartHp = Math.Clamp(double.IsFinite(StartHp) ? StartHp : 1000, 1, 1_000_000),
+        StartHp = Math.Clamp(double.IsFinite(StartHp) ? StartHp : 100, 1, 1_000_000),
         HpUpgradeMult = Math.Clamp(double.IsFinite(HpUpgradeMult) ? HpUpgradeMult : 1.2, 1, 10),
         HpUpgradeCost = Math.Clamp(HpUpgradeCost, 0, 10000),
         HpUpgradeCostIncrease = Math.Clamp(HpUpgradeCostIncrease, 0, 10000)

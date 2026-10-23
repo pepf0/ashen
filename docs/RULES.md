@@ -23,7 +23,7 @@ lobby host.
   | Income per round | 20 $ |
   | Win bonus | 10 $ |
   | Special items unique | per player (or per lobby) |
-  | Starting HP | 250 |
+  | Starting HP | 100 |
   | HP upgrade multiplier | ×1.2 |
   | HP upgrade base cost | 10 $ |
   | HP upgrade cost increase | +5 $ per purchase |
@@ -104,6 +104,17 @@ A match is a loop of **Shop → Combat → Results** until one player is left.
 - No selling. Buying a different weapon/shirt replaces the old one (asks for
   confirmation; levels are lost). With all 4 dynamic slots full you pick a
   dynamic to replace.
+
+### Weaponless bonus
+
+- If you fought **both** round 1 and round 2 without a weapon, shop 3 also offers
+  a random **special weapon and its pack's buff** (e.g. Pepf's Guitar + Pepf's
+  Pick) at a third of their price (rounded up), as two separate offers.
+- Buying them doesn't lock the roll. They count as obtained specials (and can
+  claim Lucky Find). The offer disappears after shop 3.
+- Only specials you could still get are offered (per-lobby mode respected). If
+  no special weapon is left there is no offer; if the buff is gone, only the
+  weapon is offered.
 
 ### HP upgrades
 

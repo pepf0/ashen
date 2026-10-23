@@ -30,12 +30,13 @@ export function createGameView(app) {
         return [you.weapon, you.shirt, ...you.dynamics].find(x => x && x.id === id);
     }
 
-    async function buy(index) {
+    /** action is "buy" for the shop roll or "buyPity" for the weaponless offer. */
+    async function buy(index, action = "buy") {
         const you = state.you;
-        const slot = you.shop.items[index];
+        const slot = (action === "buyPity" ? you.shop.pity : you.shop.items)[index];
         const it = item(slot.itemId);
         const mine = owned(you, it.id);
-        if (mine) return app.socket.send("buy", { slot: index });
+        if (mine) return app.socket.send(action, { slot: index });
 
         if (it.type === "weapon" || it.type === "shirt") {
             const current = it.type === "weapon" ? you.weapon : you.shirt;
@@ -45,7 +46,7 @@ export function createGameView(app) {
                     [{ label: "Cancel", value: false }, { label: "Replace", value: true, kind: "btn-primary" }]);
                 if (!ok) return;
             }
-            return app.socket.send("buy", { slot: index });
+            return app.socket.send(action, { slot: index });
         }
 
         if (you.dynamics.every(d => d)) {
@@ -55,14 +56,32 @@ export function createGameView(app) {
                         itemCard(d.id, { level: d.level }), el("span", { text: item(d.id).name })))),
                 [{ label: "Cancel", value: null }]);
             if (choice === null || choice === undefined) return;
-            return app.socket.send("buy", { slot: index, replace: choice });
+            return app.socket.send(action, { slot: index, replace: choice });
         }
-        app.socket.send("buy", { slot: index });
+        app.socket.send(action, { slot: index });
+    }
+
+    function renderPity(you, open) {
+        const panel = document.getElementById("pityPanel");
+        const offer = you.shop.pity ?? [];
+        panel.hidden = offer.length === 0;
+        if (!offer.length) return;
+        document.getElementById("pityGrid").replaceChildren(...offer.map((slot, i) => {
+            const it = item(slot.itemId);
+            const canBuy = open && !slot.bought && you.money >= slot.price;
+            return el("div", { class: "shop-item special" + (slot.bought ? " bought" : "") },
+                itemCard(it.id, { size: "large" }),
+                el("div", { class: "shop-name", text: it.name }),
+                el("div", { class: "shop-type muted small" }, el("s", { text: `${it.price}$` }), ` Special ${it.type}`),
+                el("button", { class: "btn btn-buy", disabled: !canBuy, onclick: () => buy(i, "buyPity") },
+                    el("span", { text: slot.bought ? "Bought" : "Buy" }), slot.bought ? null : el("b", { text: `${slot.price}$` })));
+        }));
     }
 
     function renderShop(you) {
         const grid = document.getElementById("shopGrid");
         const open = state.phase === "shop" && !you.eliminated;
+        renderPity(you, open);
         grid.replaceChildren(...you.shop.items.map((slot, i) => {
             const it = item(slot.itemId);
             const mine = owned(you, it.id);
