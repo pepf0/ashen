@@ -42,6 +42,8 @@ def server_blocks(text):
                     break
             i += 1
 
+if not TEST_MODE and shutil.which("nginx") is None:
+    sys.exit("nginx isn't installed on this machine. Run this on the VPS that runs nginx for pepf.net (ssh into it first).")
 if not TEST_MODE:
     check = subprocess.run(["nginx", "-t"], capture_output=True, text=True)
     if check.returncode != 0:
