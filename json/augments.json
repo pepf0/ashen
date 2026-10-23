@@ -26,11 +26,11 @@
   { "id": "concussion", "name": "Concussion", "tier": "gold", "mods": { "stun_duration_mult": 1.5, "opening_stun": 0.5 }, "description": "Your stuns last 50% longer, and every fight starts by stunning the enemy for 0.5s" },
 
   { "id": "double_strike", "name": "Double Strike", "tier": "prismatic", "mods": { "double_strike": 0.35 }, "description": "35% chance for every weapon attack to strike twice" },
-  { "id": "second_wind", "name": "Second Wind", "tier": "prismatic", "mods": { "second_wind": 1 }, "description": "Once per fight, survive a lethal hit with 1 HP" },
+  { "id": "second_wind", "name": "Second Wind", "tier": "prismatic", "mods": { "second_wind": 1, "second_wind_heal": 0.3 }, "description": "Once per fight, survive a lethal hit and heal back to 30% of your max HP" },
   { "id": "extra_pockets", "name": "Extra Pockets", "tier": "prismatic", "mods": { "dynamic_slots_add": 2 }, "description": "+2 slots for buffs, charms and passives" },
   { "id": "overcharged", "name": "Overcharged", "tier": "prismatic", "mods": { "ult_charge_mult": 2, "skill_cooldown_mult": 0.8 }, "description": "Ultimate charges twice as fast, skill cooldowns x0.8" },
   { "id": "golden_touch", "name": "Golden Touch", "tier": "prismatic", "mods": { "income_add": 15, "interest_cap_add": 5 }, "description": "+15$ income every round and interest cap +5$" },
   { "id": "juggernaut", "name": "Juggernaut", "tier": "prismatic", "mods": { "max_hp_mult": 1.4, "damage_reduction_add": 0.1 }, "description": "+40% max HP and +10% damage reduction" },
   { "id": "berserk_blood", "name": "Berserk Blood", "tier": "prismatic", "mods": { "weapon_damage_mult": 1.5, "weapon_cooldown_mult": 0.85, "max_hp_mult": 0.85 }, "description": "+50% weapon damage, weapon cooldown x0.85, but -15% max HP" },
-  { "id": "phoenix", "name": "Phoenix", "tier": "prismatic", "mods": { "life_now": 1, "second_wind": 1 }, "description": "+1 life right now, and once per fight survive a lethal hit with 1 HP" }
+  { "id": "phoenix", "name": "Phoenix", "tier": "prismatic", "mods": { "life_now": 2 }, "description": "+2 lives right now" }
 ]

@@ -686,7 +686,7 @@ public sealed class Fight
         {
             defender.SecondWindUsed = true;
             damage += defender.Health - 1;
-            defender.Health = 1;
+            defender.Health = Math.Max(1, defender.MaxHealth * defender.Aug.Get("second_wind_heal"));
             events.Add(new AbilityEvent { Source = defender.Index, Target = defender.Index, Ability = "second_wind", Tick = tick, T = Math.Round(Time, 2), Hp = Hp() });
         }
         attacker.DamageDealt += damage;
