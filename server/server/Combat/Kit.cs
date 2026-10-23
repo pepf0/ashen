@@ -50,3 +50,26 @@ public class RoundModifier
     /// <summary>Share of rounds (from round 2) without any modifier.</summary>
     public const double CalmChance = 0.3;
 }
+
+/// <summary>A match-long rule rolled at match start (mutators.json). Effects are implemented by id.</summary>
+public class Mutator
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+
+    public static IReadOnlyList<Mutator> All => GameData.Mutators;
+    public const int PerMatch = 2;
+}
+
+/// <summary>Where a single fight takes place (arenas.json). Effects are implemented by id.</summary>
+public class Arena
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+
+    public static IReadOnlyList<Arena> All => GameData.Arenas;
+    /// <summary>Share of fights without an arena.</summary>
+    public const double PlainChance = 0.4;
+}

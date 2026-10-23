@@ -35,6 +35,19 @@ public class Player
     public int LossStreak { get; set; }
     /// <summary>What the player got when the current shop opened (shown in the shop).</summary>
     public Dictionary<string, int> LastIncome { get; set; } = new();
+    public List<string> Augments { get; } = new();
+    /// <summary>Augments offered in this shop (rounds 3/6/9), or null.</summary>
+    public List<string>? AugmentOffer { get; set; }
+    /// <summary>Mystery event offered in this shop, or null.</summary>
+    public MysteryOffer? Mystery { get; set; }
+    public int WinStreak { get; set; }
+    /// <summary>Set by the Library mystery: the next kit change is free.</summary>
+    public bool FreeKitSwap { get; set; }
+    public const int BountyStreak = 3;
+    public const int BountyPerWin = 10;
+    /// <summary>Money paid to whoever ends this player's win streak (3+ wins).</summary>
+    public int Bounty => WinStreak >= BountyStreak ? BountyPerWin * WinStreak : 0;
+    public Dictionary<string, double> AugmentMods => Augment.Combine(Augments);
     /// <summary>Fights in rounds 1 and 2 fought without a weapon (2 = gets the pity offer in shop 3).</summary>
     public int EarlyWeaponlessFights { get; set; }
     /// <summary>Set after a fight, used to rank players eliminated in the same round.</summary>
@@ -54,11 +67,11 @@ public class Player
     /// <summary>Base 1%, times every special_chance buff the player owns (different effects multiply).</summary>
     public double SpecialChance => SpecialChanceWith(null);
 
-    public double SpecialChanceWith(string? modifier)
+    public double SpecialChanceWith(string? modifier, double extraMult = 1)
     {
         {
             if (modifier == "unlucky") return 0;
-            double chance = BaseSpecialChance * (modifier == "lucky_day" ? 3 : 1);
+            double chance = BaseSpecialChance * (modifier == "lucky_day" ? 3 : 1) * extraMult * AugmentMods.Get("special_chance_mult");
             foreach (var item in AllItems())
                 foreach (var effect in item.Item.Effects.Where(e => e.Type == EffectType.Buff && e.Target == "special_chance"))
                 {
@@ -81,7 +94,9 @@ public class Player
         Dynamics = Dynamics.Select(d => d?.Clone()).ToArray(),
         BonusEffects = BonusEffects.ToList(),
         Kit = Kit,
-        Bot = ghost
+        Bot = ghost,
+        AugmentMods = AugmentMods,
+        AugmentIds = Augments.ToList()
     };
 
     public List<ItemView> BuildView()
@@ -93,4 +108,24 @@ public class Player
             if (Dynamics[i] is { } d) list.Add(new ItemView(d.Id, d.Level, $"dynamic{i}"));
         return list;
     }
+}
+
+/// <summary>A one-off choice next to the shop (about 25% of shops).</summary>
+public class MysteryOffer
+{
+    public string Kind { get; set; } = "";
+    /// <summary>Shrine: the specials to choose from.</summary>
+    public List<string> Choices { get; set; } = new();
+    public bool Used { get; set; }
+    /// <summary>Outcome text after using it (e.g. the gamble result).</summary>
+    public string? Result { get; set; }
+
+    public static readonly string[] Kinds = { "chest", "shrine", "gamble", "blacksmith", "fountain", "library" };
+    public const double Chance = 0.25;
+    public const int ChestCost = 25;
+    public const double ChestSpecialChance = 0.1;
+    public const int BlacksmithCost = 15;
+    public const int BlacksmithSpecialMaxLevel = 3;
+    public const int FountainCost = 40;
+    public const int LibraryMoney = 10;
 }

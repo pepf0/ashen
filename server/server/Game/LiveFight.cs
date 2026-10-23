@@ -18,6 +18,7 @@ public class LiveFight
     {
         id = Id,
         names = new[] { Fight.Info(0).Name, Fight.Info(1).Name },
+        arena = Fight.Arena,
         ended = Ended,
         winner = Fight.Result?.Winner
     };

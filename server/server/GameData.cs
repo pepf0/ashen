@@ -11,6 +11,9 @@ public static class GameData
     public static IReadOnlyList<Item> Specials { get; private set; } = new List<Item>();
     public static IReadOnlyDictionary<string, Kit> Kits { get; private set; } = new Dictionary<string, Kit>();
     public static IReadOnlyList<RoundModifier> Modifiers { get; private set; } = new List<RoundModifier>();
+    public static IReadOnlyList<Augment> Augments { get; private set; } = new List<Augment>();
+    public static IReadOnlyList<Mutator> Mutators { get; private set; } = new List<Mutator>();
+    public static IReadOnlyList<Arena> Arenas { get; private set; } = new List<Arena>();
 
     private static readonly object loadLock = new();
     private static bool loaded;
@@ -53,6 +56,9 @@ public static class GameData
             var events = ItemLoader.EventsFromJson(File.ReadAllText(Path.Combine(json, "events.json")));
             var kits = ItemLoader.ListFromJson<Kit>(File.ReadAllText(Path.Combine(json, "kits.json")), "kits.json");
             var modifiers = ItemLoader.ListFromJson<RoundModifier>(File.ReadAllText(Path.Combine(json, "modifiers.json")), "modifiers.json");
+            var augments = ItemLoader.ListFromJson<Augment>(File.ReadAllText(Path.Combine(json, "augments.json")), "augments.json");
+            var mutators = ItemLoader.ListFromJson<Mutator>(File.ReadAllText(Path.Combine(json, "mutators.json")), "mutators.json");
+            var arenas = ItemLoader.ListFromJson<Arena>(File.ReadAllText(Path.Combine(json, "arenas.json")), "arenas.json");
             foreach (var kit in kits)
                 if (kit.Abilities.Count != 4 || kit.Abilities.Count(a => a.Ultimate) != 1 || !kit.Abilities[3].Ultimate)
                     throw new InvalidDataException($"Kit {kit.Id}: needs 3 skills followed by 1 ultimate.");
@@ -83,6 +89,9 @@ public static class GameData
             Specials = items.Where(i => i.IsSpecial).ToList();
             Kits = kits.ToDictionary(k => k.Id);
             Modifiers = modifiers;
+            Augments = augments;
+            Mutators = mutators;
+            Arenas = arenas;
             loaded = true;
         }
     }

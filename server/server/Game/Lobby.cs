@@ -15,6 +15,8 @@ public class LobbyMember
     public Connection? Connection { get; set; }
     public bool Connected => Connection is not null;
     public string Kit { get; set; } = Ashen.Kit.Default;
+    /// <summary>Best kit mastery title (e.g. "Duelist Adept"), from the database.</summary>
+    public string? Mastery { get; set; }
 }
 
 public record ChatMessage(long UserId, string Name, string Text, long At);
@@ -52,12 +54,19 @@ public class Lobby
     private readonly List<ChatMessage> chat = new();
     private readonly Dictionary<long, DateTime> lastChat = new();
     private int round;
+    private int startingLives;
     private DateTime phaseEndsAt;
     private DateTime matchStartedAt;
     private DateTime fightsStartAt;
     private readonly List<LiveFight> fights = new();
     private int nextFightId;
     private RoundModifier? modifier;
+    private readonly List<Mutator> mutators = new();
+
+    private bool Mut(string id) => mutators.Any(m => m.Id == id);
+    private int MaxLevel => Mut("master_smith") ? 7 : OwnedItem.MaxLevel;
+    private int KitSwapCost => Mut("free_kits") ? 0 : Kit.SwapCost;
+    private int[] AugmentRounds => Mut("augment_feast") ? new[] { 3, 6, 9, 12 } : Augment.DefaultRounds;
     private readonly List<string> pendingAnnouncements = new();
     private object? lastGameOver;
     private BalanceLog? log;
@@ -112,7 +121,7 @@ public class Lobby
             }
             if (InMatch) return "This match is already running.";
             if (Members.Count >= MaxPlayers) return "This lobby is full.";
-            var member = new LobbyMember { UserId = conn.User.Id, Name = conn.User.DisplayName };
+            var member = new LobbyMember { UserId = conn.User.Id, Name = conn.User.DisplayName, Mastery = database?.MasteryTitle(conn.User.Id) };
             Members.Add(member);
             if (Members.Count == 1) HostId = member.UserId;
             Attach(member, conn);
@@ -317,28 +326,41 @@ public class Lobby
             lastGameOver = null;
             round = 0;
             matchStartedAt = DateTime.UtcNow;
+            mutators.Clear();
+            mutators.AddRange(Mutator.All.OrderBy(_ => rng.Next()).Take(Mutator.PerMatch));
+            int lives = Settings.Lives + (Mut("long_haul") ? 2 : 0) - (Mut("hardcore") ? 2 : 0);
+            if (Mut("hardcore")) lives = Math.Max(Math.Min(2, Settings.Lives), lives);
             foreach (var m in Members)
             {
-                players.Add(new Player
+                var player = new Player
                 {
                     Id = m.UserId,
                     Name = m.Name,
-                    Money = Settings.StartMoney,
-                    Lives = Settings.Lives,
-                    MaxHealth = Settings.StartHp,
+                    Money = Settings.StartMoney + (Mut("rich_start") ? 50 : 0),
+                    Lives = Math.Max(1, lives),
+                    MaxHealth = Settings.StartHp * (Mut("fragile_start") ? 0.6 : 1),
                     Connected = m.Connected,
                     Kit = m.Kit
-                });
+                };
+                if (Mut("armed_start"))
+                {
+                    var weapons = GameData.Generics.Where(i => i.Type == ItemType.Weapon).ToList();
+                    player.Weapon = new OwnedItem(weapons[rng.Next(weapons.Count)]);
+                }
+                players.Add(player);
             }
+            startingLives = Math.Max(1, lives);
             log?.Dispose();
             log = BalanceLog.Open(Code);
             log.Write("match_start", new
             {
                 lobby = Code,
                 settings = Settings,
-                players = players.Select(p => new { id = p.Id, name = p.Name })
+                mutators = mutators.Select(m => m.Id),
+                players = players.Select(p => new { id = p.Id, name = p.Name, kit = p.Kit })
             });
             AddSystemChat("The match has started. Good luck!");
+            AddSystemChat("Mutators this match: " + string.Join(", ", mutators.Select(m => $"{m.Name} ({m.Description})")));
             State = LobbyState.Shop;
             _ = Task.Run(RunMatchAsync);
             return null;
@@ -428,12 +450,31 @@ public class Lobby
     private ISet<string> UnavailableSpecials(Player p) =>
         Settings.SpecialMode == SpecialMode.PerLobby ? lobbySpecials : p.ObtainedSpecials;
 
-    private FightRules Rules => new() { Modifier = modifier?.Id };
+    private FightRules Rules => new()
+    {
+        Modifier = modifier?.Id,
+        DamageMult = Mut("double_trouble") && round % 3 == 0 ? 2 : 1,
+        OvertimeStart = Mut("quick_death") ? 20 : Combat.OvertimeStart,
+        SuddenDeathStart = Mut("quick_death") ? 40 : Combat.SuddenDeathStart
+    };
+
+    private ShopRollOptions RollOptions(Player p) => new()
+    {
+        Modifier = modifier?.Id,
+        Slots = Mut("big_shops") ? 8 : Shop.Slots,
+        MaxLevel = MaxLevel,
+        NoShirts = Mut("no_shirts"),
+        SpecialMult = Mut("special_frenzy") ? 2 : 1,
+        Discount = Math.Clamp(p.AugmentMods.Get("shop_discount"), 0, 0.9)
+    };
+
+    private string? RollArena() =>
+        Mut("arena_masters") || rng.NextDouble() >= Arena.PlainChance ? Arena.All[rng.Next(Arena.All.Count)].Id : null;
 
     /// <summary>From round 2, 70% of rounds get a random modifier.</summary>
     private void RollModifier()
     {
-        modifier = round >= 2 && rng.NextDouble() >= RoundModifier.CalmChance && RoundModifier.All.Count > 0
+        modifier = (Mut("chaos") || (round >= 2 && rng.NextDouble() >= RoundModifier.CalmChance)) && RoundModifier.All.Count > 0
             ? RoundModifier.All[rng.Next(RoundModifier.All.Count)]
             : null;
         if (modifier is not null) AddSystemChat($"Round {round}: {modifier.Name}. {modifier.Description}.");
@@ -445,8 +486,10 @@ public class Lobby
         var income = new Dictionary<string, int>();
         if (round > 1)
         {
-            income["interest"] = Math.Min(MaxInterest, p.Money / InterestPer);
-            income["income"] = Settings.Income * (modifier?.Id == "gold_rush" ? 2 : 1);
+            var aug = p.AugmentMods;
+            int cap = (Mut("big_interest") ? 10 : MaxInterest) + (int)aug.Get("interest_cap_add");
+            income["interest"] = Math.Min(cap, p.Money / InterestPer);
+            income["income"] = (Settings.Income + (int)aug.Get("income_add")) * (modifier?.Id == "gold_rush" ? 2 : 1);
             if (p.LossStreak >= 2) income["lossStreak"] = 10 + 5 * (p.LossStreak - 2);
         }
         p.Money += income.Values.Sum();
@@ -470,10 +513,22 @@ public class Lobby
         {
             PayIncome(p);
             p.Ready = false;
-            p.Shop.RerollsLeft = Shop.FreeRerolls;
+            p.Shop.RerollsLeft = Shop.FreeRerolls + (int)p.AugmentMods.Get("rerolls_add");
             p.Shop.Locked = false;
-            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng, modifier?.Id);
-            p.Shop.Pity = round == Shop.PityRound && p.EarlyWeaponlessFights >= 2
+            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng, RollOptions(p));
+            p.AugmentOffer = null;
+            p.Mystery = null;
+            if (AugmentRounds.Contains(round))
+            {
+                p.AugmentOffer = Augment.RollOffer(p.Augments, rng, Mut("augment_feast") ? 4 : 3);
+                log?.Write("augment_offer", new { round, player = p.Id, augments = p.AugmentOffer });
+            }
+            else if (rng.NextDouble() < MysteryOffer.Chance)
+            {
+                p.Mystery = RollMystery(p);
+                if (p.Mystery is not null) log?.Write("mystery_offer", new { round, player = p.Id, kind = p.Mystery.Kind, choices = p.Mystery.Choices });
+            }
+            p.Shop.Pity = round == Shop.PityRound && p.EarlyWeaponlessFights >= 2 && p.Weapon is null
                 ? Shop.PityOffer(UnavailableSpecials(p), rng)
                 : new List<ShopSlot>();
             CheckEvents(p, null);
@@ -555,6 +610,11 @@ public class Lobby
     {
         State = LobbyState.Combat;
         fightsStartAt = DateTime.UtcNow.AddSeconds(CountdownSeconds);
+        foreach (var p in players)
+        {
+            p.AugmentOffer = null;
+            p.Mystery = null;
+        }
         var alive = AlivePlayers().ToList();
         var (pairs, ghostFor) = MakePairs(alive);
         var rules = Rules;
@@ -567,7 +627,7 @@ public class Lobby
             fights.Add(new LiveFight
             {
                 Id = ++nextFightId,
-                Fight = new Fight(a.ToLoadout(), b.ToLoadout(), rules, rng.Next()),
+                Fight = new Fight(a.ToLoadout(), b.ToLoadout(), rules.WithArena(RollArena()), rng.Next()),
                 Players = new Player?[] { a, b }
             });
         }
@@ -576,7 +636,7 @@ public class Lobby
             var others = alive.Where(p => p != ghostFor).ToList();
             var copy = others[rng.Next(others.Count)];
             ghostFor.GhostFights++;
-            var fight = new Fight(ghostFor.ToLoadout(), copy.ToLoadout(ghost: true), rules, rng.Next());
+            var fight = new Fight(ghostFor.ToLoadout(), copy.ToLoadout(ghost: true), rules.WithArena(RollArena()), rng.Next());
             fight.SetBot(1, true);
             fights.Add(new LiveFight { Id = ++nextFightId, Fight = fight, Players = new Player?[] { ghostFor, null } });
         }
@@ -615,8 +675,12 @@ public class Lobby
             {
                 lf.Ended = true;
                 var result = lf.Fight.Result!;
+                // Bounties are read before anyone's streak resets.
+                var bounties = lf.Players.Select(p => p?.Bounty ?? 0).ToArray();
                 for (int i = 0; i < 2; i++)
-                    if (lf.Players[i] is { } p) ApplyResult(p, result, i);
+                    if (lf.Players[i] is { } p) ApplyResult(p, result, i, lf.Players[1 - i], bounties[1 - i]);
+                for (int i = 0; i < 2; i++)
+                    if (lf.Players[i] is { } p && result.Winner != i) p.WinStreak = 0;
                 LogFight(lf.Players[0]!, lf.Players[1], result);
                 var end = new { type = "fightEnd", fightId = lf.Id, result = ResultSummary(result) };
                 foreach (var m in Watchers(lf)) m.Connection?.Send(end);
@@ -651,6 +715,7 @@ public class Lobby
             you,
             countdown = Math.Max(0, (fightsStartAt - DateTime.UtcNow).TotalSeconds),
             modifier,
+            arena = GameData.Arenas.FirstOrDefault(x => x.Id == lf.Fight.Arena),
             fighters = new[] { lf.Fight.Info(0), lf.Fight.Info(1) },
             buffs = new[] { lf.Fight.ActiveBuffs(0), lf.Fight.ActiveBuffs(1) },
             snap = lf.Fight.Snapshot(),
@@ -659,10 +724,22 @@ public class Lobby
         });
     }
 
-    private void ApplyResult(Player p, CombatResult result, int index)
+    private void ApplyResult(Player p, CombatResult result, int index, Player? opponent, int opponentBounty)
     {
         bool won = result.Winner == index;
         p.Money += result.Earnings[index];
+        if (won)
+        {
+            if (opponent is { } victim && opponentBounty > 0)
+            {
+                p.Money += opponentBounty;
+                log?.Write("bounty", new { round, player = p.Id, from = victim.Id, amount = opponentBounty });
+                AddSystemChat($"{p.Name} collected the {opponentBounty}$ bounty on {victim.Name}!");
+            }
+            p.WinStreak++;
+            if (p.WinStreak == Player.BountyStreak) AddSystemChat($"{p.Name} is on a {p.WinStreak} win streak. Bounty: {p.Bounty}$");
+            p.Money += (int)p.AugmentMods.Get("win_bonus_add") + (result.Arena == "colosseum" ? 5 : 0);
+        }
         p.LastFightHpPercent = result.EndHp[index] / Math.Max(1, result.Fighters[index].MaxHp);
         p.LastFightDamageDealt = result.DamageDealt[index];
         if (won || result.Winner == -1) p.LossStreak = 0;
@@ -779,7 +856,9 @@ public class Lobby
                 money = p.Money,
                 maxHp = Math.Round(p.MaxHealth),
                 titles = p.Titles,
-                build = p.BuildView()
+                build = p.BuildView(),
+                kit = p.Kit,
+                augments = p.Augments
             })
             .ToList();
         var events = claimedEvents.Select(kv => new { id = kv.Key, by = kv.Value }).ToList();
@@ -806,7 +885,9 @@ public class Lobby
                     Wins = p.Wins,
                     Losses = p.Losses,
                     Build = p.BuildView(),
-                    Titles = p.Titles.ToList()
+                    Titles = p.Titles.ToList(),
+                    Kit = p.Kit,
+                    Augments = p.Augments.ToList()
                 }).ToList()
             });
         }
@@ -817,6 +898,7 @@ public class Lobby
 
         State = LobbyState.Waiting;
         players.Clear();
+        foreach (var m in Members) m.Mastery = database?.MasteryTitle(m.UserId);
         foreach (var m in Members.Where(m => !m.Connected).ToList()) RemoveMember(m, $"{m.Name} left.");
         AddSystemChat("The match is over. The host can start a rematch.");
         BroadcastLobby();
@@ -843,8 +925,8 @@ public class Lobby
             if (p.Shop.Locked) return "You already bought from this roll.";
             if (p.Shop.RerollsLeft <= 0) return "No rerolls left.";
             p.Shop.RerollsLeft--;
-            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng, modifier?.Id);
-            LogRoll(p, Shop.FreeRerolls - p.Shop.RerollsLeft);
+            p.Shop.Items = Shop.Roll(p, UnavailableSpecials(p), rng, RollOptions(p));
+            LogRoll(p, p.Shop.RerollsLeft);
             SendState(p.Id);
             return null;
         }
@@ -883,7 +965,7 @@ public class Lobby
             var owned = p.FindOwned(item.Id);
             if (owned is not null)
             {
-                if (owned.Level >= OwnedItem.MaxLevel) return "That item is already at max level.";
+                if (owned.Level >= MaxLevel) return "That item is already at max level.";
                 owned.Level++;
                 kind = "level_up";
             }
@@ -932,7 +1014,7 @@ public class Lobby
                 level = p.FindOwned(item.Id)?.Level ?? 1,
                 moneyBefore,
                 moneyAfter = p.Money,
-                rerollsUsed = Shop.FreeRerolls - p.Shop.RerollsLeft,
+                rerollsLeft = p.Shop.RerollsLeft,
                 shopSecondsLeft = Math.Round(Math.Max(0, (phaseEndsAt - DateTime.UtcNow).TotalSeconds), 1)
             });
             CheckEvents(p, null);
@@ -969,6 +1051,126 @@ public class Lobby
             if (p is null) return error;
             p.Ready = ready;
             BroadcastState();
+            return null;
+        }
+    }
+
+    // ================= augments & mystery events =================
+
+    private MysteryOffer? RollMystery(Player p)
+    {
+        var kinds = MysteryOffer.Kinds.Where(k => k switch
+        {
+            "shrine" => p.Lives > 1 && GameData.Specials.Any(i => !UnavailableSpecials(p).Contains(i.Id)),
+            "fountain" => p.Lives < startingLives,
+            "blacksmith" => p.AllItems().Any(),
+            _ => true
+        }).ToList();
+        if (kinds.Count == 0) return null;
+        var offer = new MysteryOffer { Kind = kinds[rng.Next(kinds.Count)] };
+        if (offer.Kind == "shrine")
+            offer.Choices = GameData.Specials.Where(i => !UnavailableSpecials(p).Contains(i.Id))
+                .OrderBy(_ => rng.Next()).Take(3).Select(i => i.Id).ToList();
+        return offer;
+    }
+
+    public string? PickAugment(Connection conn, int index)
+    {
+        lock (sync)
+        {
+            var p = ShopPlayer(conn, out var error);
+            if (p is null) return error;
+            if (p.AugmentOffer is not { } offer || index < 0 || index >= offer.Count) return "No augment to pick.";
+            var id = offer[index];
+            var aug = GameData.Augments.First(a => a.Id == id);
+            p.Augments.Add(id);
+            p.AugmentOffer = null;
+            p.Money += (int)aug.Mods.Get("money_now");
+            p.Lives += (int)aug.Mods.Get("life_now");
+            int slots = (int)aug.Mods.Get("dynamic_slots_add");
+            if (slots > 0) p.Dynamics = p.Dynamics.Concat(new OwnedItem?[slots]).ToArray();
+            log?.Write("augment_pick", new { round, player = p.Id, augment = id, tier = aug.Tier });
+            SendState(p.Id);
+            return null;
+        }
+    }
+
+    /// <summary>Uses this shop's mystery event. arg: Shrine choice index, Gamble bet, or Blacksmith slot ("weapon", "shirt", "dynamic2").</summary>
+    public string? UseMystery(Connection conn, string? arg)
+    {
+        lock (sync)
+        {
+            var p = ShopPlayer(conn, out var error);
+            if (p is null) return error;
+            if (p.Mystery is not { Used: false } m) return "There is no mystery event.";
+            switch (m.Kind)
+            {
+                case "chest":
+                {
+                    if (p.Money < MysteryOffer.ChestCost) return "Not enough money.";
+                    p.Money -= MysteryOffer.ChestCost;
+                    var specials = GameData.Specials.Where(i => !UnavailableSpecials(p).Contains(i.Id)).ToList();
+                    Item item = specials.Count > 0 && rng.NextDouble() < MysteryOffer.ChestSpecialChance
+                        ? Shop.WeightedPick(specials, rng)!
+                        : GameData.Generics[rng.Next(GameData.Generics.Count)];
+                    p.Shop.Pity.Add(new ShopSlot { ItemId = item.Id, Price = 0, Source = "chest" });
+                    m.Result = $"The chest had {item.Name}. Take it from your bonus offers.";
+                    break;
+                }
+                case "shrine":
+                {
+                    if (!int.TryParse(arg, out int i) || i < 0 || i >= m.Choices.Count) return "Pick a special item.";
+                    if (p.Lives <= 1) return "You need more than 1 life.";
+                    p.Lives--;
+                    p.Shop.Pity.Add(new ShopSlot { ItemId = m.Choices[i], Price = 0, Source = "shrine" });
+                    m.Result = $"You sacrificed a life for {GameData.Items[m.Choices[i]].Name}. Take it from your bonus offers.";
+                    break;
+                }
+                case "gamble":
+                {
+                    if (!int.TryParse(arg, out int bet) || bet <= 0) return "Choose a bet.";
+                    if (bet > p.Money / 2) return "You can bet at most half your money.";
+                    bool won = rng.NextDouble() < 0.5;
+                    p.Money += won ? bet : -bet;
+                    m.Result = won ? $"You won {bet}$!" : $"You lost {bet}$.";
+                    break;
+                }
+                case "blacksmith":
+                {
+                    var item = arg switch
+                    {
+                        "weapon" => p.Weapon,
+                        "shirt" => p.Shirt,
+                        _ when arg?.StartsWith("dynamic") == true && int.TryParse(arg[7..], out int d) && d >= 0 && d < p.Dynamics.Length => p.Dynamics[d],
+                        _ => null
+                    };
+                    if (item is null) return "Pick one of your items.";
+                    int cap = item.Item.IsSpecial ? MysteryOffer.BlacksmithSpecialMaxLevel : MaxLevel;
+                    if (item.Level >= cap) return "That item can't be upgraded further here.";
+                    if (p.Money < MysteryOffer.BlacksmithCost) return "Not enough money.";
+                    p.Money -= MysteryOffer.BlacksmithCost;
+                    item.Level++;
+                    m.Result = $"{item.Item.Name} is now level {item.Level}.";
+                    break;
+                }
+                case "fountain":
+                    if (p.Lives >= startingLives) return "You already have full lives.";
+                    if (p.Money < MysteryOffer.FountainCost) return "Not enough money.";
+                    p.Money -= MysteryOffer.FountainCost;
+                    p.Lives++;
+                    m.Result = "You feel refreshed: +1 life.";
+                    break;
+                case "library":
+                    p.FreeKitSwap = true;
+                    p.Money += MysteryOffer.LibraryMoney;
+                    m.Result = $"+{MysteryOffer.LibraryMoney}$ and your next kit change is free.";
+                    break;
+            }
+            m.Used = true;
+            log?.Write("mystery_use", new { round, player = p.Id, kind = m.Kind, arg, result = m.Result });
+            CheckEvents(p, null);
+            FlushAnnouncements();
+            SendState(p.Id);
             return null;
         }
     }
@@ -1022,9 +1224,11 @@ public class Lobby
         var p = ShopPlayer(conn, out var error);
         if (p is null) return error;
         if (p.Kit == kit) return null;
-        if (p.Money < Kit.SwapCost) return "Not enough money.";
-        p.Money -= Kit.SwapCost;
-        log?.Write("kit_change", new { round, player = p.Id, from = p.Kit, to = kit, cost = Kit.SwapCost });
+        int cost = p.FreeKitSwap ? 0 : KitSwapCost;
+        if (p.Money < cost) return "Not enough money.";
+        p.Money -= cost;
+        p.FreeKitSwap = false;
+        log?.Write("kit_change", new { round, player = p.Id, from = p.Kit, to = kit, cost });
         p.Kit = kit;
         if (MemberOf(p.Id) is { } m) m.Kit = kit;
         SendState(p.Id);
@@ -1093,7 +1297,7 @@ public class Lobby
         state = State,
         inMatch = InMatch,
         settings = Settings,
-        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected, kit = m.Kit })
+        members = Members.Select(m => new { id = m.UserId, name = m.Name, connected = m.Connected, kit = m.Kit, mastery = m.Mastery })
     };
 
     private void BroadcastLobby()
@@ -1130,7 +1334,9 @@ public class Lobby
                 settings = Settings,
                 modifier,
                 fights = State is LobbyState.Combat or LobbyState.Results ? fights.Select(f => f.Summary()) : null,
-                kitSwapCost = Kit.SwapCost,
+                kitSwapCost = p?.FreeKitSwap == true ? 0 : KitSwapCost,
+                mutators,
+                maxLevel = MaxLevel,
                 you = p is null ? null : new
                 {
                     id = p.Id,
@@ -1145,6 +1351,11 @@ public class Lobby
                     kit = p.Kit,
                     income = p.LastIncome,
                     lossStreak = p.LossStreak,
+                    winStreak = p.WinStreak,
+                    augments = p.Augments,
+                    augmentOffer = p.AugmentOffer,
+                    mystery = p.Mystery,
+                    startingLives,
                     canSpectate = State is LobbyState.Combat or LobbyState.Results && (p.Eliminated || FightOf(p.Id) is not { Ended: false }),
                     weapon = p.Weapon is { } w ? new ItemView(w.Id, w.Level, "weapon") : null,
                     shirt = p.Shirt is { } s ? new ItemView(s.Id, s.Level, "shirt") : null,
@@ -1162,7 +1373,9 @@ public class Lobby
                     ready = o.Ready,
                     alive = !o.Eliminated,
                     connected = o.Connected,
-                    titles = o.Titles
+                    titles = o.Titles,
+                    bounty = o.Bounty,
+                    mastery = MemberOf(o.Id)?.Mastery
                 }),
                 events = GameData.Events.Select(e => new
                 {

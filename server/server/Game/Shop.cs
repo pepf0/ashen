@@ -1,11 +1,25 @@
 namespace Ashen;
 
+/// <summary>Match/round rules that change how a shop rolls.</summary>
+public class ShopRollOptions
+{
+    public string? Modifier { get; set; }
+    public int Slots { get; set; } = Shop.Slots;
+    public int MaxLevel { get; set; } = OwnedItem.MaxLevel;
+    public bool NoShirts { get; set; }
+    public double SpecialMult { get; set; } = 1;
+    /// <summary>Price discount (0.1 = 10% off) from augments.</summary>
+    public double Discount { get; set; }
+}
+
 public class ShopSlot
 {
     public string ItemId { get; set; } = "";
     public bool Bought { get; set; }
-    /// <summary>Only set for pity offers, which cost a third of the item's price.</summary>
+    /// <summary>Price if it differs from the item's (pity offers, discounts, free mystery rewards).</summary>
     public int? Price { get; set; }
+    /// <summary>For bonus offers: where it came from ("weaponless", "chest", "shrine").</summary>
+    public string? Source { get; set; }
 }
 
 /// <summary>A player's shop for the current shop phase.</summary>
@@ -30,21 +44,27 @@ public class Shop
     /// (already obtained by this player, or by anyone in "per lobby" mode).
     /// </summary>
     public static List<ShopSlot> Roll(Player player, ISet<string> unavailableSpecials, Random rng, string? modifier = null)
+        => Roll(player, unavailableSpecials, rng, new ShopRollOptions { Modifier = modifier });
+
+    public static List<ShopSlot> Roll(Player player, ISet<string> unavailableSpecials, Random rng, ShopRollOptions options)
     {
+        var modifier = options.Modifier;
         var slots = new List<ShopSlot>();
         var inShop = new HashSet<string>();
-        double specialChance = player.SpecialChanceWith(modifier);
+        double specialChance = player.SpecialChanceWith(modifier, options.SpecialMult);
         var generics = GameData.Generics
-            .Where(g => player.FindOwned(g.Id) is not { Level: >= OwnedItem.MaxLevel })
+            .Where(g => player.FindOwned(g.Id) is not { } owned || owned.Level < options.MaxLevel)
+            .Where(g => !(options.NoShirts && g.Type == ItemType.Shirt))
             .ToList();
 
-        for (int i = 0; i < Slots; i++)
+        for (int i = 0; i < options.Slots; i++)
         {
             Item? pick = null;
             if (rng.NextDouble() < specialChance)
             {
                 var pool = GameData.Specials
                     .Where(s => !unavailableSpecials.Contains(s.Id) && !inShop.Contains(s.Id))
+                    .Where(s => !(options.NoShirts && s.Type == ItemType.Shirt))
                     .ToList();
                 pick = WeightedPick(pool, rng);
             }
@@ -52,8 +72,9 @@ public class Shop
                 pick = generics[rng.Next(generics.Count)];
             if (pick is null) continue;
             if (pick.IsSpecial) inShop.Add(pick.Id);
-            // Clearance: everything 30% off this round.
-            slots.Add(new ShopSlot { ItemId = pick.Id, Price = modifier == "clearance" ? (int)Math.Round(pick.Price * 0.7) : null });
+            // Clearance (30% off this round) and augment discounts.
+            double priceMult = (modifier == "clearance" ? 0.7 : 1) * (1 - options.Discount);
+            slots.Add(new ShopSlot { ItemId = pick.Id, Price = priceMult < 1 ? (int)Math.Round(pick.Price * priceMult) : null });
         }
         return slots;
     }
@@ -64,10 +85,10 @@ public class Shop
         var weapons = GameData.Specials.Where(i => i.Type == ItemType.Weapon && !unavailableSpecials.Contains(i.Id)).ToList();
         if (weapons.Count == 0) return new List<ShopSlot>();
         var weapon = weapons[rng.Next(weapons.Count)];
-        var offer = new List<ShopSlot> { new() { ItemId = weapon.Id, Price = ThirdPrice(weapon) } };
+        var offer = new List<ShopSlot> { new() { ItemId = weapon.Id, Price = ThirdPrice(weapon), Source = "weaponless" } };
         var buff = GameData.Specials.FirstOrDefault(i => i.Pack == weapon.Pack && i.Type == ItemType.Buff);
         if (buff is not null && !unavailableSpecials.Contains(buff.Id))
-            offer.Add(new ShopSlot { ItemId = buff.Id, Price = ThirdPrice(buff) });
+            offer.Add(new ShopSlot { ItemId = buff.Id, Price = ThirdPrice(buff), Source = "weaponless" });
         return offer;
     }
 

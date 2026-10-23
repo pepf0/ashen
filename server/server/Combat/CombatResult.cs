@@ -11,6 +11,7 @@ public class CombatResult
     public double[] DamageDealt { get; set; } = new double[2];
     public double[] DamageTaken { get; set; } = new double[2];
     public int[] Earnings { get; set; } = new int[2];
+    public string? Arena { get; set; }
 }
 
 public class FighterInfo
@@ -22,6 +23,7 @@ public class FighterInfo
     public double DamageReduction { get; set; }
     public double DodgeChance { get; set; }
     public string? Kit { get; set; }
+    public List<string> Augments { get; set; } = new();
     public List<ItemView> Items { get; set; } = new();
     /// <summary>Buffs active for the whole fight (static effects), as they are at the start.</summary>
     public List<BuffEvent> StartBuffs { get; set; } = new();

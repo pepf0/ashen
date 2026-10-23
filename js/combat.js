@@ -1,12 +1,12 @@
 // Live fight view. The server runs the fight in real time and streams ticks; Q/W/E/R send abilities.
 import { data, el, item, itemCard, abilityById } from "./data.js";
 import { formatTime } from "./ui.js";
+import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
 
 const STAT_NAMES = {
     damage: "Damage", cooldown: "Cooldown", crit_chance: "Crit chance", crit_damage: "Crit damage",
     damage_reduction: "Damage reduction", dodge_chance: "Dodge", hit_condition: "Hits needed"
 };
-const KEYS = ["q", "w", "e", "r"];
 
 function targetName(id) {
     if (data.items[id]) return data.items[id].name;
@@ -41,7 +41,7 @@ export function createCombatView(app) {
             class: "ab" + (a.ultimate ? " ult" : "") + (mine ? "" : " small"),
             title: `${a.name}: ${a.description}`,
             onclick: mine ? () => app.socket.send("ability", { slot }) : undefined
-        }, sweep, el("span", { class: "ab-key", text: a.key.toUpperCase() }), el("span", { class: "ab-name", text: a.name }), label);
+        }, sweep, el("span", { class: "ab-key", text: mine ? keyLabelOf(SKILL_ACTIONS[slot]) : a.key.toUpperCase() }), el("span", { class: "ab-name", text: a.name }), label);
         return { btn, sweep, label, ability: a };
     }
 
@@ -118,7 +118,8 @@ export function createCombatView(app) {
         fight.panel = i => fight.panels[fight.sideOf(i)];
         document.getElementById("cRound").textContent = msg.you == null ? `Round ${msg.round} · spectating` : `Round ${msg.round}`;
         const mod = document.getElementById("cModifier");
-        mod.textContent = msg.modifier ? `${msg.modifier.name}: ${msg.modifier.description}` : "";
+        mod.textContent = [msg.modifier ? `${msg.modifier.name}: ${msg.modifier.description}` : null,
+            msg.arena ? `Arena: ${msg.arena.name} (${msg.arena.description})` : null].filter(Boolean).join("  ·  ");
         mod.className = "arena-modifier " + (msg.modifier ? (msg.modifier.positive ? "good" : "bad") : "");
         document.getElementById("resultScreen").hidden = true;
         document.getElementById("spectatorBar").hidden = msg.you != null;
@@ -166,7 +167,8 @@ export function createCombatView(app) {
                 else if (ev.parried) float(target, "Parried!", "blocked");
                 else if (ev.missed) float(target, "Miss", "dodge");
                 else if (ev.dodged) float(target, "Dodge", "dodge");
-                else if (ev.reflected) float(target, `Reflect ${Math.round(ev.damage * 10) / 10}`, "smash");
+                else if (ev.reflected) float(target, `${ev.abilitySource === "thorns" ? "Thorns" : "Reflect"} ${Math.round(ev.damage * 10) / 10}`, "smash");
+                else if (ev.abilitySource === "lightning") { float(target, `Lightning ${Math.round(ev.damage)}`, "stun"); shake(target); }
                 else if (ev.abilitySource === "headshot") { float(target, `Headshot ${Math.round(ev.damage)}`, "smash"); shake(target); }
                 else if (ev.effectSource) { float(target, `Smash ${Math.round(ev.damage)}`, "smash"); shake(target); }
                 else if (ev.critMultiplier) { float(target, `${Math.round(ev.damage * 10) / 10}!`, "crit"); shake(target); }
@@ -188,6 +190,7 @@ export function createCombatView(app) {
                 float(source, `+${Math.round(ev.amount * 10) / 10}`, "heal");
                 break;
             case "ability": {
+                if (ev.ability === "second_wind") { float(source, "Second Wind!", "ult"); break; }
                 const a = abilityById(ev.ability);
                 float(source, a?.name ?? ev.ability, a?.ultimate ? "ult" : "ability");
                 break;
@@ -250,7 +253,7 @@ export function createCombatView(app) {
             for (const m of s.mods) {
                 const a = abilityById(m.id);
                 items.push(el("li", { class: m.debuff ? "debuff" : "ability-buff" },
-                    el("span", { class: "key small-key" + (a?.ultimate ? " ult" : ""), text: a?.key.toUpperCase() ?? "?" }),
+                    el("span", { class: "key small-key" + (a?.ultimate ? " ult" : ""), text: a ? a.key.toUpperCase() : "?" }),
                     el("span", { class: "grow", text: a?.name ?? m.id }),
                     el("span", { class: "buff-time", text: `${Math.max(0, m.left).toFixed(1)}s` })));
             }
@@ -317,8 +320,9 @@ export function createCombatView(app) {
     document.addEventListener("keydown", e => {
         if (!fight || fight.ended || fight.you == null || document.body.dataset.view !== "Combat") return;
         if (e.target instanceof HTMLInputElement || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-        const slot = KEYS.indexOf(e.key.toLowerCase());
-        if (slot < 0) return;
+        const action = actionFor(e, SKILL_ACTIONS);
+        if (!action) return;
+        const slot = SKILL_ACTIONS.indexOf(action);
         e.preventDefault();
         app.socket.send("ability", { slot });
         const ab = fight.panel(fight.you).abilities[slot];

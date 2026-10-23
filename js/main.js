@@ -8,6 +8,7 @@ import { createLobbyView } from "./lobby.js";
 import { createGameView } from "./game.js";
 import { createCombatView } from "./combat.js";
 import { renderGameOver } from "./gameover.js";
+import { loadKeybinds, renderKeybindSettings, onKeybindsChanged } from "./keybinds.js";
 
 // Relative URLs (api/, ws, json/) need the page URL to end in "/" when hosted under a sub-path.
 if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) {
@@ -101,6 +102,7 @@ function loggedIn(user) {
     renderUserChip();
     setMode("menu");
     setTab("menu");
+    loadKeybinds();
     app.socket.connect();
 }
 
@@ -166,6 +168,8 @@ app.socket
     });
 
 initChat(text => app.socket.send("chat", { text }));
+renderKeybindSettings(document.getElementById("keybindSettings"));
+onKeybindsChanged(() => { if (app.lobby && !app.lobby.inMatch) app.lobbyView.render(app.lobby); });
 
 document.getElementById("backToLobby").addEventListener("click", () => setMode(app.lobby ? "lobby" : "menu"));
 
@@ -210,7 +214,7 @@ async function loadLeaderboard() {
         ]);
         document.querySelector("#leaderboardTable tbody").replaceChildren(...(board.length ? board.map((r, i) =>
             el("tr", { class: r.id === app.user?.id ? "me" : "" },
-                el("td", { text: `${i + 1}` }), el("td", {}, el("b", { text: r.name })),
+                el("td", { text: `${i + 1}` }), el("td", {}, el("b", { text: r.name }), r.mastery ? el("div", { class: "mastery", text: r.mastery }) : null),
                 el("td", { text: `${r.wins}` }), el("td", { text: `${r.games}` }),
                 el("td", { text: `${Math.round(r.winRate * 100)}%` }), el("td", { text: `${r.top3}` }),
                 el("td", { text: `${r.avgPlacement}` })))

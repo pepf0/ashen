@@ -62,7 +62,7 @@ export function createLobbyView(app) {
             document.getElementById("memberList").replaceChildren(...lobby.members.map(m =>
                 el("li", { class: m.connected ? "" : "offline" },
                     el("span", { class: "dot" + (m.connected ? " on" : "") }),
-                    el("span", { class: "grow", text: m.name }),
+                    el("span", { class: "grow" }, m.name, m.mastery ? el("span", { class: "mastery", text: ` ${m.mastery}` }) : null),
                     el("span", { class: "tag", text: data.kits[m.kit]?.name ?? m.kit }),
                     m.id === lobby.hostId ? el("span", { class: "tag", text: "Host" }) : null,
                     isHost && m.id !== app.user.id

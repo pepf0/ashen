@@ -1,5 +1,5 @@
 // End of match: podium, standings and a bit of confetti.
-import { el, itemCard } from "./data.js";
+import { el, itemCard, augmentCard } from "./data.js";
 
 const PACK_COLORS = ["#40e0d0", "#e0407a", "#a8ff40", "#6040e0", "#c0c0ff"];
 
@@ -22,7 +22,8 @@ export function renderGameOver(msg, app) {
     tbody.replaceChildren(...standings.map(s => el("tr", { class: s.id === app.user.id ? "me" : "" },
         el("td", { text: `${s.placement}` }),
         el("td", {}, el("b", { text: s.name })),
-        el("td", {}, el("div", { class: "mini-build" }, s.build.map(b => itemCard(b.id, { level: b.level, size: "small" })))),
+        el("td", {}, el("div", { class: "mini-build" }, s.build.map(b => itemCard(b.id, { level: b.level, size: "small" }))),
+            el("div", { class: "mini-build" }, (s.augments ?? []).map(id => augmentCard(id, { small: true })))),
         el("td", { text: `${s.wins} / ${s.losses}` }),
         el("td", { text: `${s.lives}` }),
         el("td", { class: "small", text: s.titles.join(", ") || "–" }))));

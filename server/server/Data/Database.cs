@@ -26,6 +26,8 @@ public class MatchPlayerRecord
     public int Losses { get; set; }
     public List<ItemView> Build { get; set; } = new();
     public List<string> Titles { get; set; } = new();
+    public string? Kit { get; set; }
+    public List<string> Augments { get; set; } = new();
 }
 
 /// <summary>SQLite storage for accounts, sessions and match history. The schema is created on startup.</summary>
@@ -94,8 +96,52 @@ public class Database
                 PRIMARY KEY (match_id, user_id)
             );
             CREATE INDEX IF NOT EXISTS idx_match_players_user ON match_players(user_id);
+            CREATE TABLE IF NOT EXISTS user_settings (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                keybinds TEXT NOT NULL DEFAULT '{}'
+            );
             """;
         cmd.ExecuteNonQuery();
+        AddColumnIfMissing(conn, "match_players", "kit", "TEXT");
+        AddColumnIfMissing(conn, "match_players", "augments", "TEXT NOT NULL DEFAULT '[]'");
+    }
+
+    private static void AddColumnIfMissing(SqliteConnection conn, string table, string column, string type)
+    {
+        using var check = conn.CreateCommand();
+        check.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name = '{column}'";
+        if ((long)check.ExecuteScalar()! > 0) return;
+        using var alter = conn.CreateCommand();
+        alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {type}";
+        alter.ExecuteNonQuery();
+    }
+
+    // ---------- kit mastery ----------
+
+    public static readonly (int Wins, string Rank)[] MasteryRanks = { (50, "Master"), (20, "Expert"), (5, "Adept") };
+
+    /// <summary>Match wins per kit for a user.</summary>
+    public Dictionary<string, int> KitWins(long userId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT kit, COUNT(*) FROM match_players WHERE user_id = $u AND placement = 1 AND kit IS NOT NULL GROUP BY kit";
+        cmd.Parameters.AddWithValue("$u", userId);
+        using var rd = cmd.ExecuteReader();
+        var wins = new Dictionary<string, int>();
+        while (rd.Read()) wins[rd.GetString(0)] = rd.GetInt32(1);
+        return wins;
+    }
+
+    /// <summary>The user's best mastery title, e.g. "Duelist Expert", or null below 5 wins with every kit.</summary>
+    public string? MasteryTitle(long userId)
+    {
+        var best = KitWins(userId).OrderByDescending(kv => kv.Value).FirstOrDefault();
+        if (best.Key is null) return null;
+        foreach (var (wins, rank) in MasteryRanks)
+            if (best.Value >= wins)
+                return $"{(GameData.Kits.TryGetValue(best.Key, out var kit) ? kit.Name : best.Key)} {rank}";
+        return null;
     }
 
     // ---------- accounts ----------
@@ -199,6 +245,50 @@ public class Database
         cmd.ExecuteNonQuery();
     }
 
+    // ---------- settings ----------
+
+    /// <summary>Actions that can be bound to keys, with their default keys (KeyboardEvent.key, lower case).</summary>
+    public static readonly IReadOnlyDictionary<string, string> DefaultKeybinds = new Dictionary<string, string>
+    {
+        ["skill_q"] = "q", ["skill_w"] = "w", ["skill_e"] = "e", ["skill_ult"] = "r",
+        ["reroll"] = "d", ["ready"] = " ", ["hp"] = "h",
+        ["buy1"] = "1", ["buy2"] = "2", ["buy3"] = "3", ["buy4"] = "4", ["buy5"] = "5", ["buy6"] = "6"
+    };
+
+    public Dictionary<string, string> GetKeybinds(long userId)
+    {
+        var binds = new Dictionary<string, string>(DefaultKeybinds);
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT keybinds FROM user_settings WHERE user_id = $u";
+        cmd.Parameters.AddWithValue("$u", userId);
+        if (cmd.ExecuteScalar() is string json)
+        {
+            var saved = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new();
+            foreach (var (action, key) in saved)
+                if (binds.ContainsKey(action)) binds[action] = key;
+        }
+        return binds;
+    }
+
+    /// <summary>Saves keybinds; unknown actions and invalid keys are dropped.</summary>
+    public Dictionary<string, string> SetKeybinds(long userId, Dictionary<string, string> binds)
+    {
+        var clean = binds
+            .Where(kv => DefaultKeybinds.ContainsKey(kv.Key) && kv.Value is { Length: > 0 and <= 20 })
+            .ToDictionary(kv => kv.Key, kv => kv.Value.ToLowerInvariant());
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO user_settings (user_id, keybinds) VALUES ($u, $k)
+            ON CONFLICT(user_id) DO UPDATE SET keybinds = excluded.keybinds
+            """;
+        cmd.Parameters.AddWithValue("$u", userId);
+        cmd.Parameters.AddWithValue("$k", JsonSerializer.Serialize(clean));
+        cmd.ExecuteNonQuery();
+        return GetKeybinds(userId);
+    }
+
     // ---------- sessions ----------
 
     private static string TokenHash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
@@ -270,8 +360,8 @@ public class Database
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
             cmd.CommandText = """
-                INSERT INTO match_players (match_id, user_id, display_name, placement, wins, losses, build, titles)
-                VALUES ($m, $u, $n, $p, $w, $l, $b, $t)
+                INSERT INTO match_players (match_id, user_id, display_name, placement, wins, losses, build, titles, kit, augments)
+                VALUES ($m, $u, $n, $p, $w, $l, $b, $t, $k, $a)
                 """;
             cmd.Parameters.AddWithValue("$m", matchId);
             cmd.Parameters.AddWithValue("$u", p.UserId);
@@ -281,6 +371,8 @@ public class Database
             cmd.Parameters.AddWithValue("$l", p.Losses);
             cmd.Parameters.AddWithValue("$b", JsonSerializer.Serialize(p.Build, Protocol.Json));
             cmd.Parameters.AddWithValue("$t", JsonSerializer.Serialize(p.Titles, Protocol.Json));
+            cmd.Parameters.AddWithValue("$k", (object?)p.Kit ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$a", JsonSerializer.Serialize(p.Augments, Protocol.Json));
             cmd.ExecuteNonQuery();
         }
         tx.Commit();
@@ -311,6 +403,7 @@ public class Database
             {
                 id = r.GetInt64(0),
                 name = r.GetString(1),
+                mastery = MasteryTitle(r.GetInt64(0)),
                 games,
                 wins,
                 winRate = games == 0 ? 0 : Math.Round((double)wins / games, 3),
@@ -368,7 +461,7 @@ public class Database
         using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
-                SELECT user_id, display_name, placement, wins, losses, build, titles
+                SELECT user_id, display_name, placement, wins, losses, build, titles, kit, augments
                 FROM match_players WHERE match_id = $id ORDER BY placement
                 """;
             cmd.Parameters.AddWithValue("$id", id);
@@ -383,7 +476,9 @@ public class Database
                     wins = r.GetInt32(3),
                     losses = r.GetInt32(4),
                     build = JsonSerializer.Deserialize<List<ItemView>>(r.GetString(5), Protocol.Json),
-                    titles = JsonSerializer.Deserialize<List<string>>(r.GetString(6), Protocol.Json)
+                    titles = JsonSerializer.Deserialize<List<string>>(r.GetString(6), Protocol.Json),
+                    kit = r.IsDBNull(7) ? null : r.GetString(7),
+                    augments = JsonSerializer.Deserialize<List<string>>(r.GetString(8), Protocol.Json)
                 });
             }
         }

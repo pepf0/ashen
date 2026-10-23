@@ -114,6 +114,11 @@
                     <button class="btn" type="submit">Change password</button>
                     <p class="form-note" id="passwordNote"></p>
                 </form>
+                <div class="panel keybind-panel">
+                    <h2>Keybinds</h2>
+                    <p class="muted small">Click a key, then press the new one. Esc cancels. Saved to your account.</p>
+                    <div id="keybindSettings"></div>
+                </div>
                 <div class="panel">
                     <h2>Account</h2>
                     <p class="muted">Logged in as <b id="settingsUsername"></b></p>
@@ -179,7 +184,14 @@
                 </aside>
 
                 <div class="game-center">
+                    <div class="mutator-row" id="mutatorRow"></div>
                     <div class="modifier-banner" id="modifierBanner" hidden></div>
+                    <div class="panel augment-panel" id="augmentPanel" hidden>
+                        <h3>Choose an augment</h3>
+                        <p class="muted small">It lasts for the rest of the match. Others can't see your pick until the end. If you don't pick before the fight, it's lost.</p>
+                        <div class="augment-offer" id="augmentOffer"></div>
+                    </div>
+                    <div class="panel mystery-panel" id="mysteryPanel" hidden></div>
                     <div class="panel shop" id="shopPanel">
                         <div class="row spread">
                             <h3>Shop</h3>
@@ -190,10 +202,8 @@
                             </div>
                         </div>
                         <div class="pity" id="pityPanel" hidden>
-                            <h4>Weaponless bonus</h4>
-                            <p class="muted small">You fought rounds 1 and 2 without a weapon, so this round you can grab a
-                                special weapon and its buff for a third of the price. Buying these doesn't lock your rerolls.
-                                The offer is gone after this shop.</p>
+                            <h4>Bonus offers</h4>
+                            <p class="muted small" id="pityText"></p>
                             <div class="shop-grid" id="pityGrid"></div>
                         </div>
                         <div class="shop-grid" id="shopGrid"></div>
@@ -226,6 +236,7 @@
                             </div>
                         </div>
                         <ul class="stat-list" id="statList"></ul>
+                        <div class="my-augments" id="myAugments"></div>
                         <div class="kit-row">
                             <div id="myKit"></div>
                             <button class="btn btn-small" id="changeKit">Change kit</button>

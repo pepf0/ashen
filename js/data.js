@@ -1,18 +1,18 @@
 // Item/effect data and text formatting shared by the compendium, shop and combat views.
+import { label as keyLabelOf, SKILL_ACTIONS } from "./keybinds.js";
 
-export const data = { items: {}, effects: {}, kits: {}, modifiers: {} };
+export const data = { items: {}, effects: {}, kits: {}, modifiers: {}, augments: {}, mutators: {}, arenas: {} };
 
 export const TYPES = ["weapon", "buff", "shirt", "charm", "passive"];
 export const PACK_NAMES = { pepf: "Pepf", z7fox: "Z7FOX", ely7: "Ely7", xxzweiradxx: "xXZweiradXx", generic: "Generic" };
 export const MAX_LEVEL = 5;
 
 export async function loadData() {
-    const [items, effects, kits, modifiers] = await Promise.all([
-        fetch("json/items.json").then(r => r.json()),
-        fetch("json/effects.json").then(r => r.json()),
-        fetch("json/kits.json").then(r => r.json()),
-        fetch("json/modifiers.json").then(r => r.json())
-    ]);
+    const [items, effects, kits, modifiers, augments, mutators, arenas] = await Promise.all(
+        ["items", "effects", "kits", "modifiers", "augments", "mutators", "arenas"].map(f => fetch(`json/${f}.json`).then(r => r.json())));
+    data.augments = Object.fromEntries(augments.map(a => [a.id, a]));
+    data.mutators = Object.fromEntries(mutators.map(m => [m.id, m]));
+    data.arenas = Object.fromEntries(arenas.map(a => [a.id, a]));
     data.items = Object.fromEntries(items.map(i => [i.id, i]));
     data.effects = Object.fromEntries(effects.map(e => [e.id, e]));
     data.kits = Object.fromEntries(kits.map(k => [k.id, k]));
@@ -102,13 +102,23 @@ export function kitCard(kitId, { selected = false, onclick, footer } = {}) {
     return el("div", { class: "kit-card" + (selected ? " selected" : "") + (onclick ? " clickable" : ""), onclick },
         el("div", { class: "kit-name", text: kit.name }),
         el("div", { class: "muted small", text: kit.description }),
-        el("ul", { class: "kit-abilities" }, kit.abilities.map(a => el("li", {},
-            el("span", { class: "key" + (a.ultimate ? " ult" : ""), text: a.key.toUpperCase() }),
+        el("ul", { class: "kit-abilities" }, kit.abilities.map((a, i) => el("li", {},
+            el("span", { class: "key" + (a.ultimate ? " ult" : ""), text: keyLabelOf(SKILL_ACTIONS[i]) }),
             el("div", {},
                 el("b", { text: a.name }),
                 el("span", { class: "muted small", text: a.cooldown ? `  ${a.cooldown}s` : "  ultimate" }),
                 el("div", { class: "small", text: abilityPretty(a) }))))),
         footer ?? null);
+}
+
+/** Augment card with its tier color. */
+export function augmentCard(id, { onclick, small = false } = {}) {
+    const a = data.augments[id];
+    if (!a) return el("div", { text: id });
+    return el(onclick ? "button" : "div", { class: `augment-card tier-${a.tier}` + (small ? " small" : ""), onclick, title: a.description },
+        el("span", { class: "augment-tier", text: a.tier }),
+        el("b", { text: a.name }),
+        small ? null : el("span", { class: "small", text: a.description }));
 }
 
 export function el(tag, attrs = {}, ...children) {

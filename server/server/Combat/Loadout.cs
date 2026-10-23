@@ -11,11 +11,14 @@ public class Loadout
     public int Money { get; set; }
     public OwnedItem? Weapon { get; set; }
     public OwnedItem? Shirt { get; set; }
-    public OwnedItem?[] Dynamics { get; set; } = new OwnedItem?[4];
+    public OwnedItem?[] Dynamics { get; set; } = new OwnedItem?[Player.DynamicSlots];
     /// <summary>Kit id (kits.json), or null for no abilities.</summary>
     public string? Kit { get; set; }
     /// <summary>Abilities are pressed by the built-in bot (ghosts, disconnected players, tests).</summary>
     public bool Bot { get; set; }
+    /// <summary>Combined augment mods (see Augment.Combine).</summary>
+    public Dictionary<string, double> AugmentMods { get; set; } = new();
+    public List<string> AugmentIds { get; set; } = new();
     /// <summary>Extra always-on effects, e.g. lobby event rewards.</summary>
     public List<string> BonusEffects { get; set; } = new();
 

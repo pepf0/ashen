@@ -291,6 +291,23 @@ label.check input { width: auto; accent-color: var(--pepf); }
 .key.ult { border-color: var(--gold); color: var(--gold); }
 /*#endregion*/
 
+.kb-hint {
+    font-family: var(--font-pixel);
+    font-size: 0.7rem;
+    padding: 0 5px;
+    margin: 0 4px;
+    border-radius: 4px;
+    border: 1px solid var(--line-strong);
+    color: var(--text-dim);
+    vertical-align: middle;
+}
+.btn-buy .kb-hint { margin: 0; }
+.keybind-panel { grid-column: span 2; }
+.kb-group h4 { margin: 10px 0 4px; }
+.kb-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; border-bottom: 1px solid rgba(192, 192, 255, 0.05); }
+.kb-key { min-width: 90px; font-family: var(--font-pixel); }
+.kb-key.waiting { border-color: var(--gold); color: var(--gold); }
+
 /*#region Chat*/
 .chat { display: flex; flex-direction: column; min-height: 260px; max-height: 480px; }
 .chat-log {
@@ -570,6 +587,45 @@ button.item-card:hover, .item-card:hover { background-color: var(--panel-hover);
 .fight-list li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(192, 192, 255, 0.05); }
 #dialog .kit-grid { min-width: min(820px, 80vw); }
 
+.mutator-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mutator-row:empty { display: none; }
+.mutator-chip { font-size: 0.85rem; padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(96, 64, 224, 0.6); background: rgba(96, 64, 224, 0.12); color: var(--text-dim); }
+.mutator-chip b { color: var(--text); font-family: var(--font-pixel); font-weight: 500; }
+.augment-panel { border-color: rgba(255, 209, 102, 0.4); }
+.augment-offer { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.augment-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line-strong);
+    background: rgba(3, 0, 21, 0.4);
+    color: var(--text);
+    font: inherit;
+}
+button.augment-card { cursor: pointer; transition: transform 0.12s, border-color 0.12s; }
+button.augment-card:hover { transform: translateY(-2px); }
+.augment-card b { font-family: var(--font-pixel); font-weight: 500; font-size: 1.1rem; }
+.augment-tier { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; }
+.augment-card.tier-silver { border-color: #b8bcc8; }
+.augment-card.tier-silver .augment-tier { color: #b8bcc8; }
+.augment-card.tier-gold { border-color: var(--gold); }
+.augment-card.tier-gold .augment-tier { color: var(--gold); }
+.augment-card.tier-prismatic { border-color: #e070ff; box-shadow: 0 0 18px rgba(224, 112, 255, 0.15); }
+.augment-card.tier-prismatic .augment-tier { color: #e070ff; }
+.augment-card.small { padding: 3px 8px; flex-direction: row; align-items: baseline; gap: 6px; }
+.augment-card.small b { font-size: 0.85rem; }
+.augment-card.small .augment-tier { display: none; }
+.my-augments { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
+.my-augments:empty { display: none; }
+.mystery-panel { border-color: rgba(96, 64, 224, 0.6); }
+.mystery-panel input { width: 120px; }
+.mystery-result { color: var(--gold); }
+.mastery { font-size: 0.72rem; color: var(--gold); font-family: var(--font-pixel); }
+.tag.bounty { color: var(--gold); border-color: rgba(255, 209, 102, 0.5); }
+
 /*#region Combat*/
 .arena { max-width: 1100px; margin: 0 auto; }
 .arena-clock { display: flex; justify-content: center; align-items: baseline; gap: 16px; margin-bottom: 12px; color: var(--text-dim); }
@@ -810,3 +866,8 @@ button.ab.ready:hover { border-color: var(--text); }
     .item-card-big { width: 180px; height: 180px; }
 }
 /*#endregion*/
+
+/* Key labels use the body font: the pixel font makes Z look like 2 and S like 5. */
+.kb-hint, .kb-key, .key, .ab-key { font-family: var(--font-body) !important; font-weight: 700; }
+.shop-item { position: relative; }
+.slot-hint { position: absolute; top: 6px; left: 6px; margin: 0; }

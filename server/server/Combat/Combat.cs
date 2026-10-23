@@ -5,7 +5,20 @@ public class FightRules
 {
     /// <summary>Active round modifier id (modifiers.json), or null.</summary>
     public string? Modifier { get; set; }
+    /// <summary>Arena of this fight (arenas.json), or null for a plain fight.</summary>
+    public string? Arena { get; set; }
+    /// <summary>Extra damage multiplier for everyone (Double Trouble mutator).</summary>
+    public double DamageMult { get; set; } = 1;
+    public double OvertimeStart { get; set; } = Combat.OvertimeStart;
+    public double SuddenDeathStart { get; set; } = Combat.SuddenDeathStart;
     public bool Has(string id) => Modifier == id;
+    public bool In(string arena) => Arena == arena;
+
+    public FightRules WithArena(string? arena) => new()
+    {
+        Modifier = Modifier, Arena = arena, DamageMult = DamageMult,
+        OvertimeStart = OvertimeStart, SuddenDeathStart = SuddenDeathStart
+    };
 }
 
 /// <summary>
@@ -123,6 +136,9 @@ public sealed class Fight
         public double BulwarkReflect { get; set; }
         public double? HeadshotAt { get; set; }
         public List<double> FlurryAttacks { get; } = new();
+        public IReadOnlyDictionary<string, double> Aug => Loadout.AugmentMods;
+        public bool SecondWindUsed { get; set; }
+        public bool FirstStrikeUsed { get; set; }
 
         public bool Stunned => StunLeft > tiny;
         public bool Invulnerable => InvulnerableLeft > tiny;
@@ -132,7 +148,7 @@ public sealed class Fight
             Index = index;
             Loadout = loadout;
             Rng = rng;
-            MaxHealth = loadout.MaxHealth * (rules.Has("glass_cannon") ? 0.7 : 1);
+            MaxHealth = loadout.MaxHealth * (rules.Has("glass_cannon") ? 0.7 : 1) * loadout.AugmentMods.Get("max_hp_mult");
             Health = MaxHealth;
             Bot = loadout.Bot;
             Kit = loadout.Kit is not null && GameData.Kits.TryGetValue(loadout.Kit, out var kit) ? kit : null;
@@ -183,7 +199,9 @@ public sealed class Fight
     private readonly double overtimeStart;
     private readonly double suddenDeathStart;
     private readonly FighterInfo[] infos;
+    private double nextLightning = 5;
 
+    public string? Arena => rules.Arena;
     public bool Finished { get; private set; }
     public CombatResult? Result { get; private set; }
     public double Time => tick * Combat.SPT;
@@ -195,8 +213,8 @@ public sealed class Fight
         var rng = new Random(seed);
         fighters = new[] { new Fighter(0, a, new Random(rng.Next()), rules), new Fighter(1, b, new Random(rng.Next()), rules) };
         bool noWeapons = a.Weapon is null && b.Weapon is null;
-        overtimeStart = noWeapons ? Combat.NoWeaponOvertimeStart : Combat.OvertimeStart;
-        suddenDeathStart = noWeapons ? Combat.NoWeaponSuddenDeathStart : Combat.SuddenDeathStart;
+        overtimeStart = noWeapons ? Math.Min(Combat.NoWeaponOvertimeStart, rules.OvertimeStart) : rules.OvertimeStart;
+        suddenDeathStart = noWeapons ? Math.Min(Combat.NoWeaponSuddenDeathStart, rules.SuddenDeathStart) : rules.SuddenDeathStart;
         foreach (var f in fighters)
         {
             f.WeaponTimer = f.Weapon is null ? double.PositiveInfinity : WeaponCooldown(f);
@@ -205,6 +223,17 @@ public sealed class Fight
                 es.CurrentCooldown = EffectCooldown(f, es);
         }
         infos = fighters.Select(Describe).ToArray();
+        foreach (var f in fighters)
+        {
+            if (f.Aug.Get("start_shield") is > 0 and var shield)
+            {
+                f.Shield = shield * f.MaxHealth;
+                f.ShieldUntil = double.PositiveInfinity;
+            }
+        }
+        foreach (var f in fighters)
+            if (f.Aug.Get("opening_stun") is > 0 and var stun)
+                Stun(f, Opponent(f), stun, new StunEvent { Source = f.Index, Target = 1 - f.Index, EffectSource = "augment.concussion" });
         foreach (var f in fighters) ApplyRoundStartEffects(f);
         foreach (var f in fighters) UpdateConditionalBuffs(f, report: false);
     }
@@ -249,6 +278,7 @@ public sealed class Fight
         foreach (var f in order) TickScheduled(f);
         foreach (var f in order) TryWeaponAttack(f);
         foreach (var f in order) TryTriggerCooldownEffects(f);
+        ApplyArenaAndRegen();
         if (Time >= suddenDeathStart - tiny) ApplySuddenDeath();
         foreach (var f in fighters) UpdateConditionalBuffs(f, report: true);
 
@@ -275,7 +305,8 @@ public sealed class Fight
             Fighters = infos,
             Events = events,
             Winner = winner,
-            Duration = Math.Round(Time, 2)
+            Duration = Math.Round(Time, 2),
+            Arena = rules.Arena
         };
         for (int i = 0; i < 2; i++)
         {
@@ -334,6 +365,7 @@ public sealed class Fight
             PlayerId = f.Loadout.PlayerId,
             Ghost = f.Loadout.Ghost,
             Kit = f.Kit?.Id,
+            Augments = f.Loadout.AugmentIds.ToList(),
             MaxHp = Math.Round(f.MaxHealth, 1),
             DamageReduction = Math.Round(DamageReduction(f), 4),
             DodgeChance = Math.Round(DodgeChance(f), 4)
@@ -417,7 +449,7 @@ public sealed class Fight
     private double ItemStat(Fighter f, OwnedItem item, string stat) =>
         Modify(f, item.Stat(stat), stat, t => TargetsItem(f, item, t));
 
-    private double CooldownMult => rules.Has("overclock") ? 0.8 : 1;
+    private double CooldownMult => (rules.Has("overclock") ? 0.8 : 1) * (rules.In("ice") ? 1.15 : 1);
 
     private double WeaponStat(Fighter f, string stat)
     {
@@ -426,15 +458,15 @@ public sealed class Fight
         return stat switch
         {
             StatNames.Cooldown => Math.Max(Combat.MinCooldown, value),
-            StatNames.CritChance => Math.Clamp(value + f.ModSum(ModKind.CritChance), 0, 1),
-            StatNames.CritDamage => Math.Max(1, value) * (rules.Has("blood_moon") ? 1.5 : 1),
-            StatNames.Damage => Math.Max(0, value) * Combat.SynergyMult(f.Loadout, out _) * (rules.Has("rust") ? 0.75 : 1),
+            StatNames.CritChance => Math.Clamp(value + f.ModSum(ModKind.CritChance) + f.Aug.Get("crit_chance_add") + (rules.In("forge") ? 0.1 : 0), 0, 1),
+            StatNames.CritDamage => Math.Max(1, value) * (rules.Has("blood_moon") ? 1.5 : 1) * (rules.In("forge") ? 1.2 : 1) * f.Aug.Get("crit_damage_mult"),
+            StatNames.Damage => Math.Max(0, value) * Combat.SynergyMult(f.Loadout, out _) * (rules.Has("rust") ? 0.75 : 1) * f.Aug.Get("weapon_damage_mult"),
             _ => Math.Max(0, value)
         };
     }
 
     private double WeaponCooldown(Fighter f) =>
-        Math.Max(Combat.MinCooldown, WeaponStat(f, StatNames.Cooldown) * CooldownMult * f.ModProduct(ModKind.WeaponCooldown));
+        Math.Max(Combat.MinCooldown, WeaponStat(f, StatNames.Cooldown) * CooldownMult * f.ModProduct(ModKind.WeaponCooldown) * f.Aug.Get("weapon_cooldown_mult"));
 
     private double EffectStat(Fighter f, EffectState es, string stat, double baseValue) =>
         Modify(f, baseValue, stat, t => t == es.Effect.Id);
@@ -444,14 +476,15 @@ public sealed class Fight
 
     private double DamageReduction(Fighter f)
     {
-        double dr = Math.Clamp(f.Loadout.AllItems().Sum(i => ItemStat(f, i, StatNames.DamageReduction)), 0, Combat.MaxDamageReduction);
+        double dr = Math.Clamp(f.Loadout.AllItems().Sum(i => ItemStat(f, i, StatNames.DamageReduction)) + f.Aug.Get("damage_reduction_add"), 0, Combat.MaxDamageReduction);
         if (rules.Has("fragile")) dr *= 0.5;
         return Math.Clamp(dr + f.ModSum(ModKind.DamageReduction), 0, Combat.AbilityMaxDamageReduction);
     }
 
     private double DodgeChance(Fighter f)
     {
-        double dodge = f.Loadout.AllItems().Sum(i => ItemStat(f, i, StatNames.DodgeChance)) + (rules.Has("fog") ? 0.15 : 0);
+        double dodge = f.Loadout.AllItems().Sum(i => ItemStat(f, i, StatNames.DodgeChance)) + (rules.Has("fog") ? 0.15 : 0)
+                       + (rules.In("gale") ? 0.12 : 0) + f.Aug.Get("dodge_add");
         dodge = Math.Clamp(dodge, 0, Combat.MaxDodgeChance);
         return Math.Clamp(dodge + f.ModSum(ModKind.Dodge), 0, Combat.AbilityMaxDodgeChance);
     }
@@ -459,7 +492,7 @@ public sealed class Fight
     private double OvertimeMultiplier =>
         Time > overtimeStart ? 1 + Combat.OvertimeRampPerSecond * (Time - overtimeStart) : 1;
 
-    private double GlobalDamageMult => rules.Has("glass_cannon") ? 1.5 : 1;
+    private double GlobalDamageMult => (rules.Has("glass_cannon") ? 1.5 : 1) * rules.DamageMult;
 
     // ================= timers =================
 
@@ -520,6 +553,8 @@ public sealed class Fight
         attacker.LastWeaponCooldown = cd;
         attacker.WeaponTimer = Math.Max(0, attacker.WeaponTimer + cd);
         WeaponAttack(attacker, null);
+        if (attacker.Aug.Get("double_strike") is > 0 and var chance && attacker.Rng.NextDouble() < chance)
+            WeaponAttack(attacker, "double_strike");
     }
 
     /// <summary>One weapon swing: Feint/All In misses, dodge, crit, ability hit multipliers, then on-hit triggers.</summary>
@@ -575,6 +610,11 @@ public sealed class Fight
             var flip = AbilityOf(attacker, "coin_flip");
             hitMult *= attacker.Rng.NextDouble() < 0.5 ? flip?.WinMult ?? 2 : flip?.LoseMult ?? 0.5;
         }
+        if (!attacker.FirstStrikeUsed)
+        {
+            attacker.FirstStrikeUsed = true;
+            hitMult *= attacker.Aug.Get("first_strike") is > 0 and var fs ? fs : 1;
+        }
         ev.CritMultiplier = crit ? Math.Round(critMult, 3) : null;
         bool landed = Hit(attacker, defender, WeaponStat(attacker, StatNames.Damage) * critMult * hitMult, HitKind.Weapon, ev);
         if (!landed) return;
@@ -607,6 +647,7 @@ public sealed class Fight
         }
 
         double damage = raw * attacker.ModProduct(ModKind.DamageDealt) * defender.ModProduct(ModKind.DamageTaken) * GlobalDamageMult;
+        if (defender.Health / defender.MaxHealth < 0.3) damage *= 1 + attacker.Aug.Get("execute");
         if (applyReduction) damage *= 1 - DamageReduction(defender);
         if (kind != HitKind.Ability) damage *= OvertimeMultiplier;
         damage = Math.Max(0, damage);
@@ -619,6 +660,8 @@ public sealed class Fight
             ev.Absorbed = Math.Round(absorbed, 2);
         }
         Deal(attacker, defender, damage, ev);
+        if (kind == HitKind.Weapon && defender.Aug.Get("thorns") is > 0 and var thorns && damage > 0 && defender.Health > 0)
+            Reflect(defender, attacker, damage * thorns, "thorns");
         return true;
     }
 
@@ -631,6 +674,13 @@ public sealed class Fight
     private void Deal(Fighter attacker, Fighter defender, double damage, DamageEvent ev, bool chargeUlt = true)
     {
         defender.Health -= damage;
+        if (defender.Health <= 0 && !defender.SecondWindUsed && defender.Aug.Get("second_wind") > 0)
+        {
+            defender.SecondWindUsed = true;
+            damage += defender.Health - 1;
+            defender.Health = 1;
+            events.Add(new AbilityEvent { Source = defender.Index, Target = defender.Index, Ability = "second_wind", Tick = tick, T = Math.Round(Time, 2), Hp = Hp() });
+        }
         attacker.DamageDealt += damage;
         defender.DamageTaken += damage;
         ev.Damage = Math.Round(damage, 2);
@@ -639,7 +689,7 @@ public sealed class Fight
         {
             ChargeUlt(attacker, damage);
             ChargeUlt(defender, damage);
-            double steal = attacker.ModSum(ModKind.Lifesteal);
+            double steal = attacker.ModSum(ModKind.Lifesteal) + attacker.Aug.Get("lifesteal");
             if (steal > 0 && attacker.Health > 0) Heal(attacker, damage * steal);
         }
     }
@@ -647,7 +697,8 @@ public sealed class Fight
     private void ChargeUlt(Fighter f, double damage)
     {
         if (f.Kit is null) return;
-        f.UltCharge = Math.Min(1, f.UltCharge + damage / (Combat.UltChargeFraction * f.MaxHealth));
+        double speed = f.Aug.Get("ult_charge_mult") * (rules.In("void") ? 2 : 1);
+        f.UltCharge = Math.Min(1, f.UltCharge + damage * speed / (Combat.UltChargeFraction * f.MaxHealth));
     }
 
     private void Heal(Fighter f, double amount)
@@ -690,6 +741,41 @@ public sealed class Fight
             Execute(f, es);
     }
 
+    /// <summary>Arena effects (Lava, Sanctuary, Storm) and Regeneration, once per tick.</summary>
+    private void ApplyArenaAndRegen()
+    {
+        foreach (var f in fighters)
+        {
+            double heal = f.Aug.Get("regen") + (rules.In("sanctuary") ? 0.01 : 0);
+            if (heal > 0 && f.Health > 0) f.Health = Math.Min(f.MaxHealth, f.Health + heal * f.MaxHealth * Combat.SPT);
+            if (rules.In("lava") && f.Health > 0)
+            {
+                double burn = 0.01 * f.MaxHealth * Combat.SPT;
+                f.Health -= burn;
+                f.DamageTaken += burn;
+            }
+        }
+        if (rules.In("storm") && Time >= nextLightning - tiny)
+        {
+            nextLightning += 5;
+            var target = fighters[fighters[0].Rng.Next(2)];
+            var ev = new DamageEvent { Source = target.Index, Target = target.Index, AbilitySource = "lightning" };
+            if (target.Invulnerable)
+            {
+                ev.Blocked = true;
+                Emit(ev);
+            }
+            else
+            {
+                double damage = 0.08 * target.MaxHealth;
+                target.Health -= damage;
+                target.DamageTaken += damage;
+                ev.Damage = Math.Round(damage, 2);
+                Emit(ev);
+            }
+        }
+    }
+
     private void ApplySuddenDeath()
     {
         double damage = Math.Pow(2, Math.Floor(Time - suddenDeathStart + tiny));
@@ -703,6 +789,7 @@ public sealed class Fight
     /// <summary>Stuns <paramref name="target"/> unless invulnerable or stun immune. Stuns add up.</summary>
     private void Stun(Fighter source, Fighter target, double duration, StunEvent ev)
     {
+        duration *= source.Aug.Get("stun_duration_mult");
         if (target.Invulnerable || target.HasMod(ModKind.StunImmune))
         {
             ev.Blocked = true;
@@ -807,7 +894,7 @@ public sealed class Fight
         var ev = new AbilityEvent { Source = f.Index, Target = f.Index, Ability = a.Id, Slot = slot };
 
         if (slot == 3) f.UltCharge = 0;
-        else f.SkillCooldowns[slot] = (a.Cooldown ?? 0) * CooldownMult;
+        else f.SkillCooldowns[slot] = (a.Cooldown ?? 0) * CooldownMult * f.Aug.Get("skill_cooldown_mult");
 
         switch (a.Id)
         {

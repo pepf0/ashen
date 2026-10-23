@@ -147,6 +147,12 @@ public class Program
                 : Error("Your current password is wrong.", 401);
         });
 
+        api.MapGet("/me/keybinds", (HttpContext ctx) =>
+            Authenticate(ctx, db) is { } user ? Results.Json(db.GetKeybinds(user.Id)) : Error("Not logged in.", 401));
+
+        api.MapPut("/me/keybinds", (Dictionary<string, string> body, HttpContext ctx) =>
+            Authenticate(ctx, db) is { } user ? Results.Json(db.SetKeybinds(user.Id, body)) : Error("Not logged in.", 401));
+
         api.MapGet("/lobbies", () => Results.Json(lobbies.PublicLobbies()));
         api.MapGet("/leaderboard", () => Results.Json(db.Leaderboard()));
         api.MapGet("/matches", (int? limit, long? user) =>
@@ -324,6 +330,12 @@ public static class GameSocket
                 break;
             case "ready":
                 error = lobby?.SetReady(conn, msg.GetProperty("ready").GetBoolean());
+                break;
+            case "augment":
+                error = lobby?.PickAugment(conn, msg.GetProperty("index").GetInt32());
+                break;
+            case "mystery":
+                error = lobby?.UseMystery(conn, msg.TryGetProperty("arg", out var arg) ? arg.ToString() : null);
                 break;
             case "ability":
                 lobby?.UseAbility(conn, msg.GetProperty("slot").GetInt32());

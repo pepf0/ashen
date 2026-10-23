@@ -94,6 +94,63 @@ When a shop opens (from round 2 on) you get:
 The shop shows what you got. Fights also pay the *win bonus*, the flawless bonus
 and any money items (Coin, Chip, Crown) earned.
 
+## Match mutators
+
+When the match starts, **2 random mutators** are rolled and apply all match
+(shown above the shop): Big Shops (8 slots), Special Frenzy (special chance ×2),
+Shirtless (no shirts in shops), Armed Start (random generic weapon), Old Money
+(+50 $ start), Hardcore (−2 lives, at least 2), Long Haul (+2 lives), Augment
+Feast (4 augment choices + an extra augment at round 12), Chaos (a round
+modifier every round from round 1), Quick Death (overtime 20 s, sudden death
+40 s), Paper Bodies (start HP ×0.6), Master Smith (max item level 7), Free
+Spirits (free kit changes), Compound Interest (interest cap 10 $), Double
+Trouble (every 3rd round all damage ×2), Arena Masters (every fight has an
+arena). Defined in `json/mutators.json`.
+
+## Augments
+
+At **rounds 3, 6 and 9** the shop offers 3 augments; pick 1 (before the fight,
+or it's lost). Augments last all match and stay hidden from others until the
+end. Each offer rolls one tier for all 3 choices: **Silver** 60 %, **Gold** 30 %,
+**Prismatic** 10 %. You never get an augment twice. 32 augments in
+`json/augments.json`, built from these mods:
+
+| Mod | Effect |
+|---|---|
+| `weapon_damage_mult`, `weapon_cooldown_mult`, `crit_damage_mult`, `max_hp_mult` | Multiply that stat in fights |
+| `crit_chance_add`, `damage_reduction_add`, `dodge_add` | Add to that stat (DR and dodge before their caps) |
+| `lifesteal`, `regen`, `thorns`, `start_shield` | Heal % of damage dealt, % max HP per second, reflect % of weapon damage taken, shield of % max HP at fight start |
+| `ult_charge_mult`, `skill_cooldown_mult` | Kit ultimate charge speed, skill cooldowns |
+| `execute`, `first_strike`, `double_strike`, `second_wind` | +% damage vs targets under 30 % HP, first weapon hit multiplier, chance to strike twice, survive one lethal hit per fight |
+| `stun_duration_mult`, `opening_stun` | Longer stuns, stun the enemy at fight start |
+| `income_add`, `interest_cap_add`, `rerolls_add`, `win_bonus_add`, `shop_discount`, `special_chance_mult` | Economy |
+| `money_now`, `life_now`, `dynamic_slots_add` | Instant: money, a life, extra buff/charm/passive slots |
+
+## Mystery events
+
+About 25 % of shops (not in augment rounds) also offer one mystery event, each
+player rolling their own:
+
+- **Chest**: pay 25 $ for a random item (10 % special), free to take.
+- **Shrine**: sacrifice 1 life for one of 3 special items (only above 1 life).
+- **Gamble Table**: bet up to half your money, 50 % double or lose it.
+- **Blacksmith**: pay 15 $ to level up one of your items (specials up to 3).
+- **Fountain**: pay 40 $ for +1 life (up to your starting lives).
+- **Library**: +10 $ and your next kit change is free.
+
+## Arenas
+
+Every fight rolls its own arena (40 % plain): Lava Pit (1 % max HP burn per
+second), Frozen Hall (cooldowns ×1.15), Sanctuary (1 % max HP heal per second),
+Stormy Peak (lightning for 8 % max HP every 5 s), Windy Cliffs (+12 % dodge),
+The Forge (+10 % crit, crit damage ×1.2), Colosseum (+5 $ to the winner),
+The Void (ultimates charge ×2). Defined in `json/arenas.json`.
+
+## Bounties
+
+A player on a **3+ win streak** has a bounty of 10 $ per streak win, visible to
+everyone. Whoever beats them collects it. Losses and draws end a streak.
+
 ## Round modifiers
 
 From round 2 on, 70 % of rounds get a random lobby-wide modifier (30 % are calm).
@@ -251,6 +308,18 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
 | Untouchable | First flawless victory (not round 1) | +20 $ |
 | Dragon Tamer | First to own The Dragon | Title |
 | Tycoon | First to hold 250 $ | Title |
+
+## Keybinds
+
+Skills, ultimate, reroll, ready, +HP and buying shop slots 1–6 have keybinds
+(defaults Q W E R, D, Space, H, 1–6). Change them in Settings (click, press a
+key); they're saved to your account and shown next to every button.
+
+## Kit mastery
+
+Match wins with each kit count on your account: 5 / 20 / 50 wins give
+"<Kit> Adept / Expert / Master". Your best title is shown in lobbies, matches and
+on the leaderboard.
 
 ## Accounts & stats
 

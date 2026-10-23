@@ -1,10 +1,15 @@
 // Match view during the shop phase: top bar, players, events, shop, build and stats.
-import { el, item, itemCard, statPretty, kitCard, data, MAX_LEVEL } from "./data.js";
+import { el, item, itemCard, statPretty, kitCard, augmentCard, data } from "./data.js";
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
+import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
+
+const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
+const hint = action => el("span", { class: "kb-hint", text: keyLabelOf(action) });
 
 export function createGameView(app) {
     let state = null;
     let timerEnd = 0;
+    let rerender = () => {};
 
     document.getElementById("rerollButton").addEventListener("click", () => app.socket.send("reroll"));
     document.getElementById("hpButton").addEventListener("click", () => app.socket.send("buyHp"));
@@ -30,6 +35,21 @@ export function createGameView(app) {
             [{ label: "Cancel", value: null }]);
         if (choice) app.socket.send("kit", { kit: choice });
     });
+
+    // Shop hotkeys (only while the shop view is open and you're not typing).
+    document.addEventListener("keydown", e => {
+        if (document.body.dataset.view !== "Game" || !state?.you || state.phase !== "shop") return;
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (!document.getElementById("dialog").hidden) return;
+        const action = actionFor(e, SHOP_ACTIONS);
+        if (!action) return;
+        e.preventDefault();
+        if (action === "reroll") document.getElementById("rerollButton").click();
+        else if (action === "ready") document.getElementById("readyButton").click();
+        else if (action === "hp") document.getElementById("hpButton").click();
+        else document.querySelectorAll("#shopGrid .btn-buy")[Number(action.slice(3)) - 1]?.click();
+    });
+    onKeybindsChanged(() => { if (state) rerender(state); });
 
     setInterval(() => {
         if (!state || state.phaseRemaining == null) return;
@@ -71,11 +91,19 @@ export function createGameView(app) {
         app.socket.send(action, { slot: index });
     }
 
+    const SOURCE_TEXT = {
+        weaponless: "Weaponless bonus: you fought rounds 1 and 2 without a weapon, so grab a special weapon and its buff for a third of the price.",
+        chest: "From the chest: free.",
+        shrine: "From the shrine: free."
+    };
+
     function renderPity(you, open) {
         const panel = document.getElementById("pityPanel");
         const offer = you.shop.pity ?? [];
         panel.hidden = offer.length === 0;
         if (!offer.length) return;
+        document.getElementById("pityText").textContent = [...new Set(offer.map(o => SOURCE_TEXT[o.source] ?? ""))].join(" ")
+            + " Buying these doesn't lock your rerolls. They're gone after this shop.";
         document.getElementById("pityGrid").replaceChildren(...offer.map((slot, i) => {
             const it = item(slot.itemId);
             const canBuy = open && !slot.bought && you.money >= slot.price;
@@ -95,27 +123,28 @@ export function createGameView(app) {
         grid.replaceChildren(...you.shop.items.map((slot, i) => {
             const it = item(slot.itemId);
             const mine = owned(you, it.id);
-            const maxed = mine && mine.level >= MAX_LEVEL;
+            const maxed = mine && mine.level >= (state.maxLevel ?? 5);
             const price = slot.price ?? it.price;
             const canBuy = open && !slot.bought && !maxed && you.money >= price;
-            const label = slot.bought ? "Bought" : maxed ? "Max level" : mine ? `Level up → ${mine.level + 1}` : `Buy`;
+            const label = slot.bought ? "Bought" : maxed ? "Max level" : mine ? `Lv ${mine.level + 1}` : `Buy`;
             return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? " special" : "") },
                 itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large" }),
                 el("div", { class: "shop-name", text: it.name }),
                 el("div", { class: "shop-type muted small", text: it.pack !== "generic" ? `Special ${it.type}` : it.type }),
+                i < 6 ? el("span", { class: "kb-hint slot-hint", text: keyLabelOf(`buy${i + 1}`) }) : null,
                 el("button", { class: "btn btn-buy", disabled: !canBuy, onclick: () => buy(i) },
                     el("span", { text: label }), slot.bought ? null : el("b", {},
                         price !== it.price ? el("s", { class: "muted", text: `${it.price}$` }) : null, ` ${price}$`)));
         }));
 
         const reroll = document.getElementById("rerollButton");
-        reroll.textContent = `Reroll (${you.shop.rerollsLeft})`;
+        reroll.replaceChildren(`Reroll (${you.shop.rerollsLeft})`, hint("reroll"));
         reroll.disabled = !open || you.shop.locked || you.shop.rerollsLeft <= 0;
         const hp = document.getElementById("hpButton");
-        hp.textContent = `+HP ×${state.settings.hpUpgradeMult} · ${you.hpUpgradeCost}$`;
+        hp.replaceChildren(`+HP ×${state.settings.hpUpgradeMult} · ${you.hpUpgradeCost}$`, hint("hp"));
         hp.disabled = !open || you.money < you.hpUpgradeCost;
         const ready = document.getElementById("readyButton");
-        ready.textContent = you.ready ? "Not ready" : "Ready";
+        ready.replaceChildren(you.ready ? "Not ready" : "Ready", hint("ready"));
         ready.classList.toggle("is-ready", you.ready);
         ready.disabled = !open;
         const income = you.income ?? {};
@@ -171,11 +200,66 @@ export function createGameView(app) {
                 el("button", { class: "btn btn-small", text: "Watch", onclick: () => app.socket.send("spectate", { fightId: f.id }) }))));
     }
 
+    function renderAugments(you) {
+        const panel = document.getElementById("augmentPanel");
+        const offer = you.augmentOffer;
+        panel.hidden = !offer || state.phase !== "shop";
+        if (!panel.hidden)
+            document.getElementById("augmentOffer").replaceChildren(...offer.map((id, i) =>
+                augmentCard(id, { onclick: () => app.socket.send("augment", { index: i }) })));
+        document.getElementById("myAugments").replaceChildren(...(you.augments?.length
+            ? [el("span", { class: "muted small", text: "Augments: " }), ...you.augments.map(id => augmentCard(id, { small: true }))]
+            : []));
+    }
+
+    function renderMystery(you) {
+        const panel = document.getElementById("mysteryPanel");
+        const m = you.mystery;
+        panel.hidden = !m || state.phase !== "shop";
+        if (panel.hidden) return;
+        // Don't wipe the bet the player is typing when another player's state update arrives.
+        if (panel.contains(document.activeElement) && document.activeElement.tagName === "INPUT" && !m.used) return;
+        const send = arg => app.socket.send("mystery", arg === undefined ? {} : { arg: String(arg) });
+        const title = { chest: "Mystery: Chest", shrine: "Mystery: Shrine", gamble: "Mystery: Gamble Table", blacksmith: "Mystery: Blacksmith", fountain: "Mystery: Fountain", library: "Mystery: Library" }[m.kind];
+        const text = {
+            chest: "Pay 25$ to open it: a random item (10% chance for a special), yours for free.",
+            shrine: "Sacrifice 1 life to take one of these special items for free.",
+            gamble: "Bet up to half your money. 50%: double it, 50%: lose it.",
+            blacksmith: "Pay 15$ to level up one of your items by 1 (specials up to level 3).",
+            fountain: `Pay 40$ for +1 life (up to ${you.startingLives}).`,
+            library: "Get 10$ and your next kit change is free."
+        }[m.kind];
+        let body;
+        if (m.used) body = el("p", { class: "mystery-result", text: m.result ?? "Done." });
+        else if (m.kind === "shrine") body = el("div", { class: "pick-row" }, m.choices.map((id, i) =>
+            el("button", { class: "pick", onclick: () => send(i) }, itemCard(id), el("span", { text: item(id).name }))));
+        else if (m.kind === "gamble") {
+            const input = el("input", { type: "number", min: "1", max: String(Math.floor(you.money / 2)), value: String(Math.floor(you.money / 4)) });
+            body = el("div", { class: "row" }, input, el("button", { class: "btn", text: "Bet", onclick: () => send(Math.floor(Number(input.value))) }));
+        } else if (m.kind === "blacksmith") {
+            const owned = [you.weapon, you.shirt, ...you.dynamics].filter(Boolean);
+            body = el("div", { class: "pick-row" }, owned.map(o => el("button", { class: "pick", onclick: () => send(o.slot) },
+                itemCard(o.id, { level: o.level }), el("span", { text: `${item(o.id).name} → Lv ${o.level + 1}` }))));
+        } else {
+            const cost = { chest: 25, fountain: 40, library: 0 }[m.kind];
+            body = el("button", { class: "btn btn-primary", disabled: you.money < cost, onclick: () => send() },
+                m.kind === "chest" ? "Open (25$)" : m.kind === "fountain" ? "Drink (40$)" : "Read");
+        }
+        panel.replaceChildren(el("h3", { text: title }), el("p", { class: "muted small", text }), body);
+    }
+
+    function renderMutators() {
+        document.getElementById("mutatorRow").replaceChildren(...(state.mutators ?? []).map(m =>
+            el("span", { class: "mutator-chip", title: m.description }, el("b", { text: m.name }), ` ${m.description}`)));
+    }
+
     function renderSide() {
         document.getElementById("gPlayers").replaceChildren(...state.players.map(p =>
             el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") },
                 el("span", { class: "dot" + (p.connected ? " on" : "") }),
-                el("span", { class: "grow" }, p.name, p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null),
+                el("span", { class: "grow" }, p.name, p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null,
+                    p.mastery ? el("div", { class: "mastery", text: p.mastery }) : null),
+                p.bounty > 0 ? el("span", { class: "tag bounty", title: "Beat them to collect it", text: `Bounty ${p.bounty}$` }) : null,
                 !p.alive ? el("span", { class: "tag dead", text: "Out" })
                     : state.phase === "shop" ? el("span", { class: "tag" + (p.ready ? " ready" : ""), text: p.ready ? "Ready" : "Shopping" }) : null)));
         document.getElementById("gEvents").replaceChildren(...state.events.map(e =>
@@ -184,7 +268,7 @@ export function createGameView(app) {
                 el("div", { class: "small muted", text: e.claimedBy ? `Claimed by ${e.claimedBy}` : e.description }))));
     }
 
-    return {
+    const view = {
         get state() { return state; },
         render(next) {
             state = next;
@@ -195,11 +279,14 @@ export function createGameView(app) {
             document.getElementById("gTimer").textContent = state.phaseRemaining == null ? "–" : formatTime(state.phaseRemaining);
             renderSide();
             renderModifier();
+            renderMutators();
             renderFights(you);
             if (!you) return;
+            renderAugments(you);
+            renderMystery(you);
             const kit = data.kits[you.kit];
             document.getElementById("myKit").replaceChildren(el("span", { class: "muted small", text: "Kit: " }), el("b", { text: kit?.name ?? you.kit }),
-                el("span", { class: "kit-keys" }, (kit?.abilities ?? []).map(a => el("span", { class: "key" + (a.ultimate ? " ult" : ""), title: a.name, text: a.key.toUpperCase() }))));
+                el("span", { class: "kit-keys" }, (kit?.abilities ?? []).map((a, i) => el("span", { class: "key" + (a.ultimate ? " ult" : ""), title: a.name, text: keyLabelOf(SKILL_ACTIONS[i]) }))));
             const changeKit = document.getElementById("changeKit");
             changeKit.textContent = `Change kit (${state.kitSwapCost}$)`;
             changeKit.disabled = state.phase !== "shop" || you.eliminated || you.money < state.kitSwapCost;
@@ -219,4 +306,6 @@ export function createGameView(app) {
             renderBuild(you);
         }
     };
+    rerender = next => view.render(next);
+    return view;
 }

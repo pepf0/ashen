@@ -111,6 +111,9 @@ Each line is one object with a `type`:
 | `round` | every shop opens | round number, round modifier, players alive |
 | `fight` | every fight | both builds, kits, max HP, DR, dodge, winner, duration, damage, earnings, attacks, crits, dodges, stuns, abilities used, healing, shield absorbed, round modifier, sudden death |
 | `kit_change` | kit switched in a shop | from, to, cost |
+| `augment_offer` / `augment_pick` | augment rounds | offered ids / picked id and tier |
+| `mystery_offer` / `mystery_use` | mystery events | kind, choices / what was done and the result |
+| `bounty` | a bounty is collected | collector, victim, amount |
 | `event_claimed` | first-to events | event, player |
 | `elimination` | player knocked out | placement, final build |
 | `match_end` | match ends | standings |
@@ -129,8 +132,9 @@ ls /var/lib/ashen/backups       # database backups
 
 ## Editing game data
 
-Items, effects, lobby events, kits (`kits.json`) and round modifiers
-(`modifiers.json`) live in `json/`. The server validates every
+Items, effects, lobby events, kits (`kits.json`), round modifiers
+(`modifiers.json`), augments (`augments.json`), match mutators
+(`mutators.json`) and arenas (`arenas.json`) live in `json/`. The server validates every
 reference on startup (unknown effect IDs or event items stop it with a clear
 error), and the compendium reads the same files. Restart the service after
 changing them.

@@ -1,0 +1,18 @@
+[
+  { "id": "big_shops", "name": "Big Shops", "description": "Shops have 8 slots instead of 6" },
+  { "id": "special_frenzy", "name": "Special Frenzy", "description": "Special item chance x2 all match" },
+  { "id": "no_shirts", "name": "Shirtless", "description": "Shirts never appear in the shop" },
+  { "id": "armed_start", "name": "Armed Start", "description": "Everyone starts with a random generic weapon" },
+  { "id": "rich_start", "name": "Old Money", "description": "+50$ starting money" },
+  { "id": "hardcore", "name": "Hardcore", "description": "2 fewer lives (at least 2)" },
+  { "id": "long_haul", "name": "Long Haul", "description": "2 extra lives" },
+  { "id": "augment_feast", "name": "Augment Feast", "description": "Augment offers have 4 choices, plus an extra augment at round 12" },
+  { "id": "chaos", "name": "Chaos", "description": "A round modifier every round, starting in round 1" },
+  { "id": "quick_death", "name": "Quick Death", "description": "Overtime at 20s, sudden death at 40s" },
+  { "id": "fragile_start", "name": "Paper Bodies", "description": "Starting HP x0.6" },
+  { "id": "master_smith", "name": "Master Smith", "description": "Items can be leveled up to 7 instead of 5" },
+  { "id": "free_kits", "name": "Free Spirits", "description": "Changing kits in the shop is free" },
+  { "id": "big_interest", "name": "Compound Interest", "description": "Interest cap 10$ instead of 5$" },
+  { "id": "double_trouble", "name": "Double Trouble", "description": "Every 3rd round, all damage x2" },
+  { "id": "arena_masters", "name": "Arena Masters", "description": "Every fight has an arena (no plain fights)" }
+]
