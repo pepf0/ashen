@@ -1,5 +1,5 @@
 // Match view during the shop phase: top bar, players, events, shop, build and stats.
-import { el, item, itemCard, statPretty, kitCard, augmentCard, data } from "./data.js";
+import { el, item, itemCard, statPretty, kitCard, augmentCard, data, abilityPretty, abilityTooltip, attachTooltip } from "./data.js";
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl } from "./profile.js";
@@ -303,7 +303,18 @@ export function createGameView(app) {
             renderMystery(you);
             const kit = data.kits[you.kit];
             document.getElementById("myKit").replaceChildren(el("span", { class: "muted small", text: "Kit: " }), el("b", { text: kit?.name ?? you.kit }),
-                el("span", { class: "kit-keys" }, (kit?.abilities ?? []).map((a, i) => el("span", { class: "key" + (a.ultimate ? " ult" : ""), title: a.name, text: keyLabelOf(SKILL_ACTIONS[i]) }))));
+                el("span", { class: "kit-keys" }, (kit?.abilities ?? []).map((a, i) => {
+                    const k = el("span", { class: "key" + (a.ultimate ? " ult" : ""), text: keyLabelOf(SKILL_ACTIONS[i]) });
+                    attachTooltip(k, () => abilityTooltip(a, keyLabelOf(SKILL_ACTIONS[i])));
+                    return k;
+                })));
+            // Full ability list so you always know what your kit does while shopping.
+            document.getElementById("myKitAbilities").replaceChildren(...(kit?.abilities ?? []).map((a, i) => el("li", {},
+                el("span", { class: "key" + (a.ultimate ? " ult" : ""), text: keyLabelOf(SKILL_ACTIONS[i]) }),
+                el("div", {},
+                    el("b", { text: a.name }),
+                    el("span", { class: "muted small", text: a.ultimate ? "  ultimate" : `  ${a.cooldown}s` }),
+                    el("div", { class: "small", text: abilityPretty(a) })))));
             const changeKit = document.getElementById("changeKit");
             changeKit.textContent = `Change kit (${state.kitSwapCost}$)`;
             changeKit.disabled = state.phase !== "shop" || you.eliminated || you.money < state.kitSwapCost;

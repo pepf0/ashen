@@ -1,5 +1,5 @@
 // Live fight view. The server runs the fight in real time and streams ticks; Q/W/E/R send abilities.
-import { data, el, item, itemCard, abilityById } from "./data.js";
+import { data, el, item, itemCard, abilityById, abilityTooltip, attachTooltip, abilityPretty } from "./data.js";
 import { formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl } from "./profile.js";
@@ -40,9 +40,10 @@ export function createCombatView(app) {
         const label = el("span", { class: "ab-cd" });
         const btn = el(mine ? "button" : "div", {
             class: "ab" + (a.ultimate ? " ult" : "") + (mine ? "" : " small"),
-            title: `${a.name}: ${a.description}`,
+            "aria-label": `${a.name}: ${abilityPretty(a)}`,
             onclick: mine ? () => app.socket.send("ability", { slot }) : undefined
         }, sweep, el("span", { class: "ab-key", text: mine ? keyLabelOf(SKILL_ACTIONS[slot]) : a.key.toUpperCase() }), el("span", { class: "ab-name", text: a.name }), label);
+        attachTooltip(btn, () => abilityTooltip(a, mine ? keyLabelOf(SKILL_ACTIONS[slot]) : a.key.toUpperCase()));
         return { btn, sweep, label, ability: a };
     }
 

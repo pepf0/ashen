@@ -96,6 +96,14 @@ export function abilityById(id) {
     return null;
 }
 
+/** Tooltip content for a kit ability: key, name, cooldown/ultimate and what it does. */
+export function abilityTooltip(a, key) {
+    return el("div", {},
+        el("div", { class: "tt-title" }, key ? el("span", { class: "key tt-key" + (a.ultimate ? " ult" : ""), text: key }) : null, ` ${a.name}`),
+        el("div", { class: "tt-meta tt-plain", text: a.ultimate ? "Ultimate · charges as you deal and take damage" : `Skill · ${a.cooldown}s cooldown` }),
+        el("div", { class: "tt-effects", text: abilityPretty(a) }));
+}
+
 /** A kit card: name, description and its four abilities with keys. */
 export function kitCard(kitId, { selected = false, onclick, footer } = {}) {
     const kit = data.kits[kitId];

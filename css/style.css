@@ -1062,3 +1062,7 @@ label.inline select { width: auto; }
     .panel, .modifier-banner, .podium-block { background: rgba(17, 14, 34, 0.94); }
     .modal-card { background: #131025; }
 }
+
+.my-kit-abilities { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 16px; margin-top: 10px; }
+.tt-key { display: inline-flex; width: 22px; height: 22px; font-size: 0.8rem; vertical-align: middle; }
+.tt-meta.tt-plain { text-transform: none; }
