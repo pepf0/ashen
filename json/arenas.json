@@ -1,0 +1,10 @@
+[
+  { "id": "lava", "name": "Lava Pit", "description": "Both fighters burn for 1% of their max HP per second" },
+  { "id": "ice", "name": "Frozen Hall", "description": "All cooldowns x1.15" },
+  { "id": "sanctuary", "name": "Sanctuary", "description": "Both fighters heal 1% of their max HP per second" },
+  { "id": "storm", "name": "Stormy Peak", "description": "Every 5s lightning strikes a random fighter for 8% of their max HP" },
+  { "id": "gale", "name": "Windy Cliffs", "description": "+12% dodge chance for both fighters" },
+  { "id": "forge", "name": "The Forge", "description": "+10% crit chance and crit damage x1.2 for both" },
+  { "id": "colosseum", "name": "Colosseum", "description": "The winner gets an extra 5$" },
+  { "id": "void", "name": "The Void", "description": "Ultimates charge twice as fast" }
+]

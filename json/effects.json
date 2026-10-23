@@ -5,17 +5,18 @@
     "type": "buff",
     "target": "pepf.guitar",
     "stat": "damage",
-    "mult": 1.125,
+    "mult": 1.06,
     "duration": 3,
-    "max_stacks": 50,
-    "description": "On hit, gains a stacking {(mult-1)*100}% damage buff, lasting for {duration} seconds, up to {max_stacks} stacks"
+    "max_stacks": 10,
+    "stacking": "multiply",
+    "description": "On hit, multiplies its damage by x{mult} again (stacks compound), lasting for {duration} seconds, up to {max_stacks} stacks"
   },
   {
     "id": "pepf.pick.guitar_damage_buff",
     "type": "buff",
     "target": "pepf.guitar",
     "stat": "damage",
-    "mult": 2.0,
+    "mult": 1.25,
     "description": "Increases the damage of Pepf's Guitar by {(mult-1)*100}%"
   },
   {
@@ -23,7 +24,7 @@
     "type": "buff",
     "target": "pepf.guitar",
     "stat": "cooldown",
-    "mult": 0.75,
+    "mult": 0.85,
     "description": "Reduces the cooldown of Pepf's Guitar by {(1-mult)*100}%"
   },
   {
@@ -40,7 +41,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "damage",
-    "mult": 1.75,
+    "mult": 2.0,
     "description": "Increases the damage of your weapon by {(mult-1)*100}% while below {condition.hp_below*100}% HP"
   },
   {
@@ -54,9 +55,9 @@
   {
     "id": "pepf.dragon.invulnerability",
     "trigger": "cooldown",
-    "cooldown": 15,
+    "cooldown": 18,
     "type": "invulnerability",
-    "duration": 3,
+    "duration": 2,
     "description": "Gives {duration} seconds of invulnerability every {cooldown} seconds"
   },
   {
@@ -64,7 +65,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "cooldown",
-    "mult": 0.65,
+    "mult": 0.8,
     "description": "Reduces the cooldown of your weapon by {(1-mult)*100}%"
   },
   {
@@ -72,7 +73,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "damage",
-    "mult": 2.0,
+    "mult": 1.25,
     "description": "Increases the damage of your weapon by {(mult-1)*100}%"
   },
   {
@@ -105,7 +106,7 @@
     "type": "buff",
     "target": "z7fox.whip",
     "stat": "damage",
-    "mult": 3,
+    "mult": 1.5,
     "description": "Increases the damage of Z7FOX's Whip by {(mult-1)*100}%"
   },
   {
@@ -122,7 +123,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "cooldown",
-    "mult": 0.75,
+    "mult": 0.85,
     "description": "Reduces the cooldown of your weapon by {(1-mult)*100}%"
   },
   {
@@ -131,16 +132,17 @@
     "type": "buff",
     "target": "ely7.blade",
     "stat": "crit_damage",
-    "mult": 1.075,
+    "mult": 1.05,
     "max_stacks": 30,
-    "description": "On crit, gains a stacking {(mult-1)*100}% crit damage buff, up to {max_stacks} stacks"
+    "stacking": "multiply",
+    "description": "On crit, multiplies its crit damage by x{mult} again (stacks compound), up to {max_stacks} stacks"
   },
   {
     "id": "ely7.whetstone.blade_crit_chance_buff",
     "type": "buff",
     "target": "ely7.blade",
     "stat": "crit_chance",
-    "mult": 2.4,
+    "mult": 1.6,
     "description": "Increases the crit chance of Ely7's Blade by {(mult-1)*100}%"
   },
   {
@@ -148,7 +150,7 @@
     "type": "buff",
     "target": "ely7.blade",
     "stat": "cooldown",
-    "mult": 0.75,
+    "mult": 0.85,
     "description": "Reduces the cooldown of Ely7's Blade by {(1-mult)*100}%"
   },
   {
@@ -156,7 +158,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "crit_chance",
-    "add": 0.2,
+    "add": 0.25,
     "description": "Increases the crit chance of your weapon by a flat {add*100}%"
   },
   {
@@ -188,7 +190,7 @@
     "trigger": "xxzweiradxx.staff.hit",
     "condition": { "every_n_hits": 10 },
     "type": "attack",
-    "damage": 60,
+    "damage": 55,
     "description": "Every {condition.every_n_hits} hits, unleashes a strong smash, dealing {damage} damage"
   },
   {
@@ -199,7 +201,8 @@
     "target": "xxzweiradxx.staff",
     "stat": "cooldown",
     "mult": 10,
-    "duration": 5,
+    "duration": 3,
+    "scales": false,
     "description": "Every {condition.every_n_hits} hits, gets exhausted for {duration} seconds, increasing cooldown by {(mult-1)*100}%"
   },
   {
@@ -217,7 +220,7 @@
     "type": "buff",
     "target": "xxzweiradxx.staff.smash",
     "stat": "damage",
-    "mult": 3.95,
+    "mult": 1.6,
     "description": "Increases the smash damage of xXZweiradXx's Staff by {(mult-1)*100}%"
   },
   {
@@ -225,7 +228,7 @@
     "type": "buff",
     "target": "xxzweiradxx.staff.smash",
     "stat": "hit_condition",
-    "add": -2,
+    "add": -1,
     "description": "Reduces required hits for smash by {0-add}"
   },
   {
@@ -233,7 +236,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "damage",
-    "mult": 1.5,
+    "mult": 1.2,
     "description": "Increases the damage of your weapon by {(mult-1)*100}%"
   },
   {
@@ -251,7 +254,7 @@
     "type": "buff",
     "target": "type.weapon",
     "stat": "damage",
-    "mult": 1.25,
+    "mult": 1.2,
     "max_stacks": 5,
     "description": "Every {cooldown} seconds, gives your weapon a stacking {(mult-1)*100}% damage buff, up to {max_stacks} stacks"
   },
@@ -285,5 +288,13 @@
     "type": "interest",
     "gain": 0.1,
     "description": "At the start of combat, earn {gain*100}% of your money as interest" 
+  },
+  {
+    "id": "event.pack_master.weapon_damage_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "damage",
+    "mult": 1.1,
+    "description": "Increases the damage of your weapon by {(mult-1)*100}%"
   }
 ]
