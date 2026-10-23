@@ -1066,3 +1066,22 @@ label.inline select { width: auto; }
 .my-kit-abilities { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 16px; margin-top: 10px; }
 .tt-key { display: inline-flex; width: 22px; height: 22px; font-size: 0.8rem; vertical-align: middle; }
 .tt-meta.tt-plain { text-transform: none; }
+
+/*#region Readable numbers
+   Pixelify Sans makes 2/5/8/S look alike. The pixel font stays for titles and names; everything that shows
+   numbers (timers, money, prices, cooldowns, damage, levels, buttons, tags) uses the body font. */
+.btn, .tag, .badge, .stat-pill b, .float, .code, .lobby-code, #joinForm input, .podium-block,
+.arena-clock b, .overtime, .stacks, .ab-cd, .countdown, .profile-level, .profile-stats b,
+.level-badge, .level-badge-sm, .buff-time, .hp-text, .kb-key, .mastery, .versus {
+    font-family: var(--font-body);
+    font-variant-numeric: tabular-nums;
+}
+.btn, .tag, .badge { font-weight: 500; letter-spacing: 0.01em; }
+.stat-pill b { font-weight: 700; }
+.float { font-weight: 700; }
+.float.ability, .float.ult { font-family: var(--font-pixel); }
+.arena-clock b, .countdown, .profile-level, .podium-block { font-weight: 700; }
+.lobby-code, .code { font-weight: 700; letter-spacing: 0.18em; }
+.overtime { font-weight: 600; }
+.stacks, .ab-cd { font-weight: 600; }
+/*#endregion*/
