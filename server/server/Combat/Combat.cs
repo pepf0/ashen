@@ -30,11 +30,11 @@ public static class Combat
     public static int TPS { get; set; } = 20;
     public static double SPT => 1.0 / TPS;
 
-    public const double MaxDamageReduction = 0.65;
-    public const double MaxDodgeChance = 0.45;
+    public const double MaxDamageReduction = 0.6;
+    public const double MaxDodgeChance = 0.4;
     /// <summary>Abilities (Brace, Smoke, ...) can push past the normal caps, up to these.</summary>
-    public const double AbilityMaxDamageReduction = 0.85;
-    public const double AbilityMaxDodgeChance = 0.75;
+    public const double AbilityMaxDamageReduction = 0.75;
+    public const double AbilityMaxDodgeChance = 0.5;
     public const double MinCooldown = 0.1;
     public const double OvertimeStart = 30;
     public const double OvertimeRampPerSecond = 0.1;
@@ -43,7 +43,7 @@ public static class Combat
     public const double NoWeaponOvertimeStart = 5;
     public const double NoWeaponSuddenDeathStart = 10;
     /// <summary>The ultimate is charged after dealing + taking this share of your max HP in damage.</summary>
-    public const double UltChargeFraction = 0.4;
+    public const double UltChargeFraction = 0.75;
     /// <summary>Safety net: a fight never runs longer than this (sudden death ends it long before).</summary>
     public const double HardLimit = 180;
 
@@ -1013,24 +1013,35 @@ public sealed class Fight
     }
 
     /// <summary>Mirror: copies the enemy's ability buffs and their weapon buff stacks (as multipliers) for a while.</summary>
+    private const double MirrorMaxMult = 1.5, MirrorMinMult = 0.67;
+
     private void MirrorBuffs(Fighter f, Fighter enemy, double duration)
     {
-        foreach (var m in enemy.Mods.Where(m => !m.Debuff).ToList())
+        // Only upsides are copied: no Rage damage-taken, no Staff exhaustion.
+        foreach (var m in enemy.Mods.Where(m => !m.Debuff && Beneficial(m.Kind, m.Value)).ToList())
             AddMod(f, "mirror", m.Kind, m.Value, duration);
         foreach (var es in enemy.Effects.Where(e => e.Effect.Type == EffectType.Buff
                      && (e.Effect.Target == "type.weapon" || e.Effect.Target == enemy.Weapon?.Id)))
         {
             int n = ActiveStacks(enemy, es);
             if (n == 0) continue;
-            double mult = es.ScaledMult is double m ? Math.Max(0, 1 + n * (m - 1)) : 1;
+            // Copied stacks are capped so Mirror can't steal a fully ramped Guitar.
+            double mult = es.ScaledMult is double m ? Math.Clamp(1 + n * (m - 1), MirrorMinMult, MirrorMaxMult) : 1;
             switch (es.Effect.Stat)
             {
-                case StatNames.Damage when mult != 1: AddMod(f, "mirror", ModKind.DamageDealt, mult, duration); break;
-                case StatNames.Cooldown when mult != 1: AddMod(f, "mirror", ModKind.WeaponCooldown, mult, duration); break;
+                case StatNames.Damage when mult > 1: AddMod(f, "mirror", ModKind.DamageDealt, mult, duration); break;
+                case StatNames.Cooldown when mult < 1: AddMod(f, "mirror", ModKind.WeaponCooldown, mult, duration); break;
                 case StatNames.CritChance when es.ScaledAdd is double a: AddMod(f, "mirror", ModKind.CritChance, a * n, duration); break;
             }
         }
     }
+
+    private static bool Beneficial(ModKind kind, double value) => kind switch
+    {
+        ModKind.DamageTaken or ModKind.WeaponCooldown => value < 1,
+        ModKind.DamageDealt => value > 1,
+        _ => value > 0
+    };
 
     /// <summary>Simple bot for ghosts, disconnected players and simulations: defensive skills right before the enemy
     /// swings, Cleanse when stunned or debuffed, everything else as soon as it is ready.</summary>

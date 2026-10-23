@@ -131,7 +131,7 @@ app.socket
     .on("open", () => document.body.classList.remove("offline"))
     .on("error", msg => toast(msg.message))
     .on("chat", msg => addChat(msg.messages))
-    .on("announce", msg => announce(`${msg.player} claimed ${msg.name}${msg.reward && msg.reward !== "Title" ? ` (${msg.reward})` : ""}`))
+    .on("announce", msg => msg.text ? announce(msg.text) : announce(`${msg.player} claimed ${msg.name}${msg.reward && msg.reward !== "Title" ? ` (${msg.reward})` : ""}`))
     .on("kicked", () => toast("You were kicked from the lobby.", "info"))
     .on("left", () => {
         app.lobby = null;

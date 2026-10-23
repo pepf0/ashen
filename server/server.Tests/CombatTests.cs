@@ -45,9 +45,9 @@ public class CombatTests
     [Fact]
     public void DifferentEffectsMultiply()
     {
-        // Pepf Shirt x0.85, Cyan Sigil x0.9, Dragon x0.65 on a 1s guitar
+        // Pepf Shirt x0.85, Cyan Sigil x0.9, Dragon x0.8 on a 1s guitar
         var stats = Combat.PreviewStats(TestHelpers.Build("pepf.guitar", "pepf.shirt", "pepf.sigil", "pepf.dragon"));
-        Assert.Equal(1.0 * 0.85 * 0.9 * 0.65, stats["cooldown"], 6);
+        Assert.Equal(1.0 * 0.85 * 0.9 * 0.8, stats["cooldown"], 6);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class CombatTests
     {
         var withGuitar = Combat.PreviewStats(TestHelpers.Build("pepf.guitar", null, "pepf.pick"));
         var withSword = Combat.PreviewStats(TestHelpers.Build("generic.sword", null, "pepf.pick"));
-        Assert.Equal(10 * 1.05, withGuitar["damage"], 6); // Pick x2, and 2 Pepf items give +5% synergy
+        Assert.Equal(5 * 1.3 * 1.05, withGuitar["damage"], 6); // Pick x1.3, and 2 Pepf items give +5% synergy
         Assert.Equal(5, withSword["damage"], 6);
     }
 
@@ -66,7 +66,7 @@ public class CombatTests
         var buffs = r.Events.OfType<BuffEvent>().Where(b => b.EffectSource == "pepf.guitar.stacking_damage_buff").ToList();
         Assert.Contains(buffs, b => b.Stacks >= 3);
         var three = buffs.First(b => b.Stacks == 3);
-        Assert.Equal(1 + 3 * 0.125, three.Mult!.Value, 6);
+        Assert.Equal(1 + 3 * 0.08, three.Mult!.Value, 6);
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public class CombatTests
         {
             if (e is DamageEvent { EffectSource: "xxzweiradxx.staff.smash" } smash)
             {
-                Assert.Equal(8, hitsBeforeSmash);
-                Assert.Equal(60 * 3.95, smash.Damage, 3);
+                Assert.Equal(9, hitsBeforeSmash);
+                Assert.Equal(50 * 2.0, smash.Damage, 3);
                 return;
             }
             if (e is DamageEvent { WeaponAttack: true, Dodged: false, Blocked: false, Source: 0 }) hitsBeforeSmash++;

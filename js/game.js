@@ -93,7 +93,7 @@ export function createGameView(app) {
     }
 
     const SOURCE_TEXT = {
-        weaponless: "Weaponless bonus: you fought rounds 1 and 2 without a weapon, so grab a special weapon and its buff for a third of the price.",
+        weaponless: "Empty Hands: you fought rounds 1 and 2 without a weapon, so grab a special weapon and its buff for a third of the price.",
         chest: "From the chest: free.",
         shrine: "From the shrine: free."
     };
@@ -280,9 +280,9 @@ export function createGameView(app) {
                 !p.alive ? el("span", { class: "tag dead", text: "Out" })
                     : state.phase === "shop" ? el("span", { class: "tag" + (p.ready ? " ready" : ""), text: p.ready ? "Ready" : "Shopping" }) : null)));
         document.getElementById("gEvents").replaceChildren(...state.events.map(e =>
-            el("li", { class: e.claimedBy ? "claimed" : "" },
+            el("li", { class: (e.claimedBy ? "claimed" : "") + (e.special ? " special" : "") },
                 el("div", { class: "row spread" }, el("b", { text: e.name }), el("span", { class: "small muted", text: e.reward })),
-                el("div", { class: "small muted", text: e.claimedBy ? `Claimed by ${e.claimedBy}` : e.description }))));
+                el("div", { class: "small muted", text: e.claimedBy ? `${e.special ? "Taken" : "Claimed"} by ${e.claimedBy}` : e.description }))));
     }
 
     const view = {

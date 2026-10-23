@@ -55,6 +55,10 @@ public partial class Lobby
     // ----- match state -----
     private readonly List<Player> players = new();
     private readonly Dictionary<string, long> claimedEvents = new();
+    /// <summary>Events active this match (events with a chance are rolled at match start).</summary>
+    private readonly HashSet<string> activeEvents = new();
+    /// <summary>Names of players who took the Empty Hands offer, for the events list.</summary>
+    private readonly List<string> weaponlessTakers = new();
     private readonly HashSet<string> lobbySpecials = new();
     private readonly List<ChatMessage> chat = new();
     private readonly Dictionary<long, DateTime> lastChat = new();
@@ -387,6 +391,10 @@ public partial class Lobby
 
             players.Clear();
             claimedEvents.Clear();
+            weaponlessTakers.Clear();
+            activeEvents.Clear();
+            foreach (var ev in GameData.Events)
+                if (ev.Chance is not { } chance || rng.NextDouble() < chance) activeEvents.Add(ev.Id);
             lobbySpecials.Clear();
             pendingAnnouncements.Clear();
             lastGameOver = null;
@@ -426,6 +434,7 @@ public partial class Lobby
                 lobby = Code,
                 settings = Settings,
                 mutators = mutators.Select(m => m.Id),
+                events = activeEvents,
                 players = players.Select(p => new { id = p.Id, name = p.Name, kit = p.Kit })
             });
             AddSystemChat("The match has started. Good luck!");
@@ -599,7 +608,7 @@ public partial class Lobby
                 p.Mystery = RollMystery(p);
                 if (p.Mystery is not null) log?.Write("mystery_offer", new { round, player = p.Id, kind = p.Mystery.Kind, choices = p.Mystery.Choices });
             }
-            p.Shop.Pity = round == Shop.PityRound && p.EarlyWeaponlessFights >= 2 && p.Weapon is null
+            p.Shop.Pity = round == Shop.PityRound && WeaponlessEventActive && p.EarlyWeaponlessFights >= 2 && p.Weapon is null
                 ? Shop.PityOffer(UnavailableSpecials(p), rng)
                 : new List<ShopSlot>();
             CheckEvents(p, null);
@@ -625,6 +634,7 @@ public partial class Lobby
             if (p.Shop.Pity.Count > 0)
                 log?.Write("pity_offer", new { round, player = p.Id, items = p.Shop.Pity });
         }
+        AnnounceRoundEvents();
         BotsTakeShop();
         FlushAnnouncements();
         BroadcastState();
@@ -1178,7 +1188,11 @@ public partial class Lobby
             st.Spent += price;
             if (item.Id == Shop.DragonId) st.OwnedDragon = true;
             if (item.Type == ItemType.Shirt) st.EverShirt = true;
-            if (pity && shopSlot.Source == "weaponless") st.WeaponlessTaken = true;
+            if (pity && shopSlot.Source == "weaponless")
+            {
+                st.WeaponlessTaken = true;
+                if (!weaponlessTakers.Contains(p.Name)) weaponlessTakers.Add(p.Name);
+            }
             if (p.FindOwned(item.Id) is { } nowOwned && nowOwned.Level >= MaxLevel) st.MaxLevelReached = true;
             if (p.AllItems().Where(x => x.Item.IsSpecial).GroupBy(x => x.Item.Pack).Any(g => g.Select(x => x.Id).Distinct().Count() >= 5))
                 st.FullPack = true;
@@ -1434,7 +1448,8 @@ public partial class Lobby
     {
         foreach (var ev in GameData.Events)
         {
-            if (claimedEvents.ContainsKey(ev.Id)) continue;
+            if (claimedEvents.ContainsKey(ev.Id) || !activeEvents.Contains(ev.Id)) continue;
+            if (ev.Trigger == EventTrigger.WeaponlessStart) continue;
             if (ev.NotFirstRound && round <= 1) continue;
             bool met = ev.Trigger switch
             {
@@ -1456,6 +1471,21 @@ public partial class Lobby
             p.BonusEffects.AddRange(ev.RewardEffects ?? new List<string>());
             p.Titles.Add(ev.Name);
             pendingAnnouncements.Add(ev.Id + "\n" + p.Id);
+        }
+    }
+
+    private bool WeaponlessEventActive =>
+        GameData.Events.Any(e => e.Trigger == EventTrigger.WeaponlessStart && activeEvents.Contains(e.Id));
+
+    /// <summary>Banners for active events that announce themselves this round (e.g. Empty Hands in rounds 1-2).</summary>
+    private void AnnounceRoundEvents()
+    {
+        foreach (var ev in GameData.Events)
+        {
+            if (!activeEvents.Contains(ev.Id) || ev.AnnounceRounds?.Contains(round) != true) continue;
+            string text = ev.AnnounceText ?? $"{ev.Name}: {ev.Description}";
+            Broadcast(new { type = "announce", eventId = ev.Id, name = ev.Name, text });
+            AddSystemChat("Event: " + text);
         }
     }
 
@@ -1571,13 +1601,16 @@ public partial class Lobby
                     appearance = o.Appearance,
                     mastery = MemberOf(o.Id)?.Mastery
                 }),
-                events = GameData.Events.Select(e => new
+                events = GameData.Events.Where(e => activeEvents.Contains(e.Id)).Select(e => new
                 {
                     id = e.Id,
                     name = e.Name,
                     description = e.Description,
                     reward = e.Reward,
-                    claimedBy = claimedEvents.TryGetValue(e.Id, out var by) ? FindPlayer(by)?.Name : null
+                    special = e.Chance is not null,
+                    claimedBy = e.Trigger == EventTrigger.WeaponlessStart
+                        ? (weaponlessTakers.Count > 0 ? string.Join(", ", weaponlessTakers) : null)
+                        : claimedEvents.TryGetValue(e.Id, out var by) ? FindPlayer(by)?.Name : null
                 })
             }
         });

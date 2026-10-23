@@ -485,6 +485,7 @@ button.item-card:hover, .item-card:hover { background-color: var(--panel-hover);
 .player-list li.offline .grow::after { content: " · away"; color: var(--text-faint); }
 .event-list li { padding: 7px 0; border-bottom: 1px solid rgba(192, 192, 255, 0.05); }
 .event-list li.claimed { opacity: 0.55; }
+.event-list li.special { border-left: 3px solid var(--gold); padding-left: 6px; }
 
 .shop-grid {
     display: grid;

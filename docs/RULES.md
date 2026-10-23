@@ -178,20 +178,20 @@ the server code.
 Everyone picks a kit in the lobby (free). In any shop you can switch for 15 $.
 Several players can pick the same kit. Each kit has three skills (**Q**, **W**,
 **E**) on cooldowns and an **ultimate** (**R**) that charges from damage you deal
-and take: dealing + taking 40 % of your max HP fills it. Charge and cooldowns
+and take: dealing + taking 75 % of your max HP fills it. Charge and cooldowns
 reset every fight. Stunned players can't use abilities (except Cleanse).
 
 | Kit | Q | W | E | R (ultimate) |
 |---|---|---|---|---|
-| Duelist | Parry (6 s): blocks the next hit within 0.6 s, reflects 50 % | Lunge (8 s): instant extra weapon attack | Feint (10 s): enemy's next weapon attack misses | Flurry: 5 extra weapon attacks over 1.5 s |
-| Berserker | Rage (10 s): +50 % damage dealt, +25 % taken, 4 s | Bloodlust (12 s): heal 30 % of damage dealt, 5 s | Shout (9 s): stun 0.5 s | Rampage: weapon cooldown ×0.5 + stun immune 6 s, breaks stuns |
-| Guardian | Shield (8 s): absorb 15 % max HP, 4 s | Brace (10 s): +30 % damage reduction (past the cap), 3 s | Cleanse (12 s): remove stun + enemy debuffs, works while stunned | Bulwark: invulnerable 2.5 s, reflects 100 % of blocked damage |
-| Trickster | Smoke (9 s): +40 % dodge, 3 s | Hex (11 s): enemy weapon cooldown ×1.5, 4 s | Blink (7 s): next weapon attack crits | Mirror: copy the enemy's active buffs for 6 s |
-| Gambler | Coin Flip (6 s): next hit ×2 or ×0.5 | Double Down (12 s): +30 % crit chance, 4 s | Jackpot (15 s): 10 % stun 2 s, else +2 $ | All In: next 3 hits ×3 or miss (50/50 each) |
-| Sniper | Aim (8 s): next hit +100 % | Mark (12 s): enemy takes +20 % damage, 5 s | Retreat (10 s): +50 % dodge, 2 s | Headshot: 2 s wind-up, then 40 % of the enemy's current HP |
+| Duelist | Parry (7 s): blocks the next hit within 0.6 s, reflects 50 % | Lunge (7 s): instant extra weapon attack | Feint (12 s): enemy's next weapon attack misses | Flurry: 5 extra weapon attacks over 1.5 s |
+| Berserker | Rage (10 s): +60 % damage dealt, +15 % taken, 4 s | Bloodlust (12 s): heal 40 % of damage dealt, 5 s | Shout (8 s): stun 0.5 s | Rampage: weapon cooldown ×0.5 + stun immune 6 s, breaks stuns |
+| Guardian | Shield (12 s): absorb 9 % max HP, 4 s | Brace (12 s): +20 % damage reduction (past the item cap), 3 s | Cleanse (12 s): remove stun + enemy debuffs, works while stunned | Bulwark: invulnerable 1.5 s, reflects 50 % of blocked damage |
+| Trickster | Smoke (8 s): +30 % dodge, 3 s | Hex (11 s): enemy weapon cooldown ×1.6, 4 s | Blink (5 s): next weapon attack crits | Mirror: copy the enemy's active upsides for 6 s (copied stacks capped at ×1.5) |
+| Gambler | Coin Flip (3.5 s): next hit ×3 or ×0.75 | Double Down (10 s): +50 % crit chance, 5 s | Jackpot (12 s): 25 % stun 1.5 s, else +3 $ | All In: next 4 hits each 65 % to deal ×3.5, else miss |
+| Sniper | Aim (8 s): next hit +125 % | Mark (12 s): enemy takes +20 % damage, 5 s | Retreat (12 s): +30 % dodge, 2 s | Headshot: 2 s wind-up, then 40 % of the enemy's current HP |
 
-- Ability dodge and damage reduction can go past the normal caps (up to 75 %
-  dodge and 85 % damage reduction).
+- Ability dodge and damage reduction can go past the item caps, but never past
+  the hard caps: **50 % dodge** and **75 % damage reduction** in total.
 - Headshot ignores damage reduction and overtime, but invulnerability, Parry
   and Shield still work against it.
 - All numbers are in `json/kits.json`.
@@ -231,8 +231,11 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
   confirmation; levels are lost). With all 4 dynamic slots full you pick a
   dynamic to replace.
 
-### Weaponless bonus
+### Empty Hands (special event)
 
+- **Empty Hands** is a special lobby event that is only active in some matches
+  (30 %, `chance` in `json/events.json`). When it is active, everyone gets a
+  banner in rounds 1 and 2 and it shows in the Lobby events list.
 - If you fought **both** round 1 and round 2 without a weapon, shop 3 also offers
   a random **special weapon and its pack's buff** (e.g. Pepf's Guitar + Pepf's
   Pick) at a third of their price (rounded up), as two separate offers.
@@ -241,6 +244,7 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
 - Only specials you could still get are offered (per-lobby mode respected). If
   no special weapon is left there is no offer; if the buff is gone, only the
   weapon is offered.
+- Without the event there is no weaponless offer.
 
 ### HP upgrades
 
@@ -259,7 +263,7 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
   3. damage is reduced by the defender's **damage reduction**,
   4. invulnerability blocks it completely.
 - Damage reduction and dodge chance are the sum over all your items, capped at
-  65 % and 45 %.
+  60 % and 40 % (abilities can add more, up to the hard caps of 75 % and 50 %).
 - Weapon cooldown can't go below 0.1 s, crit chance is capped at 100 %.
 - A stunned player's weapon and item cooldowns stop. Stuns hitting an already
   stunned player add their duration. Invulnerability blocks new stuns.
@@ -297,7 +301,8 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
 
 ## Lobby events (first to …)
 
-Each event can be claimed once per lobby. Everyone sees a banner when it is
+Each event can be claimed once per lobby (special events like Empty Hands
+are only active in some matches, see above). Everyone sees a banner when it is
 claimed and the list of open/claimed events. Defined in `json/events.json`.
 
 | Event | Condition | Reward |

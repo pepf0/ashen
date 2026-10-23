@@ -77,7 +77,7 @@
     "price": 60,
     "base_stats": {
       "damage": 20,
-      "cooldown": 5,
+      "cooldown": 3.5,
       "crit_chance": 0.1,
       "crit_damage": 1.9
     },
@@ -118,8 +118,8 @@
     "sprite": "z7fox/chain.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.2,
-      "dodge_chance": 0.2
+      "damage_reduction": 0.12,
+      "dodge_chance": 0.12
     },
     "description": "Your faith will protect you."
   },
@@ -131,7 +131,7 @@
     "sprite": "z7fox/football.png",
     "price": 50,
     "base_stats": {
-      "dodge_chance": 0.2
+      "dodge_chance": 0.12
     },
     "effects": ["z7fox.football.weapon_cooldown_buff"],
     "description": "A football, that somehow makes you agile?! Also, it's red..."
@@ -144,10 +144,10 @@
     "sprite": "ely7/blade.png",
     "price": 60,
     "base_stats": {
-      "damage": 5,
+      "damage": 6,
       "cooldown": 1,
-      "crit_chance": 0.3,
-      "crit_damage": 1
+      "crit_chance": 0.35,
+      "crit_damage": 1.5
     },
     "effects": ["ely7.blade.stacking_crit_damage_buff"],
     "description": "A blade wielded by a lucky man."
@@ -173,7 +173,7 @@
     "sprite": "ely7/shirt.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.16
+      "damage_reduction": 0.2
     },
     "effects": [
       "ely7.shirt.weapon_crit_chance_buff",
@@ -209,7 +209,7 @@
     "sprite": "xxzweiradxx/staff.png",
     "price": 60,
     "base_stats": {
-      "damage": 1,
+      "damage": 2,
       "cooldown": 0.5,
       "crit_chance": 0.1,
       "crit_damage": 2
@@ -242,7 +242,7 @@
     "sprite": "xxzweiradxx/shirt.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.28
+      "damage_reduction": 0.24
     },
     "effects": ["xxzweiradxx.shirt.weapon_damage_buff"],
     "description": "A shirt that has been seen quite often. Wearing it makes you feel a sudden rush of strength."
@@ -307,7 +307,7 @@
     },
     "level_stats": {
       "damage_add": 1.2,
-      "cooldown_add": 0.1,
+      "cooldown_add": 0,
       "crit_chance_add": 0.025,
       "crit_damage_add": 0.1
     },
@@ -321,16 +321,16 @@
     "sprite": "generic/frying_pan.png",
     "price": 10,
     "base_stats": {
-      "damage": 3,
+      "damage": 4,
       "cooldown": 1,
       "crit_chance": 0.25,
       "crit_damage": 2
     },
     "level_stats": {
-      "damage_add": 0.5,
-      "cooldown_add": -0.0375,
+      "damage_add": 0.4,
+      "cooldown_add": -0.025,
       "crit_chance_add": 0.025,
-      "crit_damage_add": 0.125
+      "crit_damage_add": 0.075
     },
     "description": "A frying pan. Not a weapon! But works, I guess..."
   },
@@ -348,10 +348,10 @@
       "crit_damage": 2
     },
     "level_stats": {
-      "damage_add": 0.25,
+      "damage_add": 0.2,
       "cooldown_add": -0.0125,
       "crit_chance_add": 0.025,
-      "crit_damage_add": 0.125
+      "crit_damage_add": 0.075
     },
     "description": "A bow. How can you shoot this so fast?"
   },

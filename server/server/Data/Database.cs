@@ -112,6 +112,26 @@ public partial class Database
         MigrateReplays(conn);
         AddColumnIfMissing(conn, "users", "banned", "INTEGER NOT NULL DEFAULT 0");
         AddColumnIfMissing(conn, "users", "ban_reason", "TEXT");
+        RunOnce(conn, 1, """
+            DELETE FROM matches WHERE id IN (SELECT match_id FROM match_players WHERE kit IS NULL);
+            """);
+    }
+
+    /// <summary>One-time data migrations, tracked with PRAGMA user_version.
+    /// Version 1 wipes matches from before kits and live fights (accounts, XP and achievements stay).</summary>
+    private static void RunOnce(SqliteConnection conn, int version, string sql)
+    {
+        using var check = conn.CreateCommand();
+        check.CommandText = "PRAGMA user_version";
+        if ((long)check.ExecuteScalar()! >= version) return;
+        using var tx = conn.BeginTransaction();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.Transaction = tx;
+            cmd.CommandText = sql + $"\nPRAGMA user_version = {version};";
+            cmd.ExecuteNonQuery();
+        }
+        tx.Commit();
     }
 
     private static void AddColumnIfMissing(SqliteConnection conn, string table, string column, string type)

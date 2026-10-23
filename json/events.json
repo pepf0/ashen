@@ -47,5 +47,15 @@
     "trigger": "money_at_least",
     "value": 250,
     "reward": "Title"
+  },
+  {
+    "id": "empty_hands",
+    "name": "Empty Hands",
+    "description": "Fight rounds 1 and 2 without a weapon: shop 3 offers a random special weapon and its pack's buff at a third of the price",
+    "trigger": "weaponless_start",
+    "chance": 0.3,
+    "announce_rounds": [1, 2],
+    "announce_text": "Empty Hands is active! Fight rounds 1 and 2 without a weapon and shop 3 offers a special weapon + its buff at 1/3 price.",
+    "reward": "Special weapon + buff at 1/3 price"
   }
 ]

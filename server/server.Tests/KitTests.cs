@@ -128,4 +128,27 @@ public class KitTests
         Assert.Equal(5, two["damage"], 6);
         Assert.Equal(5 * 1.05, withSigil["damage"], 6);
     }
+
+    [Fact]
+    public void DodgeIsHardCappedEvenWithAbilities()
+    {
+        int attacks = 0, dodged = 0;
+        for (int seed = 0; seed < 20; seed++)
+        {
+            var dodgy = TestHelpers.Build("generic.sword", "generic.mike_shirt", "z7fox.football", "z7fox.chain", "generic.knight");
+            dodgy.Shirt = TestHelpers.Own("generic.mike_shirt", 5);
+            dodgy.Kit = "trickster";
+            dodgy.MaxHealth = 100000;
+            var attacker = TestHelpers.Build("generic.bow");
+            attacker.MaxHealth = 100000;
+            var fight = new Fight(attacker, dodgy, new FightRules(), seed);
+            fight.SetBot(1, true);
+            for (int i = 0; i < 20 * 60; i++) fight.Step();
+            var hits = fight.TakeNewEvents().OfType<DamageEvent>().Where(e => e.WeaponAttack && e.Source == 0).ToList();
+            attacks += hits.Count;
+            dodged += hits.Count(e => e.Dodged);
+        }
+        double rate = (double)dodged / attacks;
+        Assert.InRange(rate, 0.38, Combat.AbilityMaxDodgeChance + 0.03);
+    }
 }

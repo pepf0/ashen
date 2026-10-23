@@ -69,6 +69,14 @@ cd server
 dotnet test server.Tests
 ```
 
+Balance report (thousands of simulated fights: weapons, support items, kits by
+weapon, full packs, random builds):
+
+```bash
+cd server
+ASHEN_SIM=1 dotnet test server.Tests --filter BalanceSim --logger "console;verbosity=detailed"
+```
+
 ## Deploying (Raspberry Pi behind the pepf.net VPS)
 
 **On the Pi** (64-bit Raspberry Pi OS), run:
@@ -104,10 +112,10 @@ Each line is one object with a `type`:
 
 | type | When | Contents |
 |---|---|---|
-| `match_start` | match starts | lobby, settings, players |
+| `match_start` | match starts | lobby, settings, mutators, active events, players |
 | `snapshot` | every shop opens (after income) | money, income breakdown, kit, loss streak, lives, max HP, HP upgrades, special chance, W/L, titles, build |
 | `roll` | every shop roll and reroll | the 6 items, reroll number, special chance |
-| `pity_offer` | shop 3, weaponless players | offered items and prices |
+| `pity_offer` | shop 3, weaponless players (Empty Hands event) | offered items and prices |
 | `purchase` | every buy | item, price, new/level-up/replace, money before/after, rerolls used, time left |
 | `hp_upgrade` | every HP upgrade | cost, new max HP |
 | `round` | every shop opens | round number, round modifier, players alive |
