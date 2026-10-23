@@ -347,7 +347,7 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
   - **Victory effects** played in the arena when you win a fight (Confetti,
     Fireworks, Lightning, Meteor, Soul Harvest, Ash Storm, …).
   - **Admin set "Pepf Prime"** (only for `ASHEN_ADMINS`, hidden from everyone
-    else): Pepf Prime name color, Tidecrown name border, "Creator of Ashen"
+    else): Pepf Prime name color, Tidecrown name border, "The Creator"
     title, Pepf Aura portrait border, Pepf Tide fighter frame, Pepf Teal weapon
     skin and the Encore victory effect.
 - Click any player name to see their profile.
