@@ -106,7 +106,7 @@ public static class Progression
             ["top3_10"] = Count("top3") >= 10,
             ["full_lobby_win"] = won && c.Players >= 8,
             ["untouched"] = won && s.LivesLost == 0,
-            ["comeback"] = won && s.MinLives <= 1,
+            ["comeback"] = won && s.MinLives <= 1 && s.LivesLost > 0,
             ["bot_slayer"] = won && c.SoloVsHard,
             ["flawless"] = s.Flawless > 0,
             ["clutch"] = s.Clutch,

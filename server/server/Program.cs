@@ -222,6 +222,9 @@ public class Program
         api.MapGet("/leaderboard", () => Results.Json(db.Leaderboard()));
         api.MapGet("/matches", (int? limit, long? user) =>
             Results.Json(db.RecentMatches(Math.Clamp(limit ?? 20, 1, 100), user)));
+        api.MapGet("/replays/{id:long}", (long id) =>
+            db.Replay(id) is { } json ? Results.Text(json, "application/json") : Error("Replay not found.", 404));
+
         api.MapGet("/matches/{id:long}", (long id) =>
             db.MatchDetails(id) is { } m ? Results.Json(m) : Error("Match not found.", 404));
     }

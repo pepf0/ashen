@@ -133,9 +133,61 @@ export function createCombatView(app) {
 
     function stop() {
         if (fight?.raf) cancelAnimationFrame(fight.raf);
+        if (replay?.raf) cancelAnimationFrame(replay.raf);
+        replay = null;
         fight = null;
         document.getElementById("countdown").hidden = true;
+        document.getElementById("replayControls").hidden = true;
+        document.getElementById("spectatorText").textContent = "You are watching this fight.";
     }
+
+    // ---------------- replays ----------------
+    let replay = null;
+    let replayBack = null;
+
+    /** Plays a stored fight (from /api/replays/{id}) in this view. back() is called by the Back button. */
+    function playReplay(data, back) {
+        stop();
+        replayBack = back;
+        start({
+            fightId: "replay", round: data.round, you: null, countdown: 0, modifier: data.modifier, arena: data.arena,
+            fighters: data.fighters, buffs: data.fighters.map(f => f.startBuffs), snap: data.snaps[0]
+        });
+        document.getElementById("cRound").textContent = `Replay · Round ${data.round}`;
+        document.getElementById("spectatorText").textContent = `${data.fighters[0].name} vs ${data.fighters[1].name}`;
+        document.getElementById("replayControls").hidden = false;
+        replay = { data, time: 0, speed: 1, paused: false, e: 0, s: 0, last: performance.now(), raf: 0, done: false };
+        replayFrame();
+    }
+
+    function replayFrame() {
+        if (!replay || !fight) return;
+        const now = performance.now();
+        if (!replay.paused) replay.time += ((now - replay.last) / 1000) * replay.speed;
+        replay.last = now;
+        const { events, snaps, result } = replay.data;
+        while (replay.e < events.length && events[replay.e].t <= replay.time) apply(events[replay.e++]);
+        while (replay.s + 1 < snaps.length && snaps[replay.s + 1].t <= replay.time) replay.s++;
+        fight.snap = snaps[replay.s];
+        render();
+        if (!replay.done && replay.time >= result.duration + 0.2) {
+            replay.done = true;
+            end({ fightId: "replay", result });
+        }
+        replay.raf = requestAnimationFrame(replayFrame);
+    }
+
+    document.getElementById("replayPause").addEventListener("click", e => {
+        if (!replay) return;
+        replay.paused = !replay.paused;
+        e.target.textContent = replay.paused ? "Play" : "Pause";
+    });
+    document.querySelectorAll("#replayControls [data-speed]").forEach(b => b.addEventListener("click", () => {
+        if (replay) replay.speed = Number(b.dataset.speed);
+    }));
+    document.getElementById("replayRestart").addEventListener("click", () => {
+        if (replay) playReplay(replay.data, replayBack);
+    });
 
     function loop() {
         if (!fight) return;
@@ -352,11 +404,13 @@ export function createCombatView(app) {
     });
 
     document.getElementById("leaveSpectate").addEventListener("click", () => {
+        const back = replay ? replayBack : null;
         stop();
-        app.showGame();
+        if (back) back(); else app.showGame();
     });
 
     return {
+        playReplay,
         start,
         tick,
         end,

@@ -282,7 +282,14 @@
                 </div>
                 <div class="arena-modifier" id="cModifier"></div>
                 <div class="spectator-bar" id="spectatorBar" hidden>
-                    <span class="muted">You are watching this fight.</span>
+                    <span class="muted" id="spectatorText">You are watching this fight.</span>
+                    <span class="replay-controls" id="replayControls" hidden>
+                        <button class="btn btn-small" id="replayPause">Pause</button>
+                        <button class="btn btn-small" data-speed="1">1×</button>
+                        <button class="btn btn-small" data-speed="2">2×</button>
+                        <button class="btn btn-small" data-speed="4">4×</button>
+                        <button class="btn btn-small" id="replayRestart">Restart</button>
+                    </span>
                     <button class="btn btn-small" id="leaveSpectate">Back</button>
                 </div>
                 <div class="fighters">

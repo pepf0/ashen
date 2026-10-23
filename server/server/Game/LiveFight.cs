@@ -10,6 +10,8 @@ public class LiveFight
     public HashSet<long> Spectators { get; } = new();
     public bool Ended { get; set; }
     public int TicksDone { get; set; }
+    /// <summary>Snapshots kept for the replay (every 2nd tick).</summary>
+    public List<object> Snapshots { get; } = new();
 
     public int? IndexOf(long playerId) =>
         Players[0]?.Id == playerId ? 0 : Players[1]?.Id == playerId ? 1 : null;

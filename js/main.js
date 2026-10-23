@@ -1,7 +1,7 @@
 // Entry point: login, navigation and routing of server messages to the views.
 import { loadData, el } from "./data.js";
 import { api, getToken, setToken, GameSocket } from "./net.js";
-import { showView, currentView, toast, announce, openDialog } from "./ui.js";
+import { showView, currentView, toast, announce, openDialog, closeDialog } from "./ui.js";
 import { renderCompendium } from "./compendium.js";
 import { initChat, addChat, clearChat } from "./chat.js";
 import { createLobbyView } from "./lobby.js";
@@ -261,17 +261,36 @@ async function loadLeaderboard() {
     }
 }
 
+async function watchReplay(id) {
+    try {
+        const data = await api(`replays/${id}`);
+        closeDialog();
+        const back = currentView();
+        showView("Combat");
+        app.combat.playReplay(data, () => showView(back === "Combat" ? "Leaderboard" : back));
+    } catch (err) {
+        toast(err.message);
+    }
+}
+
 async function showMatch(id) {
     const { itemCard } = await import("./data.js");
     try {
         const m = await api(`matches/${id}`);
-        await openDialog(`Match in lobby ${m.match.lobby}`, el("table", { class: "table" },
+        const rounds = [...new Set(m.match.fights.map(f => f.round))];
+        const fightsView = m.match.fights.length ? el("div", { class: "round-list" }, rounds.map(r => el("div", { class: "round-row" },
+            el("b", { text: `Round ${r}` }),
+            el("div", { class: "round-fights" }, m.match.fights.filter(f => f.round === r).map(f => el("button", {
+                class: "btn btn-small fight-chip", title: "Watch replay", onclick: () => watchReplay(f.id)
+            }, el("span", { class: f.winner === 0 ? "won" : "" , text: f.names[0] }), " vs ",
+                el("span", { class: f.winner === 1 ? "won" : "", text: f.names[1] }), el("span", { class: "muted", text: ` · ${f.duration.toFixed(0)}s ▶` }))))))) : el("p", { class: "muted small", text: "No replays stored for this match." });
+        await openDialog(`Match in lobby ${m.match.lobby}`, el("div", {}, el("table", { class: "table" },
             el("thead", {}, el("tr", {}, ["#", "Player", "Build", "W / L", "Titles"].map(h => el("th", { text: h })))),
             el("tbody", {}, m.players.map(p => el("tr", {},
                 el("td", { text: `${p.placement}` }), el("td", {}, el("b", { text: p.name })),
                 el("td", {}, el("div", { class: "mini-build" }, p.build.map(b => itemCard(b.id, { level: b.level, size: "small" })))),
                 el("td", { text: `${p.wins} / ${p.losses}` }),
-                el("td", { class: "small", text: p.titles.join(", ") || "–" }))))));
+                el("td", { class: "small", text: p.titles.join(", ") || "–" }))))), el("h4", { text: "Fights (click to watch)" }), fightsView));
     } catch (err) {
         toast(err.message);
     }

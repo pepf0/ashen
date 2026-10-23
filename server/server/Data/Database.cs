@@ -15,6 +15,8 @@ public class MatchRecord
     public int Rounds { get; set; }
     public LobbySettings Settings { get; set; } = new();
     public List<MatchPlayerRecord> Players { get; set; } = new();
+    /// <summary>False for matches with fewer than 2 humans (solo vs bots): kept in history, not on the leaderboard.</summary>
+    public bool Counted { get; set; } = true;
 }
 
 public class MatchPlayerRecord
@@ -106,6 +108,8 @@ public partial class Database
         AddColumnIfMissing(conn, "match_players", "augments", "TEXT NOT NULL DEFAULT '[]'");
         MigrateProgress(conn);
         MigrateFriends(conn);
+        AddColumnIfMissing(conn, "matches", "counted", "INTEGER NOT NULL DEFAULT 1");
+        MigrateReplays(conn);
     }
 
     private static void AddColumnIfMissing(SqliteConnection conn, string table, string column, string type)
@@ -127,7 +131,10 @@ public partial class Database
     {
         using var conn = Open();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT kit, COUNT(*) FROM match_players WHERE user_id = $u AND placement = 1 AND kit IS NOT NULL GROUP BY kit";
+        cmd.CommandText = """
+            SELECT mp.kit, COUNT(*) FROM match_players mp JOIN matches m ON m.id = mp.match_id
+            WHERE mp.user_id = $u AND mp.placement = 1 AND mp.kit IS NOT NULL AND m.counted = 1 GROUP BY mp.kit
+            """;
         cmd.Parameters.AddWithValue("$u", userId);
         using var rd = cmd.ExecuteReader();
         var wins = new Dictionary<string, int>();
@@ -347,13 +354,14 @@ public partial class Database
         {
             cmd.Transaction = tx;
             cmd.CommandText = """
-                INSERT INTO matches (lobby_code, started_at, ended_at, rounds, settings)
-                VALUES ($c, $s, $e, $r, $set) RETURNING id
+                INSERT INTO matches (lobby_code, started_at, ended_at, rounds, settings, counted)
+                VALUES ($c, $s, $e, $r, $set, $counted) RETURNING id
                 """;
             cmd.Parameters.AddWithValue("$c", match.LobbyCode);
             cmd.Parameters.AddWithValue("$s", match.StartedAt.ToString("O"));
             cmd.Parameters.AddWithValue("$e", match.EndedAt.ToString("O"));
             cmd.Parameters.AddWithValue("$r", match.Rounds);
+            cmd.Parameters.AddWithValue("$counted", match.Counted ? 1 : 0);
             cmd.Parameters.AddWithValue("$set", JsonSerializer.Serialize(match.Settings, Protocol.Json));
             matchId = (long)cmd.ExecuteScalar()!;
         }
@@ -390,7 +398,7 @@ public partial class Database
                    SUM(CASE WHEN mp.placement = 1 THEN 1 ELSE 0 END) AS wins,
                    SUM(CASE WHEN mp.placement <= 3 THEN 1 ELSE 0 END) AS top3,
                    AVG(mp.placement) AS avg_placement
-            FROM match_players mp JOIN users u ON u.id = mp.user_id
+            FROM match_players mp JOIN users u ON u.id = mp.user_id JOIN matches m ON m.id = mp.match_id AND m.counted = 1
             GROUP BY u.id
             ORDER BY wins DESC, (wins * 1.0 / games) DESC, games DESC
             LIMIT $l
@@ -457,7 +465,7 @@ public partial class Database
             cmd.Parameters.AddWithValue("$id", id);
             using var r = cmd.ExecuteReader();
             if (!r.Read()) return null;
-            header = new { id = r.GetInt64(0), lobby = r.GetString(1), startedAt = r.GetString(2), endedAt = r.GetString(3), rounds = r.GetInt32(4) };
+            header = new { id = r.GetInt64(0), lobby = r.GetString(1), startedAt = r.GetString(2), endedAt = r.GetString(3), rounds = r.GetInt32(4), fights = ReplayList(id) };
         }
         var players = new List<object>();
         using (var cmd = conn.CreateCommand())

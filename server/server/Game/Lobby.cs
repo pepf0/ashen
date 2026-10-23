@@ -67,6 +67,7 @@ public partial class Lobby
     private int nextFightId;
     private RoundModifier? modifier;
     private readonly List<Mutator> mutators = new();
+    private readonly List<PendingReplay> replays = new();
 
     private bool Mut(string id) => mutators.Any(m => m.Id == id);
     private int MaxLevel => Mut("master_smith") ? 7 : OwnedItem.MaxLevel;
@@ -337,6 +338,7 @@ public partial class Lobby
             round = 0;
             matchStartedAt = DateTime.UtcNow;
             mutators.Clear();
+            replays.Clear();
             mutators.AddRange(Mutator.All.OrderBy(_ => rng.Next()).Take(Mutator.PerMatch));
             int lives = Settings.Lives + (Mut("long_haul") ? 2 : 0) - (Mut("hardcore") ? 2 : 0);
             if (Mut("hardcore")) lives = Math.Max(Math.Min(2, Settings.Lives), lives);
@@ -690,7 +692,9 @@ public partial class Lobby
                 lf.Fight.Step();
                 lf.TicksDone++;
             }
-            var tick = new { type = "fightTick", fightId = lf.Id, events = lf.Fight.TakeNewEvents(), snap = lf.Fight.Snapshot() };
+            var snap = lf.Fight.Snapshot();
+            if (lf.TicksDone % 2 == 0 || lf.Fight.Finished) lf.Snapshots.Add(snap);
+            var tick = new { type = "fightTick", fightId = lf.Id, events = lf.Fight.TakeNewEvents(), snap };
             foreach (var m in Watchers(lf)) m.Connection?.Send(tick);
 
             if (lf.Fight.Finished)
@@ -706,6 +710,7 @@ public partial class Lobby
                 for (int i = 0; i < 2; i++)
                     if (lf.Players[i] is { } p) TrackFight(p, result, i);
                 LogFight(lf.Players[0]!, lf.Players[1], result);
+                StoreReplay(lf, result);
                 var end = new { type = "fightEnd", fightId = lf.Id, result = ResultSummary(result) };
                 foreach (var m in Watchers(lf)) m.Connection?.Send(end);
                 BroadcastState();
@@ -739,6 +744,28 @@ public partial class Lobby
         s.MinLives = Math.Min(s.MinLives, Math.Max(0, p.Lives));
         if (!won) s.LivesLost++;
         s.MaxMoney = Math.Max(s.MaxMoney, p.Money);
+    }
+
+    private void StoreReplay(LiveFight lf, CombatResult result)
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                round,
+                modifier,
+                arena = GameData.Arenas.FirstOrDefault(a => a.Id == lf.Fight.Arena),
+                fighters = result.Fighters,
+                events = result.Events,
+                snaps = lf.Snapshots,
+                result = ResultSummary(result)
+            }, Protocol.Json);
+            replays.Add(new PendingReplay(round, result.Fighters[0].Name, result.Fighters[1].Name, result.Winner, result.Duration, Database.Compress(json)));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"[lobby {Code}] could not record replay: {e.Message}");
+        }
     }
 
     private IEnumerable<LobbyMember> Watchers(LiveFight lf) =>
@@ -922,15 +949,15 @@ public partial class Lobby
 
         try
         {
-            // Only matches with 2+ humans count for the leaderboard; bots are never stored.
-            if (players.Count(p => p.Id > 0) >= 2)
-            database?.SaveMatch(new MatchRecord
+            // Bots are never stored; matches with fewer than 2 humans are kept in history but don't count.
+            long? matchId = database?.SaveMatch(new MatchRecord
             {
                 LobbyCode = Code,
                 StartedAt = matchStartedAt,
                 EndedAt = DateTime.UtcNow,
                 Rounds = round,
                 Settings = Settings,
+                Counted = players.Count(p => p.Id > 0) >= 2,
                 Players = players.Where(p => p.Id > 0).Select(p => new MatchPlayerRecord
                 {
                     UserId = p.Id,
@@ -944,6 +971,8 @@ public partial class Lobby
                     Augments = p.Augments.ToList()
                 }).ToList()
             });
+            if (matchId is long id) database!.SaveReplays(id, replays);
+            replays.Clear();
         }
         catch (Exception e)
         {

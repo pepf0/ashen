@@ -978,3 +978,9 @@ label.inline select { width: auto; }
 .friend-list li.request { background: rgba(255, 209, 102, 0.05); border-radius: 8px; }
 .toast.invite { display: flex; align-items: center; gap: 8px; border-color: var(--pepf); }
 .lobby-grid > .friends { grid-column: span 1; }
+
+.replay-controls { display: inline-flex; gap: 4px; }
+.round-list { display: grid; gap: 8px; }
+.round-row { display: grid; grid-template-columns: 80px 1fr; gap: 10px; align-items: start; }
+.round-fights { display: flex; flex-wrap: wrap; gap: 6px; }
+.fight-chip .won { color: var(--good); }

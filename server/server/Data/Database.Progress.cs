@@ -237,8 +237,8 @@ public partial class Database
         using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
-                SELECT COUNT(*), SUM(placement = 1), SUM(placement <= 3), AVG(placement)
-                FROM match_players WHERE user_id = $u
+                SELECT COUNT(*), SUM(mp.placement = 1), SUM(mp.placement <= 3), AVG(mp.placement)
+                FROM match_players mp JOIN matches m ON m.id = mp.match_id AND m.counted = 1 WHERE mp.user_id = $u
                 """;
             cmd.Parameters.AddWithValue("$u", userId);
             using var r = cmd.ExecuteReader();
@@ -255,8 +255,8 @@ public partial class Database
         using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
-                SELECT kit, COUNT(*), SUM(placement = 1) FROM match_players
-                WHERE user_id = $u AND kit IS NOT NULL GROUP BY kit ORDER BY COUNT(*) DESC
+                SELECT mp.kit, COUNT(*), SUM(mp.placement = 1) FROM match_players mp JOIN matches m ON m.id = mp.match_id AND m.counted = 1
+                WHERE mp.user_id = $u AND mp.kit IS NOT NULL GROUP BY mp.kit ORDER BY COUNT(*) DESC
                 """;
             cmd.Parameters.AddWithValue("$u", userId);
             using var r = cmd.ExecuteReader();
