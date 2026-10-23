@@ -80,10 +80,17 @@ at `/var/lib/ashen/ashen.db` (backed up daily to `/var/lib/ashen/backups`,
 script stops; pick another port with `... | sudo ASHEN_PORT=6770 bash` (and use
 it in nginx too).
 
-**On the VPS**, add the two `location` blocks from
+**On the VPS**, run
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pepf0/ashen/ccode/deploy/nginx-setup.py | sudo python3 -
+```
+
+It adds the two `location` blocks from
 [`deploy/nginx-ashen.conf`](deploy/nginx-ashen.conf) to the `pepf.net` server
-block, then `sudo nginx -t && sudo systemctl reload nginx`. The game is then at
-<https://pepf.net/ashen/>.
+block (the HTTPS one if there are several), backs the file up to
+`/root/nginx-backups`, runs `nginx -t` (restoring the backup if it fails) and
+reloads nginx. The game is then at <https://pepf.net/ashen/>.
 
 Useful commands on the Pi:
 
