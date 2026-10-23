@@ -77,6 +77,8 @@ public class Program
     private record Credentials(string? Username, string? Password);
     private record DisplayNameBody(string? DisplayName);
     private record PasswordBody(string? OldPassword, string? NewPassword);
+    private record FriendRequestBody(string? Username);
+    private record FriendRespondBody(long UserId, bool Accept);
 
     private static User? Authenticate(HttpContext ctx, Database db)
     {
@@ -173,6 +175,49 @@ public class Program
             rarity = db.AchievementRarity()
         }));
 
+        api.MapGet("/friends", (HttpContext ctx) =>
+        {
+            if (Authenticate(ctx, db) is not { } user) return Error("Not logged in.", 401);
+            return Results.Json(db.Friends(user.Id).Select(f =>
+            {
+                var lobby = lobbies.LobbyOf(f.UserId);
+                bool online = GameSocket.IsOnline(f.UserId);
+                string presence = !online ? "offline" : lobby is null ? "online" : lobby.InMatch ? "in match" : "in lobby";
+                return new
+                {
+                    id = f.UserId,
+                    name = f.Name,
+                    status = f.Status,
+                    presence = f.Status == "accepted" ? presence : null,
+                    joinable = f.Status == "accepted" && lobby is not null && !lobby.InMatch ? lobby.Code : null
+                };
+            }));
+        });
+
+        api.MapPost("/friends/request", (FriendRequestBody body, HttpContext ctx) =>
+        {
+            if (Authenticate(ctx, db) is not { } user) return Error("Not logged in.", 401);
+            if (db.UserIdByName(body.Username ?? "") is not long target) return Error("No player with that username.", 404);
+            if (db.RequestFriend(user.Id, target) is { } err) return Error(err);
+            GameSocket.Notify(target, new { type = "friends", message = $"{user.DisplayName} sent you a friend request." });
+            return Results.Json(new { ok = true });
+        });
+
+        api.MapPost("/friends/respond", (FriendRespondBody body, HttpContext ctx) =>
+        {
+            if (Authenticate(ctx, db) is not { } user) return Error("Not logged in.", 401);
+            db.RespondFriend(body.UserId, user.Id, body.Accept);
+            if (body.Accept) GameSocket.Notify(body.UserId, new { type = "friends", message = $"{user.DisplayName} accepted your friend request." });
+            return Results.Json(new { ok = true });
+        });
+
+        api.MapDelete("/friends/{id:long}", (long id, HttpContext ctx) =>
+        {
+            if (Authenticate(ctx, db) is not { } user) return Error("Not logged in.", 401);
+            db.RemoveFriend(user.Id, id);
+            return Results.Json(new { ok = true });
+        });
+
         api.MapGet("/lobbies", () => Results.Json(lobbies.PublicLobbies()));
         api.MapGet("/leaderboard", () => Results.Json(db.Leaderboard()));
         api.MapGet("/matches", (int? limit, long? user) =>
@@ -211,6 +256,13 @@ public static class GameSocket
 {
     private const int MaxMessageBytes = 64 * 1024;
     private static readonly ConcurrentDictionary<long, Connection> online = new();
+
+    public static bool IsOnline(long userId) => online.ContainsKey(userId);
+
+    public static void Notify(long userId, object message)
+    {
+        if (online.TryGetValue(userId, out var conn)) conn.Send(message);
+    }
 
     public static void Rename(long userId, string name)
     {
@@ -266,7 +318,7 @@ public static class GameSocket
                 if (text is null) break;
                 try
                 {
-                    Handle(conn, text, lobbies);
+                    Handle(conn, text, lobbies, db);
                 }
                 catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
                 {
@@ -289,7 +341,7 @@ public static class GameSocket
         }
     }
 
-    private static void Handle(Connection conn, string text, LobbyManager lobbies)
+    private static void Handle(Connection conn, string text, LobbyManager lobbies, Database db)
     {
         using var doc = JsonDocument.Parse(text);
         var msg = doc.RootElement;
@@ -379,6 +431,19 @@ public static class GameSocket
             case "kit":
                 error = lobby?.PickKit(conn, msg.GetProperty("kit").GetString() ?? "") ?? (lobby is null ? "You are not in a lobby." : null);
                 break;
+            case "invite":
+            {
+                long target = msg.GetProperty("userId").GetInt64();
+                if (lobby is null) error = "Create or join a lobby first.";
+                else if (!db.AreFriends(conn.User.Id, target)) error = "You can only invite friends.";
+                else if (!IsOnline(target)) error = "That friend is offline.";
+                else
+                {
+                    Notify(target, new { type = "invite", from = conn.User.DisplayName, fromId = conn.User.Id, code = lobby.Code });
+                    conn.Send(new { type = "info", message = "Invite sent." });
+                }
+                break;
+            }
             case "ping":
                 conn.Send(new { type = "pong" });
                 break;

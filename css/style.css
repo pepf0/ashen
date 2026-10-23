@@ -971,3 +971,10 @@ label.inline select { width: auto; }
 .user-chip { cursor: pointer; }
 .user-chip:hover { color: var(--text); }
 /*#endregion*/
+
+.friend-list { list-style: none; padding: 0; margin: 10px 0 0; }
+.friend-list li { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid rgba(192, 192, 255, 0.05); }
+.friend-list li.offline { opacity: 0.55; }
+.friend-list li.request { background: rgba(255, 209, 102, 0.05); border-radius: 8px; }
+.toast.invite { display: flex; align-items: center; gap: 8px; border-color: var(--pepf); }
+.lobby-grid > .friends { grid-column: span 1; }

@@ -10,6 +10,7 @@ import { createCombatView } from "./combat.js";
 import { renderGameOver } from "./gameover.js";
 import { loadKeybinds, renderKeybindSettings, onKeybindsChanged } from "./keybinds.js";
 import { openProfile, renderLocker, nameEl, loadAchievements } from "./profile.js";
+import { createFriends } from "./friends.js";
 
 // Relative URLs (api/, ws, json/) need the page URL to end in "/" when hosted under a sub-path.
 if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) {
@@ -27,6 +28,7 @@ app.lobbyView = createLobbyView(app);
 app.game = createGameView(app);
 app.combat = createCombatView(app);
 app.showGame = () => { if (app.mode === "match") showView("Game"); };
+app.friends = createFriends(app);
 
 const tabs = [...document.querySelectorAll("#tabs .tab")];
 let activeTab = "menu";
@@ -56,6 +58,7 @@ function showPlay() {
     } else if (app.mode === "gameover") showView("GameOver");
     else if (app.mode === "lobby") showView("Lobby");
     else { showView("Menu"); refreshLobbies(); }
+    app.friends.refresh();
 }
 
 // ---------------- auth ----------------
@@ -138,6 +141,7 @@ app.socket
         }
         if (app.lobby?.code !== lobby.code) clearChat();
         app.lobby = lobby;
+        app.friends.render();
         app.lobbyView.render(lobby);
         if (lobby.inMatch) {
             if (app.mode !== "match") setMode("match");
@@ -162,6 +166,9 @@ app.socket
     .on("fightTick", msg => app.combat.tick(msg))
     .on("fightEnd", msg => app.combat.end(msg))
     .on("progress", msg => showProgress(msg.progress))
+    .on("friends", msg => { toast(msg.message, "info"); app.friends.refresh(); })
+    .on("invite", msg => app.friends.invite(msg))
+    .on("info", msg => toast(msg.message, "info"))
     .on("gameOver", msg => {
         app.combat.stop();
         renderGameOver(msg, app);

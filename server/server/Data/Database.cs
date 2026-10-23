@@ -105,6 +105,7 @@ public partial class Database
         AddColumnIfMissing(conn, "match_players", "kit", "TEXT");
         AddColumnIfMissing(conn, "match_players", "augments", "TEXT NOT NULL DEFAULT '[]'");
         MigrateProgress(conn);
+        MigrateFriends(conn);
     }
 
     private static void AddColumnIfMissing(SqliteConnection conn, string table, string column, string type)
