@@ -198,6 +198,52 @@ public class BalanceSim
     }
 }
 
+public class SpecialVsL5Sim
+{
+    private readonly ITestOutputHelper o;
+    public SpecialVsL5Sim(ITestOutputHelper o) { this.o = o; TestHelpers.Init(); }
+
+    [Fact]
+    public void G_SpecialsVsLevel5()
+    {
+        if (Environment.GetEnvironmentVariable("ASHEN_SIM") != "1") return;
+        var specials = new (string W, string? Buff)[] { ("pepf.guitar", null), ("pepf.guitar", "pepf.pick"), ("z7fox.whip", null), ("z7fox.whip", "z7fox.emblem"),
+            ("ely7.blade", null), ("ely7.blade", "ely7.whetstone"), ("xxzweiradxx.staff", null), ("xxzweiradxx.staff", "xxzweiradxx.dumbbell") };
+        var generics = new[] { "generic.sword", "generic.hammer", "generic.frying_pan", "generic.bow" };
+        Loadout Mk(string w, int lvl, string? buff)
+        {
+            var l = new Loadout { Name = "x", MaxHealth = 300, Weapon = TestHelpers.Own(w, lvl), Shirt = TestHelpers.Own("generic.band_shirt", 3) };
+            l.Dynamics[0] = TestHelpers.Own("generic.knight", 3); l.Dynamics[1] = TestHelpers.Own("generic.horseshoe", 3);
+            if (buff != null) l.Dynamics[2] = TestHelpers.Own(buff);
+            return l;
+        }
+        foreach (var probe in new[] { Mk("pepf.guitar", 1, null), Mk("generic.sword", 5, null), Mk("generic.sword", 1, null) })
+            o.WriteLine("  probe " + probe.Weapon!.Id + " L" + probe.Weapon.Level + " " + string.Join(", ", Combat.PreviewStats(probe).Select(kv => $"{kv.Key}={kv.Value:F2}")));
+        var dbg = Combat.CalculateCombatResults(Mk("generic.sword", 5, null), Mk("pepf.guitar", 1, null), 3);
+        o.WriteLine($"  dbg sword5 vs guitar: winner {dbg.Winner} dur {dbg.Duration:F1} dealt {string.Join("/", dbg.DamageDealt.Select(d => d.ToString("F0")))}");
+        o.WriteLine("=== Special weapon (+buff) vs level 5 generic weapons, same support (band shirt, knight, horseshoe at L3), 300 HP, no kit ===");
+        foreach (var (w, buff) in specials)
+        {
+            double wins = 0; int games = 0;
+            var per = new List<string>();
+            foreach (var g in generics)
+            {
+                double gw = 0;
+                for (int s = 0; s < 100; s++)
+                {
+                    bool swap = s % 2 == 1;
+                    var a = Mk(w, 1, buff); var b = Mk(g, 5, null);
+                    int r = Combat.CalculateCombatResults(swap ? b : a, swap ? a : b, s * 131 + g.Length).Winner;
+                    double v = r == -1 ? 0.5 : (r == 0) != swap ? 1 : 0;
+                    gw += v; wins += v; games++;
+                }
+                per.Add($"{g.Replace("generic.", "")} {gw}%");
+            }
+            o.WriteLine($"  {w + (buff != null ? " + " + buff.Split('.')[1] : ""),-38} {wins / games * 100,5:F1}%   ({string.Join(", ", per)})");
+        }
+    }
+}
+
 public class GenericComboSim
 {
     private readonly ITestOutputHelper o;

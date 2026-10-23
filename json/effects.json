@@ -5,17 +5,18 @@
     "type": "buff",
     "target": "pepf.guitar",
     "stat": "damage",
-    "mult": 1.08,
+    "mult": 1.06,
     "duration": 3,
-    "max_stacks": 20,
-    "description": "On hit, gains a stacking {(mult-1)*100}% damage buff, lasting for {duration} seconds, up to {max_stacks} stacks"
+    "max_stacks": 10,
+    "stacking": "multiply",
+    "description": "On hit, multiplies its damage by x{mult} again (stacks compound), lasting for {duration} seconds, up to {max_stacks} stacks"
   },
   {
     "id": "pepf.pick.guitar_damage_buff",
     "type": "buff",
     "target": "pepf.guitar",
     "stat": "damage",
-    "mult": 1.3,
+    "mult": 1.25,
     "description": "Increases the damage of Pepf's Guitar by {(mult-1)*100}%"
   },
   {
@@ -23,7 +24,7 @@
     "type": "buff",
     "target": "pepf.guitar",
     "stat": "cooldown",
-    "mult": 0.8,
+    "mult": 0.85,
     "description": "Reduces the cooldown of Pepf's Guitar by {(1-mult)*100}%"
   },
   {
@@ -105,7 +106,7 @@
     "type": "buff",
     "target": "z7fox.whip",
     "stat": "damage",
-    "mult": 1.6,
+    "mult": 1.5,
     "description": "Increases the damage of Z7FOX's Whip by {(mult-1)*100}%"
   },
   {
@@ -131,16 +132,17 @@
     "type": "buff",
     "target": "ely7.blade",
     "stat": "crit_damage",
-    "mult": 1.075,
+    "mult": 1.05,
     "max_stacks": 30,
-    "description": "On crit, gains a stacking {(mult-1)*100}% crit damage buff, up to {max_stacks} stacks"
+    "stacking": "multiply",
+    "description": "On crit, multiplies its crit damage by x{mult} again (stacks compound), up to {max_stacks} stacks"
   },
   {
     "id": "ely7.whetstone.blade_crit_chance_buff",
     "type": "buff",
     "target": "ely7.blade",
     "stat": "crit_chance",
-    "mult": 1.8,
+    "mult": 1.6,
     "description": "Increases the crit chance of Ely7's Blade by {(mult-1)*100}%"
   },
   {
@@ -148,7 +150,7 @@
     "type": "buff",
     "target": "ely7.blade",
     "stat": "cooldown",
-    "mult": 0.75,
+    "mult": 0.85,
     "description": "Reduces the cooldown of Ely7's Blade by {(1-mult)*100}%"
   },
   {
@@ -188,7 +190,7 @@
     "trigger": "xxzweiradxx.staff.hit",
     "condition": { "every_n_hits": 10 },
     "type": "attack",
-    "damage": 50,
+    "damage": 55,
     "description": "Every {condition.every_n_hits} hits, unleashes a strong smash, dealing {damage} damage"
   },
   {
@@ -217,7 +219,7 @@
     "type": "buff",
     "target": "xxzweiradxx.staff.smash",
     "stat": "damage",
-    "mult": 2.0,
+    "mult": 1.6,
     "description": "Increases the smash damage of xXZweiradXx's Staff by {(mult-1)*100}%"
   },
   {

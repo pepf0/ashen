@@ -55,7 +55,7 @@ public class CombatTests
     {
         var withGuitar = Combat.PreviewStats(TestHelpers.Build("pepf.guitar", null, "pepf.pick"));
         var withSword = Combat.PreviewStats(TestHelpers.Build("generic.sword", null, "pepf.pick"));
-        Assert.Equal(5 * 1.3 * 1.05, withGuitar["damage"], 6); // Pick x1.3, and 2 Pepf items give +5% synergy
+        Assert.Equal(4.8 * 1.25 * 1.05, withGuitar["damage"], 6); // Pick x1.25, and 2 Pepf items give +5% synergy
         Assert.Equal(5, withSword["damage"], 6);
     }
 
@@ -66,7 +66,7 @@ public class CombatTests
         var buffs = r.Events.OfType<BuffEvent>().Where(b => b.EffectSource == "pepf.guitar.stacking_damage_buff").ToList();
         Assert.Contains(buffs, b => b.Stacks >= 3);
         var three = buffs.First(b => b.Stacks == 3);
-        Assert.Equal(1 + 3 * 0.08, three.Mult!.Value, 6);
+        Assert.Equal(Math.Pow(1.06, 3), three.Mult!.Value, 4); // stacks compound
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class CombatTests
             if (e is DamageEvent { EffectSource: "xxzweiradxx.staff.smash" } smash)
             {
                 Assert.Equal(9, hitsBeforeSmash);
-                Assert.Equal(50 * 2.0, smash.Damage, 3);
+                Assert.Equal(55 * 1.6, smash.Damage, 3);
                 return;
             }
             if (e is DamageEvent { WeaponAttack: true, Dodged: false, Blocked: false, Source: 0 }) hitsBeforeSmash++;

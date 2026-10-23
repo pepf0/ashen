@@ -125,8 +125,8 @@ public class KitTests
     {
         var two = Combat.PreviewStats(TestHelpers.Build("pepf.guitar", null, "generic.knight"));
         var withSigil = Combat.PreviewStats(TestHelpers.Build("pepf.guitar", "pepf.shirt"));
-        Assert.Equal(5, two["damage"], 6);
-        Assert.Equal(5 * 1.05, withSigil["damage"], 6);
+        Assert.Equal(4.8, two["damage"], 6);
+        Assert.Equal(4.8 * 1.05, withSigil["damage"], 6);
     }
 
     [Fact]

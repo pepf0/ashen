@@ -17,6 +17,8 @@ public class Effect
     public double? Add { get; set; }
     public double? Duration { get; set; }
     public int? MaxStacks { get; set; }
+    /// <summary>"multiply": every stack multiplies again (m^n) instead of adding up (1 + n·(m-1)).</summary>
+    public string? Stacking { get; set; }
     public double? Damage { get; set; }
     public double? Chance { get; set; }
     public double? StartMoney { get; set; }

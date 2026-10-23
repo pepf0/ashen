@@ -186,6 +186,11 @@ public sealed class Fight
         }
 
         public double? ScaledMult => Effect.Mult is double m ? 1 + (m - 1) * Scale : null;
+
+        /// <summary>Total multiplier of <paramref name="n"/> stacks: additive by default, compounding for "multiply".</summary>
+        public double StackMult(int n) => ScaledMult is not double m ? 1
+            : Effect.Stacking == "multiply" ? Math.Pow(Math.Max(0, m), n)
+            : Math.Max(0, 1 + n * (m - 1));
         public double? ScaledAdd => Effect.Add * Scale;
     }
 
@@ -430,7 +435,7 @@ public sealed class Fight
     }
 
     /// <summary>Applies every item buff on <paramref name="f"/> for <paramref name="stat"/> whose target matches.
-    /// Stacks of the same effect add up, different effects multiply, flat adds always add.</summary>
+    /// Stacks of the same effect add up (or compound for "multiply" effects), different effects multiply, flat adds always add.</summary>
     private double Modify(Fighter f, double baseValue, string stat, Func<string, bool> targets)
     {
         double add = 0, mult = 1;
@@ -441,7 +446,7 @@ public sealed class Fight
             int n = ActiveStacks(f, es);
             if (n == 0) continue;
             if (es.ScaledAdd is double a) add += a * n;
-            if (es.ScaledMult is double m) mult *= Math.Max(0, 1 + n * (m - 1));
+            if (es.ScaledMult is not null) mult *= es.StackMult(n);
         }
         return (baseValue + add) * mult;
     }
@@ -1026,7 +1031,7 @@ public sealed class Fight
             int n = ActiveStacks(enemy, es);
             if (n == 0) continue;
             // Copied stacks are capped so Mirror can't steal a fully ramped Guitar.
-            double mult = es.ScaledMult is double m ? Math.Clamp(1 + n * (m - 1), MirrorMinMult, MirrorMaxMult) : 1;
+            double mult = es.ScaledMult is not null ? Math.Clamp(es.StackMult(n), MirrorMinMult, MirrorMaxMult) : 1;
             switch (es.Effect.Stat)
             {
                 case StatNames.Damage when mult > 1: AddMod(f, "mirror", ModKind.DamageDealt, mult, duration); break;
@@ -1122,7 +1127,7 @@ public sealed class Fight
             Stat = e.Stat,
             BuffTarget = target,
             Stacks = stacks,
-            Mult = es.ScaledMult is double m ? Math.Round(Math.Max(0, 1 + stacks * (m - 1)), 4) : null,
+            Mult = es.ScaledMult is not null ? Math.Round(es.StackMult(stacks), 4) : null,
             Add = es.ScaledAdd is double a ? Math.Round(a * stacks, 4) : null,
             Duration = stacks > 0 ? e.Duration : null,
             Tick = tick,
