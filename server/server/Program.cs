@@ -481,6 +481,19 @@ public static class GameSocket
                 }
                 break;
             }
+            case "fx":
+            {
+                // Admin prank effects: purely visual, sent only to chosen players in the same lobby, never signed.
+                if (!Admin.IsAdmin(conn.User) || lobby is null) { error = "Unknown message."; break; }
+                var effect = msg.GetProperty("effect").GetString() ?? "";
+                if (!Admin.FxEffects.Contains(effect)) { error = "Unknown effect."; break; }
+                var fxText = msg.TryGetProperty("text", out var t) ? (t.GetString() ?? "") : "";
+                if (fxText.Length > 120) fxText = fxText[..120];
+                var targets = msg.GetProperty("targets").EnumerateArray().Select(x => x.GetInt64()).ToHashSet();
+                foreach (var id in lobby.MemberIds().Where(targets.Contains))
+                    Notify(id, new { type = "fx", effect, text = fxText });
+                break;
+            }
             case "ping":
                 conn.Send(new { type = "pong" });
                 break;

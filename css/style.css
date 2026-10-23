@@ -1085,3 +1085,24 @@ label.inline select { width: auto; }
 .overtime { font-weight: 600; }
 .stacks, .ab-cd { font-weight: 600; }
 /*#endregion*/
+
+/*#region Pranks (admin troll panel)*/
+.troll-panel {
+    position: fixed; left: 16px; bottom: 16px; z-index: 130; width: 320px; max-height: 70vh; overflow: auto;
+    background: rgba(12, 10, 28, 0.97); border: 1px solid var(--line-strong); border-radius: 12px; padding: 12px;
+    display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.troll-targets { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.troll-effects { display: flex; flex-wrap: wrap; gap: 4px; }
+.fake-ping { position: fixed; right: 16px; top: 16px; z-index: 125; color: var(--bad); font-size: 0.85rem; background: rgba(3, 0, 21, 0.8); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255, 90, 110, 0.4); }
+body.fx-shake main { animation: fx-shake 0.12s 10; }
+body.fx-flip main { transform: rotate(180deg); transition: transform 0.6s; }
+body.fx-mirror main { transform: scaleX(-1); }
+body.fx-glitch main { animation: fx-glitch 0.18s steps(2) 11; }
+@keyframes fx-shake { 25% { transform: translate(-6px, 3px); } 75% { transform: translate(6px, -3px); } }
+@keyframes fx-glitch {
+    0% { filter: hue-rotate(0deg); transform: translateX(0); }
+    50% { filter: hue-rotate(90deg) saturate(2); transform: translateX(4px) skewX(2deg); }
+    100% { filter: hue-rotate(-60deg) contrast(1.4); transform: translateX(-3px); }
+}
+/*#endregion*/

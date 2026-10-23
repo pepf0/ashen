@@ -107,6 +107,11 @@ public partial class Lobby
         }
     }
 
+    public List<long> MemberIds()
+    {
+        lock (sync) return Members.Where(m => !m.IsBot).Select(m => m.UserId).ToList();
+    }
+
     public bool IsEmpty
     {
         get { lock (sync) return Members.Count == 0; }

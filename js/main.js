@@ -12,6 +12,7 @@ import { loadKeybinds, renderKeybindSettings, onKeybindsChanged } from "./keybin
 import { openProfile, renderLocker, nameEl, loadAchievements } from "./profile.js";
 import { createFriends } from "./friends.js";
 import { createAdmin } from "./admin.js";
+import { createTroll } from "./troll.js";
 
 // Relative URLs (api/, ws, json/) need the page URL to end in "/" when hosted under a sub-path.
 if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) {
@@ -31,6 +32,7 @@ app.combat = createCombatView(app);
 app.showGame = () => { if (app.mode === "match") showView("Game"); };
 app.friends = createFriends(app);
 app.admin = createAdmin();
+app.troll = createTroll(app);
 
 const tabs = [...document.querySelectorAll("#tabs .tab")];
 let activeTab = "menu";
@@ -174,6 +176,7 @@ app.socket
     .on("friends", msg => { toast(msg.message, "info"); app.friends.refresh(); })
     .on("invite", msg => app.friends.invite(msg))
     .on("info", msg => toast(msg.message, "info"))
+    .on("fx", msg => app.troll.applyFx(msg))
     .on("gameOver", msg => {
         app.combat.stop();
         renderGameOver(msg, app);

@@ -9,6 +9,12 @@ public static class Admin
 
     public static bool IsAdmin(User user) => Usernames.Contains(user.Username);
 
+    /// <summary>Visual-only prank effects the admin troll panel can send (see js/troll.js).</summary>
+    public static readonly HashSet<string> FxEffects = new()
+    {
+        "banner", "toast", "chat", "reconnect", "shake", "flip", "mirror", "glitch", "itemnames", "miss", "lag"
+    };
+
     private record BanBody(string? Reason);
     private record KickBody(long UserId);
 
