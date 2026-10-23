@@ -1,0 +1,300 @@
+// Entry point: login, navigation and routing of server messages to the views.
+import { loadData, el } from "./data.js";
+import { api, getToken, setToken, GameSocket } from "./net.js";
+import { showView, currentView, toast, announce, openDialog } from "./ui.js";
+import { renderCompendium } from "./compendium.js";
+import { initChat, addChat, clearChat } from "./chat.js";
+import { createLobbyView } from "./lobby.js";
+import { createGameView } from "./game.js";
+import { createCombatView } from "./combat.js";
+import { renderGameOver } from "./gameover.js";
+
+// Relative URLs (api/, ws, json/) need the page URL to end in "/" when hosted under a sub-path.
+if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) {
+    location.replace(location.pathname + "/" + location.search + location.hash);
+}
+
+const app = {
+    user: null,
+    lobby: null,
+    /** What the Play tab shows: "menu", "lobby", "match" or "gameover". */
+    mode: "menu",
+    socket: new GameSocket()
+};
+app.lobbyView = createLobbyView(app);
+app.game = createGameView(app);
+app.combat = createCombatView(app);
+
+const tabs = [...document.querySelectorAll("#tabs .tab")];
+let activeTab = "menu";
+
+function setTab(name) {
+    activeTab = name;
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    if (name === "menu") return showPlay();
+    if (name === "compendium") showView("Compendium");
+    if (name === "leaderboard") { showView("Leaderboard"); loadLeaderboard(); }
+    if (name === "settings") { showView("Settings"); fillSettings(); }
+}
+
+tabs.forEach(t => t.addEventListener("click", () => setTab(t.dataset.tab)));
+
+function setMode(mode) {
+    app.mode = mode;
+    document.body.dataset.mode = mode;
+    if (mode === "match") activeTab = "menu";
+    if (activeTab === "menu" || mode === "match") showPlay();
+}
+
+function showPlay() {
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === "menu"));
+    if (app.mode === "match") {
+        if (!(currentView() === "Combat" && app.combat.active)) showView("Game");
+    } else if (app.mode === "gameover") showView("GameOver");
+    else if (app.mode === "lobby") showView("Lobby");
+    else { showView("Menu"); refreshLobbies(); }
+}
+
+// ---------------- auth ----------------
+
+let registering = false;
+function renderAuthMode() {
+    document.getElementById("authTitle").textContent = registering ? "Create an account" : "Log in";
+    document.getElementById("authSubmit").textContent = registering ? "Register" : "Log in";
+    document.getElementById("authSwitchText").textContent = registering ? "Already have an account?" : "No account yet?";
+    document.getElementById("authSwitch").textContent = registering ? "Log in" : "Register";
+    document.getElementById("authPassword").autocomplete = registering ? "new-password" : "current-password";
+    document.getElementById("authError").textContent = "";
+}
+
+document.getElementById("authSwitch").addEventListener("click", e => {
+    e.preventDefault();
+    registering = !registering;
+    renderAuthMode();
+});
+
+document.getElementById("authForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const username = document.getElementById("authUsername").value.trim();
+    const password = document.getElementById("authPassword").value;
+    try {
+        const res = await api(registering ? "auth/register" : "auth/login", { method: "POST", body: { username, password } });
+        setToken(res.token);
+        document.getElementById("authPassword").value = "";
+        loggedIn(res.user);
+    } catch (err) {
+        document.getElementById("authError").textContent = err.message;
+    }
+});
+
+function showAuth() {
+    app.user = null;
+    document.body.dataset.auth = "out";
+    renderAuthMode();
+    showView("Auth");
+}
+
+function loggedIn(user) {
+    app.user = user;
+    document.body.dataset.auth = "in";
+    renderUserChip();
+    setMode("menu");
+    setTab("menu");
+    app.socket.connect();
+}
+
+function renderUserChip() {
+    document.getElementById("userChip").textContent = app.user ? app.user.displayName : "";
+}
+
+// ---------------- socket ----------------
+
+app.socket
+    .on("hello", msg => { app.user = msg.user; renderUserChip(); })
+    .on("authError", () => { app.socket.disconnect(); setToken(null); showAuth(); })
+    .on("replaced", () => toast("Ashen was opened in another tab.", "info"))
+    .on("close", () => document.body.classList.add("offline"))
+    .on("open", () => document.body.classList.remove("offline"))
+    .on("error", msg => toast(msg.message))
+    .on("chat", msg => addChat(msg.messages))
+    .on("announce", msg => announce(`${msg.player} claimed ${msg.name}${msg.reward && msg.reward !== "Title" ? ` (${msg.reward})` : ""}`))
+    .on("kicked", () => toast("You were kicked from the lobby.", "info"))
+    .on("left", () => {
+        app.lobby = null;
+        clearChat();
+        if (app.mode !== "gameover") setMode("menu");
+    })
+    .on("lobby", msg => {
+        const lobby = msg.lobby;
+        if (!lobby) {
+            app.lobby = null;
+            clearChat();
+            if (app.mode !== "gameover") setMode("menu");
+            return;
+        }
+        if (app.lobby?.code !== lobby.code) clearChat();
+        app.lobby = lobby;
+        app.lobbyView.render(lobby);
+        if (lobby.inMatch) {
+            if (app.mode !== "match") setMode("match");
+        } else if (app.mode === "match" || app.mode === "menu") {
+            setMode("lobby");
+        }
+    })
+    .on("state", msg => {
+        app.game.render(msg.state);
+        app.combat.onState(msg.state);
+        if (app.mode !== "match") setMode("match");
+        if (msg.state.phase === "shop" && currentView() === "Combat") {
+            app.combat.stop();
+            showView("Game");
+        }
+    })
+    .on("combat", msg => {
+        if (app.mode !== "match") setMode("match");
+        showView("Combat");
+        app.combat.play(msg);
+    })
+    .on("gameOver", msg => {
+        app.combat.stop();
+        renderGameOver(msg, app);
+        setMode("gameover");
+        setTab("menu");
+    });
+
+initChat(text => app.socket.send("chat", { text }));
+
+document.getElementById("backToLobby").addEventListener("click", () => setMode(app.lobby ? "lobby" : "menu"));
+
+// ---------------- menu ----------------
+
+document.getElementById("createLobby").addEventListener("click", () => app.socket.send("create"));
+document.getElementById("joinForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const code = document.getElementById("joinCode").value.trim().toUpperCase();
+    if (code.length === 5) app.socket.send("join", { code });
+    else toast("Lobby codes have 5 letters.");
+});
+document.getElementById("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase(); });
+document.getElementById("refreshLobbies").addEventListener("click", refreshLobbies);
+
+async function refreshLobbies() {
+    const list = document.getElementById("lobbyList");
+    try {
+        const lobbies = await api("lobbies");
+        list.replaceChildren(...(lobbies.length ? lobbies.map(l => el("li", {},
+            el("span", { class: "code", text: l.code }),
+            el("span", { class: "grow", text: `${l.host ?? "?"}'s lobby` }),
+            el("span", { class: "muted", text: `${l.players}/${l.maxPlayers}` }),
+            el("button", { class: "btn btn-small", text: "Join", onclick: () => app.socket.send("join", { code: l.code }) })))
+            : [el("li", { class: "muted", text: "No public lobbies right now. Create one!" })]));
+    } catch {
+        list.replaceChildren(el("li", { class: "muted", text: "Couldn't load lobbies." }));
+    }
+}
+setInterval(() => { if (currentView() === "Menu") refreshLobbies(); }, 5000);
+
+// ---------------- leaderboard ----------------
+
+document.getElementById("onlyMine").addEventListener("change", loadLeaderboard);
+
+async function loadLeaderboard() {
+    try {
+        const onlyMine = document.getElementById("onlyMine").checked;
+        const [board, matches] = await Promise.all([
+            api("leaderboard"),
+            api(`matches?limit=30${onlyMine && app.user ? `&user=${app.user.id}` : ""}`)
+        ]);
+        document.querySelector("#leaderboardTable tbody").replaceChildren(...(board.length ? board.map((r, i) =>
+            el("tr", { class: r.id === app.user?.id ? "me" : "" },
+                el("td", { text: `${i + 1}` }), el("td", {}, el("b", { text: r.name })),
+                el("td", { text: `${r.wins}` }), el("td", { text: `${r.games}` }),
+                el("td", { text: `${Math.round(r.winRate * 100)}%` }), el("td", { text: `${r.top3}` }),
+                el("td", { text: `${r.avgPlacement}` })))
+            : [el("tr", {}, el("td", { colspan: "7", class: "muted", text: "No matches played yet." }))]));
+        document.getElementById("matchList").replaceChildren(...(matches.length ? matches.map(m =>
+            el("li", { onclick: () => showMatch(m.id) },
+                el("div", { class: "row spread" }, el("b", { text: m.winners ? `${m.winners} won` : "Match" }),
+                    el("span", { class: "muted small", text: new Date(m.endedAt).toLocaleString() })),
+                el("div", { class: "muted small", text: `${m.players} players · ${m.rounds} rounds · lobby ${m.lobby}` })))
+            : [el("li", { class: "muted", text: "No matches yet." })]));
+    } catch (err) {
+        toast(err.message);
+    }
+}
+
+async function showMatch(id) {
+    const { itemCard } = await import("./data.js");
+    try {
+        const m = await api(`matches/${id}`);
+        await openDialog(`Match in lobby ${m.match.lobby}`, el("table", { class: "table" },
+            el("thead", {}, el("tr", {}, ["#", "Player", "Build", "W / L", "Titles"].map(h => el("th", { text: h })))),
+            el("tbody", {}, m.players.map(p => el("tr", {},
+                el("td", { text: `${p.placement}` }), el("td", {}, el("b", { text: p.name })),
+                el("td", {}, el("div", { class: "mini-build" }, p.build.map(b => itemCard(b.id, { level: b.level, size: "small" })))),
+                el("td", { text: `${p.wins} / ${p.losses}` }),
+                el("td", { class: "small", text: p.titles.join(", ") || "–" }))))));
+    } catch (err) {
+        toast(err.message);
+    }
+}
+
+// ---------------- settings ----------------
+
+function fillSettings() {
+    document.getElementById("displayName").value = app.user?.displayName ?? "";
+    document.getElementById("settingsUsername").textContent = app.user?.username ?? "";
+    document.getElementById("nameNote").textContent = "";
+    document.getElementById("passwordNote").textContent = "";
+}
+
+document.getElementById("nameForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const note = document.getElementById("nameNote");
+    try {
+        app.user = await api("me", { method: "PUT", body: { displayName: document.getElementById("displayName").value } });
+        renderUserChip();
+        note.textContent = "Saved.";
+    } catch (err) {
+        note.textContent = err.message;
+    }
+});
+
+document.getElementById("passwordForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const note = document.getElementById("passwordNote");
+    try {
+        await api("me/password", { method: "PUT", body: {
+            oldPassword: document.getElementById("oldPassword").value,
+            newPassword: document.getElementById("newPassword").value
+        } });
+        document.getElementById("oldPassword").value = "";
+        document.getElementById("newPassword").value = "";
+        note.textContent = "Password changed.";
+    } catch (err) {
+        note.textContent = err.message;
+    }
+});
+
+document.getElementById("logoutButton").addEventListener("click", async () => {
+    try { await api("auth/logout", { method: "POST" }); } catch { /* already gone */ }
+    app.socket.disconnect();
+    setToken(null);
+    app.lobby = null;
+    setMode("menu");
+    showAuth();
+});
+
+// ---------------- start ----------------
+
+(async function start() {
+    await loadData();
+    renderCompendium();
+    if (!getToken()) return showAuth();
+    try {
+        loggedIn(await api("me"));
+    } catch (err) {
+        if (err.status === 401) setToken(null);
+        showAuth();
+    }
+})();

@@ -285,5 +285,13 @@
     "type": "interest",
     "gain": 0.1,
     "description": "At the start of combat, earn {gain*100}% of your money as interest" 
+  },
+  {
+    "id": "event.pack_master.weapon_damage_buff",
+    "type": "buff",
+    "target": "type.weapon",
+    "stat": "damage",
+    "mult": 1.1,
+    "description": "Increases the damage of your weapon by {(mult-1)*100}%"
   }
 ]

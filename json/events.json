@@ -1,0 +1,51 @@
+[
+  {
+    "id": "first_blood",
+    "name": "First Blood",
+    "description": "First to win a fight",
+    "trigger": "win_fight",
+    "reward_money": 15,
+    "reward": "+15$"
+  },
+  {
+    "id": "lucky_find",
+    "name": "Lucky Find",
+    "description": "First to obtain a special item",
+    "trigger": "own_special",
+    "reward_money": 10,
+    "reward": "+10$"
+  },
+  {
+    "id": "pack_master",
+    "name": "Pack Master",
+    "description": "First to own all 5 items of one pack",
+    "trigger": "full_pack",
+    "reward_effects": ["event.pack_master.weapon_damage_buff"],
+    "reward": "Permanent x1.1 weapon damage"
+  },
+  {
+    "id": "untouchable",
+    "name": "Untouchable",
+    "description": "First to win a fight without taking damage",
+    "trigger": "flawless_win",
+    "not_first_round": true,
+    "reward_money": 20,
+    "reward": "+20$"
+  },
+  {
+    "id": "dragon_tamer",
+    "name": "Dragon Tamer",
+    "description": "First to own The Dragon",
+    "trigger": "own_item",
+    "item": "pepf.dragon",
+    "reward": "Title"
+  },
+  {
+    "id": "tycoon",
+    "name": "Tycoon",
+    "description": "First to hold 250$",
+    "trigger": "money_at_least",
+    "value": 250,
+    "reward": "Title"
+  }
+]

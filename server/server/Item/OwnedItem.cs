@@ -1,48 +1,29 @@
 namespace Ashen;
 
-public class OwnedItem : Item
+/// <summary>An item in a player's build. Persists between rounds; combat never mutates it.</summary>
+public class OwnedItem
 {
+    public const int MaxLevel = 5;
+
+    public Item Item { get; }
     public int Level { get; set; } = 1;
 
-public double RealDamage { get; set; }
-public double RealCooldown { get; set; }
-public double RealCritChance { get; set; }
-public double RealCritDamage { get; set; }
-public double RealDamageReduction { get; set; }
-public double RealDodgeChance { get; set; }
-
-    public double CurrentCooldown { get; set; }
-
-    public List<OwnedItemEffect> ActiveEffects { get; set; }
-
-    public OwnedItem(Item baseItem)
+    public OwnedItem(Item item, int level = 1)
     {
-        Id = baseItem.Id;
-        Name = baseItem.Name;
-        Pack = baseItem.Pack;
-        Type = baseItem.Type;
-        Sprite = baseItem.Sprite;
-        Price = baseItem.Price;
-        BaseStats = baseItem.BaseStats;
-        LevelStats = baseItem.LevelStats;
-        EffectIds = baseItem.EffectIds;
-        Description = baseItem.Description;
-
-        RealDamage = BaseStats?.Damage ?? 0;
-        RealCooldown = BaseStats?.Cooldown ?? 0;
-        RealCritChance = BaseStats?.CritChance ?? 0;
-        RealCritDamage = BaseStats?.CritDamage ?? 0;
-        RealDamageReduction = BaseStats?.DamageReduction ?? 0;
-        CurrentCooldown = RealCooldown;
-
-        ActiveEffects = (Effects ?? new List<Effect>())
-            .Select(e => new OwnedItemEffect
-            {
-                Effect = e,
-                RealCooldown = e.Cooldown ?? 0,
-                CurrentCooldown = e.Cooldown ?? 0
-            })
-            .ToList();
+        Item = item;
+        Level = level;
     }
-    // ...
+
+    public string Id => Item.Id;
+
+    /// <summary>Base stat plus level_stats for every level above 1.</summary>
+    public double Stat(string stat) =>
+        (Item.BaseStats?.Get(stat) ?? 0) + (Level - 1) * (Item.LevelStats?.Get(stat) ?? 0);
+
+    public bool HasStat(string stat) => Item.BaseStats?.Get(stat) is not null || Item.LevelStats?.Get(stat) is not null;
+
+    /// <summary>Effect strength multiplier: +50% of the base strength per level above 1.</summary>
+    public double EffectScale => 1 + 0.5 * (Level - 1);
+
+    public OwnedItem Clone() => new(Item, Level);
 }

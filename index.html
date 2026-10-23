@@ -6,48 +6,284 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ashen</title>
     <link rel="icon" href="img/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css" />
 </head>
 
 <body>
-    <h1>Ashen</h1>
-    <div class="back-container" id="backContainer" style="display: none;">
-        <button id="backButton">Go Back</button>
-    </div>
-    <div class="tab-container">
-        <button class="tab tab-left" id="tabMenu">Menu</button>
-        <button class="tab tab-center" id="tabCompendium">Compendium</button>
-        <button class="tab tab-right" id="tabSettings">Settings</button>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <header id="header">
+        <h1>Ashen</h1>
+        <nav class="tab-container" id="tabs">
+            <button class="tab active" data-tab="menu">Play</button>
+            <button class="tab" data-tab="compendium">Compendium</button>
+            <button class="tab" data-tab="leaderboard">Leaderboard</button>
+            <button class="tab" data-tab="settings">Settings</button>
+        </nav>
+        <div class="user-chip" id="userChip"></div>
+    </header>
+
+    <main>
+        <!-- Login / register -->
+        <section id="viewAuth" class="view" hidden>
+            <form class="panel auth-card" id="authForm" autocomplete="on">
+                <h2 id="authTitle">Log in</h2>
+                <label>Username
+                    <input type="text" id="authUsername" autocomplete="username" maxlength="20" required />
+                </label>
+                <label>Password
+                    <input type="password" id="authPassword" autocomplete="current-password" maxlength="128" required />
+                </label>
+                <p class="form-error" id="authError"></p>
+                <button type="submit" class="btn btn-primary" id="authSubmit">Log in</button>
+                <p class="muted small">
+                    <span id="authSwitchText">No account yet?</span>
+                    <a href="#" id="authSwitch">Register</a>
+                </p>
+            </form>
+        </section>
+
+        <!-- Main menu -->
+        <section id="viewMenu" class="view" hidden>
+            <div class="menu-grid">
+                <div class="panel">
+                    <h2>Create a lobby</h2>
+                    <p class="muted">Invite up to 7 friends with the lobby code.</p>
+                    <button class="btn btn-primary" id="createLobby">Create</button>
+                </div>
+                <div class="panel">
+                    <h2>Join with code</h2>
+                    <form id="joinForm" class="row">
+                        <input type="text" id="joinCode" placeholder="ABCDE" maxlength="5" autocomplete="off" />
+                        <button class="btn" type="submit">Join</button>
+                    </form>
+                </div>
+                <div class="panel menu-browse">
+                    <div class="row spread">
+                        <h2>Public lobbies</h2>
+                        <button class="btn btn-small" id="refreshLobbies">Refresh</button>
+                    </div>
+                    <ul class="lobby-list" id="lobbyList"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Compendium -->
+        <section id="viewCompendium" class="view" hidden>
+            <div id="compendium"></div>
+        </section>
+
+        <!-- Leaderboard + history -->
+        <section id="viewLeaderboard" class="view" hidden>
+            <div class="board-grid">
+                <div class="panel">
+                    <h2>Leaderboard</h2>
+                    <table class="table" id="leaderboardTable">
+                        <thead>
+                            <tr><th>#</th><th>Player</th><th>Wins</th><th>Games</th><th>Win %</th><th>Top 3</th><th>Avg place</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="panel">
+                    <div class="row spread">
+                        <h2>Recent matches</h2>
+                        <label class="check small"><input type="checkbox" id="onlyMine" /> Only mine</label>
+                    </div>
+                    <ul class="match-list" id="matchList"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings -->
+        <section id="viewSettings" class="view" hidden>
+            <div class="settings-grid">
+                <form class="panel" id="nameForm">
+                    <h2>Display name</h2>
+                    <input type="text" id="displayName" maxlength="20" />
+                    <button class="btn" type="submit">Save</button>
+                    <p class="form-note" id="nameNote"></p>
+                </form>
+                <form class="panel" id="passwordForm">
+                    <h2>Password</h2>
+                    <input type="password" id="oldPassword" placeholder="Current password" autocomplete="current-password" />
+                    <input type="password" id="newPassword" placeholder="New password" autocomplete="new-password" />
+                    <button class="btn" type="submit">Change password</button>
+                    <p class="form-note" id="passwordNote"></p>
+                </form>
+                <div class="panel">
+                    <h2>Account</h2>
+                    <p class="muted">Logged in as <b id="settingsUsername"></b></p>
+                    <button class="btn btn-danger" id="logoutButton">Log out</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Waiting room -->
+        <section id="viewLobby" class="view" hidden>
+            <div class="lobby-grid">
+                <div class="panel lobby-main">
+                    <div class="row spread">
+                        <div>
+                            <p class="muted small">Lobby code</p>
+                            <button class="lobby-code" id="lobbyCode" title="Copy code"></button>
+                        </div>
+                        <div class="row">
+                            <button class="btn btn-primary" id="startMatch">Start match</button>
+                            <button class="btn btn-ghost" id="leaveLobby">Leave</button>
+                        </div>
+                    </div>
+                    <h3>Players <span class="muted" id="playerCount"></span></h3>
+                    <ul class="member-list" id="memberList"></ul>
+                    <p class="muted small" id="lobbyHint"></p>
+                </div>
+                <form class="panel lobby-settings" id="settingsForm">
+                    <h3>Match settings</h3>
+                    <div class="settings-fields" id="settingsFields"></div>
+                </form>
+                <div class="panel chat" data-chat></div>
+            </div>
+        </section>
+
+        <!-- Match -->
+        <section id="viewGame" class="view" hidden>
+            <div class="game-top panel">
+                <div class="stat-pill"><span>Round</span><b id="gRound">1</b></div>
+                <div class="stat-pill phase"><span id="gPhase">Shop</span><b id="gTimer">60</b></div>
+                <div class="stat-pill money"><span>Money</span><b id="gMoney">0$</b></div>
+                <div class="stat-pill"><span>Lives</span><b id="gLives"></b></div>
+                <div class="stat-pill"><span>Max HP</span><b id="gMaxHp"></b></div>
+                <div class="grow"></div>
+                <button class="btn btn-ghost btn-small" id="forfeit">Leave match</button>
+            </div>
+
+            <div class="game-grid">
+                <aside class="game-side">
+                    <div class="panel">
+                        <h3>Players</h3>
+                        <ul class="player-list" id="gPlayers"></ul>
+                    </div>
+                    <div class="panel">
+                        <h3>Lobby events</h3>
+                        <ul class="event-list" id="gEvents"></ul>
+                    </div>
+                </aside>
+
+                <div class="game-center">
+                    <div class="panel shop" id="shopPanel">
+                        <div class="row spread">
+                            <h3>Shop</h3>
+                            <div class="row">
+                                <button class="btn" id="rerollButton">Reroll</button>
+                                <button class="btn" id="hpButton">+HP</button>
+                                <button class="btn btn-primary" id="readyButton">Ready</button>
+                            </div>
+                        </div>
+                        <div class="shop-grid" id="shopGrid"></div>
+                        <p class="muted small" id="shopNote"></p>
+                    </div>
+                    <div class="panel eliminated" id="eliminatedPanel" hidden>
+                        <h2>You were eliminated</h2>
+                        <p class="muted" id="eliminatedText"></p>
+                        <p class="muted small">The match keeps going. Stick around for the final results, or leave.</p>
+                    </div>
+                    <div class="panel build">
+                        <h3>Your build</h3>
+                        <div class="build-row">
+                            <div class="slot-group">
+                                <span class="slot-label">Weapon</span>
+                                <div class="slot" id="slotWeapon"></div>
+                            </div>
+                            <div class="slot-group">
+                                <span class="slot-label">Shirt</span>
+                                <div class="slot" id="slotShirt"></div>
+                            </div>
+                            <div class="slot-group dynamics">
+                                <span class="slot-label">Buffs, charms &amp; passives</span>
+                                <div class="slot-row" id="slotDynamics"></div>
+                            </div>
+                        </div>
+                        <ul class="stat-list" id="statList"></ul>
+                    </div>
+                </div>
+
+                <div class="panel chat" data-chat></div>
+            </div>
+        </section>
+
+        <!-- Fight replay -->
+        <section id="viewCombat" class="view" hidden>
+            <div class="arena">
+                <div class="arena-clock">
+                    <span id="cRound"></span>
+                    <b id="cTime">0.0s</b>
+                    <span class="overtime" id="cOvertime"></span>
+                </div>
+                <div class="fighters">
+                    <div class="fighter panel" id="fighter0"></div>
+                    <div class="versus">VS</div>
+                    <div class="fighter panel" id="fighter1"></div>
+                </div>
+            </div>
+            <div class="result-screen" id="resultScreen" hidden>
+                <div class="panel result-card">
+                    <h2 id="resultTitle"></h2>
+                    <ul class="result-stats" id="resultStats"></ul>
+                    <p class="muted" id="resultWait"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- End of match -->
+        <section id="viewGameOver" class="view" hidden>
+            <canvas id="confetti"></canvas>
+            <h2 class="gameover-title">Match over</h2>
+            <div class="podium" id="podium"></div>
+            <div class="panel standings">
+                <table class="table" id="standingsTable">
+                    <thead><tr><th>#</th><th>Player</th><th>Build</th><th>W / L</th><th>Lives</th><th>Titles</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button class="btn btn-primary" id="backToLobby">Back to lobby</button>
+        </section>
+    </main>
+
+    <!-- Item detail page (compendium) -->
+    <div class="modal" id="itemModal" hidden>
+        <div class="panel modal-card item-info">
+            <button class="modal-close" data-close>&times;</button>
+            <div class="item-card-big"><img id="itemInfoImg" alt="" /></div>
+            <div>
+                <h2 id="itemInfoName"></h2>
+                <p class="item-meta" id="itemInfoMeta"></p>
+                <ul id="itemInfoStats"></ul>
+                <h4 id="itemInfoLevelStatsTitle">Per level</h4>
+                <ul id="itemInfoLevelStats"></ul>
+                <ul id="itemInfoEffects" class="effects"></ul>
+                <p id="itemInfoDescription" class="flavor"></p>
+            </div>
+        </div>
     </div>
 
-    <div id="join">
-        <label for="browseButton">Browse Lobbies</label>
-        <button id="browseButton">Browse</button>
-        <label for="joinCode">Join Lobby with Code</label>
-        <input type="text" id="joinCode" placeholder="Enter lobby code" />
-        <button id="joinButton">Join</button>
-        <label for="create-lobby">Create Lobby</label>
-        <button id="create-lobby">Create</button>
-    </div>
-    <div id="compendium" style="display: none;">
-    </div>
-    <div id="itemInfo" style="display: none;">
-        <h2 id="itemInfoName"></h2>
-        <div class="item-card-big">
-            <img id="itemInfoImg" src="./img/item/pepf/guitar.png">
-        </div>
-        <div id="itemInfoDesc">
-            <ul id="itemInfoStats">
-            </ul>
-            <h3 id="itemInfoLevelStatsTitle">Per Level</h3>
-            <ul id="itemInfoLevelStats">
-            </ul>
-            <ul id="itemInfoEffects">
-            </ul>
-            <p id="itemInfoDescription"></p>
+    <!-- Generic dialog (confirm / pick replacement / match details) -->
+    <div class="modal" id="dialog" hidden>
+        <div class="panel modal-card">
+            <button class="modal-close" data-close>&times;</button>
+            <h3 id="dialogTitle"></h3>
+            <div id="dialogBody"></div>
+            <div class="row end" id="dialogButtons"></div>
         </div>
     </div>
-    <script src="js/script.js"></script>
+
+    <div class="tooltip" id="tooltip" hidden></div>
+    <div class="announce" id="announce" hidden></div>
+    <div class="toasts" id="toasts"></div>
+
+    <script type="module" src="js/main.js"></script>
 </body>
 
 </html>
