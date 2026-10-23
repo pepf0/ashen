@@ -274,12 +274,14 @@ export function createCombatView(app) {
             p.root.classList.toggle("stunned", s.stun > 0);
             p.root.classList.toggle("invulnerable", s.invuln > 0);
             p.root.classList.toggle("sudden", !!snap.suddenDeath);
-            p.status.replaceChildren(...[
+            const statusKey = `${s.stun.toFixed(1)}|${s.invuln.toFixed(1)}|${s.parry}|${s.windup == null ? "" : Math.max(0, s.windup).toFixed(1)}`;
+            if (p.statusKey !== statusKey) p.status.replaceChildren(...[
                 s.stun > 0 ? el("span", { class: "badge stun", text: `Stunned ${s.stun.toFixed(1)}s` }) : null,
                 s.invuln > 0 ? el("span", { class: "badge invuln", text: `Invulnerable ${s.invuln.toFixed(1)}s` }) : null,
                 s.parry ? el("span", { class: "badge invuln", text: "Parry ready" }) : null,
                 s.windup != null ? el("span", { class: "badge stun", text: `Headshot in ${Math.max(0, s.windup).toFixed(1)}s` }) : null
             ].filter(Boolean));
+            p.statusKey = statusKey;
 
             p.abilities.forEach((ab, slot) => {
                 if (slot === 3) {
@@ -296,6 +298,11 @@ export function createCombatView(app) {
                 }
             });
 
+            // Only rebuild the buff list when something visible changed (stacks, values, timers at 0.1s).
+            const buffKey = [...fight.buffs[i].values()].map(b => `${b.effectSource}:${b.stacks}:${b.mult}:${b.add}:${b.duration != null ? Math.max(0, b.t + b.duration - snap.t).toFixed(1) : ""}`).join(",")
+                + "|" + s.mods.map(m => `${m.id}:${Math.max(0, m.left).toFixed(1)}`).join(",");
+            if (p.buffKey === buffKey) continue;
+            p.buffKey = buffKey;
             const items = [...fight.buffs[i].values()].map(b => {
                 const left = b.duration != null ? Math.max(0, b.t + b.duration - snap.t) : null;
                 return el("li", {},
