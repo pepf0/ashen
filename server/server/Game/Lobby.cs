@@ -305,6 +305,56 @@ public partial class Lobby
         lock (sync) return Members.All(m => !m.Connected) && DateTime.UtcNow - LastActivity > after;
     }
 
+    public object AdminView()
+    {
+        lock (sync)
+        {
+            return new
+            {
+                code = Code,
+                state = State,
+                round,
+                hostId = HostId,
+                settings = Settings,
+                mutators = mutators.Select(m => m.Id),
+                members = Members.Select(m => new
+                {
+                    id = m.UserId, name = m.Name, connected = m.Connected, bot = m.Difficulty,
+                    lives = FindPlayer(m.UserId)?.Lives, eliminated = FindPlayer(m.UserId)?.Eliminated
+                })
+            };
+        }
+    }
+
+    /// <summary>Admin: removes a player (forfeiting if a match is running).</summary>
+    public void AdminKick(long userId, string reason)
+    {
+        lock (sync)
+        {
+            var member = Members.FirstOrDefault(m => m.UserId == userId);
+            if (member is null) return;
+            if (InMatch && FindPlayer(userId) is { Eliminated: false } p) Forfeit(p);
+            member.Connection?.Send(new { type = "error", message = reason });
+            RemoveMember(member, $"{member.Name} was removed by an admin.");
+        }
+    }
+
+    /// <summary>Admin: closes the lobby for everyone.</summary>
+    public void AdminClose()
+    {
+        lock (sync)
+        {
+            foreach (var m in Members.ToList())
+            {
+                m.Connection?.Send(new { type = "error", message = "This lobby was closed by an admin." });
+                m.Connection?.Send(new { type = "lobby", lobby = (object?)null });
+                manager.Unbind(m.UserId, this);
+            }
+            Members.Clear();
+        }
+        manager.Remove(this);
+    }
+
     /// <summary>Stops a running match (its loop notices the state change) when the lobby is deleted.</summary>
     public void Close()
     {
@@ -1509,7 +1559,8 @@ public partial class Lobby
                     name = o.Name,
                     ready = o.Ready,
                     alive = !o.Eliminated,
-                    connected = o.Connected,
+                    connected = o.Connected || o.Id < 0,
+                    bot = o.Id < 0,
                     titles = o.Titles,
                     bounty = o.Bounty,
                     appearance = o.Appearance,

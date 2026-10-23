@@ -1,7 +1,7 @@
 // Small UI helpers: views, toasts, dialogs and the event banner.
 import { el, hideTooltip } from "./data.js";
 
-const VIEWS = ["Auth", "Menu", "Compendium", "Leaderboard", "Settings", "Lobby", "Game", "Combat", "GameOver"];
+const VIEWS = ["Auth", "Menu", "Compendium", "Leaderboard", "Settings", "Admin", "Lobby", "Game", "Combat", "GameOver"];
 
 export function showView(name) {
     hideTooltip();

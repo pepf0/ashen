@@ -47,22 +47,55 @@ public static class GameData
         throw new DirectoryNotFoundException("Could not find json/items.json. Set ASHEN_ROOT to the repository folder.");
     }
 
-    public static void Load(string root)
+    /// <summary>Every game data file, as served under /json/ and editable in the admin panel.</summary>
+    public static readonly string[] Files =
+    {
+        "items.json", "effects.json", "events.json", "kits.json", "modifiers.json", "augments.json",
+        "mutators.json", "arenas.json", "achievements.json", "cosmetics.json"
+    };
+
+    /// <summary>Folder with admin-edited copies of data files; a file here wins over json/ in the repository.</summary>
+    public static string? OverrideDir { get; set; }
+
+    /// <summary>Path a data file is currently read from (override or repository).</summary>
+    public static string PathOf(string file)
+    {
+        if (OverrideDir is not null && File.Exists(Path.Combine(OverrideDir, file))) return Path.Combine(OverrideDir, file);
+        return Path.Combine(Root, "json", file);
+    }
+
+    /// <summary>Loads (or, with apply = false, only validates) all data. <paramref name="pending"/> replaces file contents.</summary>
+    public static void Load(string root, IReadOnlyDictionary<string, string>? pending = null, bool apply = true)
     {
         lock (loadLock)
         {
+            var oldRoot = Root;
             Root = root;
-            var json = Path.Combine(root, "json");
-            var items = ItemLoader.ItemsFromJson(File.ReadAllText(Path.Combine(json, "items.json")));
-            var effects = ItemLoader.EffectsFromJson(File.ReadAllText(Path.Combine(json, "effects.json")));
-            var events = ItemLoader.EventsFromJson(File.ReadAllText(Path.Combine(json, "events.json")));
-            var kits = ItemLoader.ListFromJson<Kit>(File.ReadAllText(Path.Combine(json, "kits.json")), "kits.json");
-            var modifiers = ItemLoader.ListFromJson<RoundModifier>(File.ReadAllText(Path.Combine(json, "modifiers.json")), "modifiers.json");
-            var augments = ItemLoader.ListFromJson<Augment>(File.ReadAllText(Path.Combine(json, "augments.json")), "augments.json");
-            var mutators = ItemLoader.ListFromJson<Mutator>(File.ReadAllText(Path.Combine(json, "mutators.json")), "mutators.json");
-            var arenas = ItemLoader.ListFromJson<Arena>(File.ReadAllText(Path.Combine(json, "arenas.json")), "arenas.json");
-            var achievements = ItemLoader.ListFromJson<Achievement>(File.ReadAllText(Path.Combine(json, "achievements.json")), "achievements.json");
-            var cosmetics = ItemLoader.ListFromJson<Cosmetic>(File.ReadAllText(Path.Combine(json, "cosmetics.json")), "cosmetics.json");
+            string Read(string file) => pending is not null && pending.TryGetValue(file, out var text) ? text : File.ReadAllText(PathOf(file));
+            try
+            {
+                LoadFrom(Read, apply);
+            }
+            finally
+            {
+                if (!apply && oldRoot.Length > 0) Root = oldRoot;
+            }
+        }
+    }
+
+    private static void LoadFrom(Func<string, string> read, bool apply)
+    {
+        {
+            var items = ItemLoader.ItemsFromJson(read("items.json"));
+            var effects = ItemLoader.EffectsFromJson(read("effects.json"));
+            var events = ItemLoader.EventsFromJson(read("events.json"));
+            var kits = ItemLoader.ListFromJson<Kit>(read("kits.json"), "kits.json");
+            var modifiers = ItemLoader.ListFromJson<RoundModifier>(read("modifiers.json"), "modifiers.json");
+            var augments = ItemLoader.ListFromJson<Augment>(read("augments.json"), "augments.json");
+            var mutators = ItemLoader.ListFromJson<Mutator>(read("mutators.json"), "mutators.json");
+            var arenas = ItemLoader.ListFromJson<Arena>(read("arenas.json"), "arenas.json");
+            var achievements = ItemLoader.ListFromJson<Achievement>(read("achievements.json"), "achievements.json");
+            var cosmetics = ItemLoader.ListFromJson<Cosmetic>(read("cosmetics.json"), "cosmetics.json");
             foreach (var c in cosmetics)
                 if (c.Unlock.Achievement is string a && !achievements.Any(x => x.Id == a))
                     throw new InvalidDataException($"Cosmetic {c.Id}: unknown achievement '{a}'");
@@ -89,6 +122,9 @@ public static class GameData
                     throw new InvalidDataException($"Event {ev.Id}: unknown item '{ev.Item}'");
             }
 
+            foreach (var id in items.GroupBy(i => i.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+                throw new InvalidDataException($"Duplicate item id '{id}'");
+            if (!apply) return;
             Items = itemMap;
             Effects = effectMap;
             Events = events;

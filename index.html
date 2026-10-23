@@ -22,6 +22,7 @@
             <button class="tab" data-tab="compendium">Compendium</button>
             <button class="tab" data-tab="leaderboard">Leaderboard</button>
             <button class="tab" data-tab="settings">Settings</button>
+            <button class="tab" data-tab="admin" id="adminTab" hidden>Admin</button>
         </nav>
         <div class="user-chip" id="userChip"></div>
     </header>
@@ -144,6 +145,11 @@
                     <button class="btn btn-danger" id="logoutButton">Log out</button>
                 </div>
             </div>
+        </section>
+
+        <!-- Admin -->
+        <section id="viewAdmin" class="view" hidden>
+            <div id="adminRoot"></div>
         </section>
 
         <!-- Waiting room -->

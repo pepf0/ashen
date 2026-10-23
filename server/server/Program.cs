@@ -11,9 +11,14 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        GameData.EnsureLoaded();
-        var root = GameData.Root;
+        var root = GameData.FindRoot();
         var dbPath = Environment.GetEnvironmentVariable("ASHEN_DB") ?? Path.Combine(root, "data", "ashen.db");
+        GameData.OverrideDir = Environment.GetEnvironmentVariable("ASHEN_DATA_OVERRIDES")
+            ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? root, "json-overrides");
+        GameData.Load(root);
+        Admin.Usernames = (Environment.GetEnvironmentVariable("ASHEN_ADMINS") ?? "pepf")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var builder = WebApplication.CreateBuilder(args);
         builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
@@ -41,9 +46,25 @@ public class Program
         var lobbies = new LobbyManager(database);
         var limiter = new RateLimiter();
         _ = lobbies.SweepAsync(app.Lifetime.ApplicationStopping);
+        _ = Admin.ApplyPendingReloadsAsync(lobbies, app.Lifetime.ApplicationStopping);
 
         app.UseForwardedHeaders();
         app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
+
+        // Admin-edited data files (json-overrides) win over the repository's json/.
+        app.Use(async (ctx, next) =>
+        {
+            var path = ctx.Request.Path.Value ?? "";
+            if (path.StartsWith("/json/") && GameData.Files.Contains(path[6..]) && GameData.OverrideDir is { } dir
+                && File.Exists(Path.Combine(dir, path[6..])))
+            {
+                ctx.Response.ContentType = "application/json";
+                ctx.Response.Headers.CacheControl = "no-cache";
+                await ctx.Response.SendFileAsync(Path.Combine(dir, path[6..]));
+                return;
+            }
+            await next();
+        });
 
         // Only the frontend folders are served, never the server source or the database.
         app.MapGet("/", () => Results.File(Path.Combine(root, "index.html"), "text/html; charset=utf-8"));
@@ -127,7 +148,11 @@ public class Program
         });
 
         api.MapGet("/me", (HttpContext ctx) =>
-            Authenticate(ctx, db) is { } user ? Results.Json(user) : Error("Not logged in.", 401));
+            Authenticate(ctx, db) is { } user
+                ? Results.Json(new { user.Id, user.Username, user.DisplayName, isAdmin = Admin.IsAdmin(user) })
+                : Error("Not logged in.", 401));
+
+        Admin.Map(api, db, lobbies);
 
         api.MapPut("/me", (DisplayNameBody body, HttpContext ctx) =>
         {
@@ -261,6 +286,15 @@ public static class GameSocket
     private static readonly ConcurrentDictionary<long, Connection> online = new();
 
     public static bool IsOnline(long userId) => online.ContainsKey(userId);
+    public static int OnlineCount => online.Count;
+
+    /// <summary>Logs a user out of the game socket (bans).</summary>
+    public static void Kick(long userId)
+    {
+        if (!online.TryGetValue(userId, out var conn)) return;
+        conn.Send(new { type = "authError", message = "You were logged out." });
+        conn.Complete();
+    }
 
     public static void Notify(long userId, object message)
     {

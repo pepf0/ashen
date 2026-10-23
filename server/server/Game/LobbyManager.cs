@@ -56,6 +56,9 @@ public class LobbyManager
             userLobby.TryRemove(kv);
     }
 
+    public IReadOnlyCollection<Lobby> All => lobbies.Values.ToList();
+    public bool AnyInMatch => lobbies.Values.Any(l => l.InMatch);
+
     public List<object> PublicLobbies() => lobbies.Values
         .Select(l => l.BrowseEntry())
         .OfType<object>()

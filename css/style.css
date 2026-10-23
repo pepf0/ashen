@@ -984,3 +984,69 @@ label.inline select { width: auto; }
 .round-row { display: grid; grid-template-columns: 80px 1fr; gap: 10px; align-items: start; }
 .round-fights { display: flex; flex-wrap: wrap; gap: 6px; }
 .fight-chip .won { color: var(--good); }
+
+.shop-item.synergy { border-color: rgba(107, 224, 138, 0.6); box-shadow: 0 0 16px rgba(107, 224, 138, 0.12); }
+.synergy-tag {
+    position: absolute; top: -9px; right: 8px; font-size: 0.68rem; padding: 1px 6px; border-radius: 5px;
+    background: var(--bg); border: 1px solid rgba(107, 224, 138, 0.6); color: var(--good); max-width: 85%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.admin-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.admin-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.data-editor { width: 100%; min-height: 60vh; font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; background: rgba(3, 0, 21, 0.7); color: var(--text); border: 2px solid #232035; border-radius: 8px; padding: 10px; margin-top: 8px; }
+.data-editor-wrap select { width: auto; }
+
+/*#region Mobile*/
+@media (max-width: 760px) {
+    header { padding: 10px 12px; }
+    h1 { font-size: 2.6rem; }
+    .tab-container { overflow-x: auto; max-width: 100%; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+    .tab { white-space: nowrap; flex: none; }
+    .user-chip { font-size: 0.8rem; }
+    .panel { padding: 14px; }
+    .game-top { gap: 6px; padding: 8px; }
+    .stat-pill { padding: 2px 8px; }
+    .stat-pill b { font-size: 1.05rem; }
+    .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .shop .row.spread { flex-direction: column; align-items: stretch; }
+    .shop .row.spread .row { justify-content: space-between; }
+    .shop .row.spread .row .btn { flex: 1; padding: 10px 6px; }
+    .item-card.large { width: 80px; height: 80px; }
+    .build-row { gap: 10px; }
+    .slot-row { flex-wrap: wrap; }
+    .game-side { order: 2; }
+    .game-center { order: 1; }
+    .fighter { min-height: 0; }
+    .fighters { gap: 10px; }
+    /* Your own fighter (with the buttons) first, ability bar stays reachable at the bottom. */
+    .fighter.you { order: -1; }
+    .ability-bar.mine { position: sticky; bottom: 8px; z-index: 5; background: rgba(3, 0, 21, 0.85); padding: 6px; border-radius: 12px; backdrop-filter: blur(8px); }
+    .ab { padding: 12px 4px 10px; min-height: 64px; }
+    .ab-key { font-size: 1.4rem; }
+    .arena-clock b { font-size: 1.5rem; }
+    .lobby-code { font-size: 1.9rem; }
+    .modal-card { padding: 14px; max-height: 92vh; }
+    .profile { min-width: 0; }
+    .kit-grid { grid-template-columns: minmax(0, 1fr); }
+    #dialog .kit-grid { min-width: 0; }
+    .table { font-size: 0.85rem; }
+    .table th, .table td { padding: 6px 4px; }
+    .standings, .board-grid .panel:first-child { overflow-x: auto; }
+    .augment-offer { grid-template-columns: minmax(0, 1fr); }
+    .podium { min-height: 220px; }
+    .toasts { left: 12px; right: 12px; }
+    .toast { max-width: none; }
+    .round-row { grid-template-columns: minmax(0, 1fr); }
+    .settings-grid > .panel { grid-column: auto; }
+    .locker-panel, .keybind-panel { grid-column: auto; }
+}
+@media (hover: none) {
+    /* Touch: no hover tooltips sticking around, bigger tap targets. */
+    .btn { min-height: 40px; }
+    .btn-small { min-height: 34px; }
+}
+/*#endregion*/
+@media (max-width: 760px) {
+    .game-grid > .chat { order: 3; }
+}

@@ -11,6 +11,7 @@ import { renderGameOver } from "./gameover.js";
 import { loadKeybinds, renderKeybindSettings, onKeybindsChanged } from "./keybinds.js";
 import { openProfile, renderLocker, nameEl, loadAchievements } from "./profile.js";
 import { createFriends } from "./friends.js";
+import { createAdmin } from "./admin.js";
 
 // Relative URLs (api/, ws, json/) need the page URL to end in "/" when hosted under a sub-path.
 if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) {
@@ -29,6 +30,7 @@ app.game = createGameView(app);
 app.combat = createCombatView(app);
 app.showGame = () => { if (app.mode === "match") showView("Game"); };
 app.friends = createFriends(app);
+app.admin = createAdmin();
 
 const tabs = [...document.querySelectorAll("#tabs .tab")];
 let activeTab = "menu";
@@ -40,6 +42,7 @@ function setTab(name) {
     if (name === "compendium") showView("Compendium");
     if (name === "leaderboard") { showView("Leaderboard"); loadLeaderboard(); }
     if (name === "settings") { showView("Settings"); fillSettings(); renderLocker(document.getElementById("lockerPanel")); }
+    if (name === "admin") { showView("Admin"); app.admin.render(); }
 }
 
 tabs.forEach(t => t.addEventListener("click", () => setTab(t.dataset.tab)));
@@ -108,16 +111,18 @@ function loggedIn(user) {
     setTab("menu");
     loadKeybinds();
     app.socket.connect();
+    api("me").then(me => { app.user = { ...app.user, isAdmin: me.isAdmin }; renderUserChip(); }).catch(() => {});
 }
 
 function renderUserChip() {
+    document.getElementById("adminTab").hidden = !app.user?.isAdmin;
     document.getElementById("userChip").textContent = app.user ? app.user.displayName : "";
 }
 
 // ---------------- socket ----------------
 
 app.socket
-    .on("hello", msg => { app.user = msg.user; renderUserChip(); })
+    .on("hello", msg => { app.user = { ...msg.user, isAdmin: app.user?.isAdmin }; renderUserChip(); })
     .on("authError", () => { app.socket.disconnect(); setToken(null); showAuth(); })
     .on("replaced", () => toast("Ashen was opened in another tab.", "info"))
     .on("close", () => document.body.classList.add("offline"))

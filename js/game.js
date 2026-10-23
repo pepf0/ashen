@@ -117,6 +117,20 @@ export function createGameView(app) {
         }));
     }
 
+    /** Why a shop item fits the current build (pack synergy, buffs an owned item, buffed by one). */
+    function synergies(you, it) {
+        const ownedItems = [you.weapon, you.shirt, ...you.dynamics].filter(Boolean).map(o => item(o.id));
+        const reasons = [];
+        if (it.pack !== "generic" && ownedItems.some(o => o.pack === it.pack && o.id !== it.id)) reasons.push("Pack synergy");
+        const targets = (it.effects ?? []).map(id => data.effects[id]?.target);
+        for (const o of ownedItems) {
+            if (o.id === it.id) continue;
+            if (targets.includes(o.id)) reasons.push(`Buffs ${o.name}`);
+            if ((o.effects ?? []).some(id => data.effects[id]?.target === it.id)) reasons.push(`Boosted by ${o.name}`);
+        }
+        return [...new Set(reasons)];
+    }
+
     function renderShop(you) {
         const grid = document.getElementById("shopGrid");
         const open = state.phase === "shop" && !you.eliminated;
@@ -128,7 +142,9 @@ export function createGameView(app) {
             const price = slot.price ?? it.price;
             const canBuy = open && !slot.bought && !maxed && you.money >= price;
             const label = slot.bought ? "Bought" : maxed ? "Max level" : mine ? `Lv ${mine.level + 1}` : `Buy`;
-            return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? " special" : "") },
+            const syn = slot.bought ? [] : synergies(you, it);
+            return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? " special" : "") + (syn.length ? " synergy" : "") },
+                syn.length ? el("span", { class: "synergy-tag", title: syn.join(", "), text: syn[0] + (syn.length > 1 ? ` +${syn.length - 1}` : "") }) : null,
                 itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large" }),
                 el("div", { class: "shop-name", text: it.name }),
                 el("div", { class: "shop-type muted small", text: it.pack !== "generic" ? `Special ${it.type}` : it.type }),

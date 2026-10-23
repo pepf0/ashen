@@ -110,6 +110,8 @@ public partial class Database
         MigrateFriends(conn);
         AddColumnIfMissing(conn, "matches", "counted", "INTEGER NOT NULL DEFAULT 1");
         MigrateReplays(conn);
+        AddColumnIfMissing(conn, "users", "banned", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfMissing(conn, "users", "ban_reason", "TEXT");
     }
 
     private static void AddColumnIfMissing(SqliteConnection conn, string table, string column, string type)
@@ -203,7 +205,7 @@ public partial class Database
     {
         using var conn = Open();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, username, display_name, password_hash, salt, iterations FROM users WHERE username = $u";
+        cmd.CommandText = "SELECT id, username, display_name, password_hash, salt, iterations, banned FROM users WHERE username = $u";
         cmd.Parameters.AddWithValue("$u", username);
         using var r = cmd.ExecuteReader();
         if (!r.Read())
@@ -215,6 +217,7 @@ public partial class Database
         var expected = (byte[])r["password_hash"];
         var actual = Hash(password, (byte[])r["salt"], r.GetInt32(5));
         if (!CryptographicOperations.FixedTimeEquals(expected, actual)) return null;
+        if (r.GetInt64(6) != 0) return null;
         return new User(r.GetInt64(0), r.GetString(1), r.GetString(2));
     }
 
@@ -326,7 +329,7 @@ public partial class Database
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             SELECT u.id, u.username, u.display_name FROM sessions s JOIN users u ON u.id = s.user_id
-            WHERE s.token_hash = $t AND s.expires_at > $now
+            WHERE s.token_hash = $t AND s.expires_at > $now AND u.banned = 0
             """;
         cmd.Parameters.AddWithValue("$t", TokenHash(token));
         cmd.Parameters.AddWithValue("$now", DateTime.UtcNow.ToString("O"));
