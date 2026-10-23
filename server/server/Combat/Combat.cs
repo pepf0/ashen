@@ -30,11 +30,11 @@ public static class Combat
     public static int TPS { get; set; } = 20;
     public static double SPT => 1.0 / TPS;
 
-    public const double MaxDamageReduction = 0.8;
-    public const double MaxDodgeChance = 0.6;
+    public const double MaxDamageReduction = 0.65;
+    public const double MaxDodgeChance = 0.45;
     /// <summary>Abilities (Brace, Smoke, ...) can push past the normal caps, up to these.</summary>
-    public const double AbilityMaxDamageReduction = 0.95;
-    public const double AbilityMaxDodgeChance = 0.9;
+    public const double AbilityMaxDamageReduction = 0.85;
+    public const double AbilityMaxDodgeChance = 0.75;
     public const double MinCooldown = 0.1;
     public const double OvertimeStart = 30;
     public const double OvertimeRampPerSecond = 0.1;

@@ -190,8 +190,8 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
 | Gambler | Coin Flip (6 s): next hit ×2 or ×0.5 | Double Down (12 s): +30 % crit chance, 4 s | Jackpot (15 s): 10 % stun 2 s, else +2 $ | All In: next 3 hits ×3 or miss (50/50 each) |
 | Sniper | Aim (8 s): next hit +100 % | Mark (12 s): enemy takes +20 % damage, 5 s | Retreat (10 s): +50 % dodge, 2 s | Headshot: 2 s wind-up, then 40 % of the enemy's current HP |
 
-- Ability dodge and damage reduction can go past the normal caps (up to 90 %
-  dodge and 95 % damage reduction).
+- Ability dodge and damage reduction can go past the normal caps (up to 75 %
+  dodge and 85 % damage reduction).
 - Headshot ignores damage reduction and overtime, but invulnerability, Parry
   and Shield still work against it.
 - All numbers are in `json/kits.json`.
@@ -259,7 +259,7 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
   3. damage is reduced by the defender's **damage reduction**,
   4. invulnerability blocks it completely.
 - Damage reduction and dodge chance are the sum over all your items, capped at
-  80 % and 60 %.
+  65 % and 45 %.
 - Weapon cooldown can't go below 0.1 s, crit chance is capped at 100 %.
 - A stunned player's weapon and item cooldowns stop. Stuns hitting an already
   stunned player add their duration. Invulnerability blocks new stuns.

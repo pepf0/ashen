@@ -29,8 +29,8 @@ public class CombatTests
         var shirt = Combat.CalculateCombatResults(TestHelpers.Build("generic.hammer"), TestHelpers.Build(null, "generic.band_shirt"), seed: 3);
         var hitNaked = naked.Events.OfType<DamageEvent>().First(e => e.WeaponAttack && !e.Dodged && e.CritMultiplier is null);
         var hitShirt = shirt.Events.OfType<DamageEvent>().First(e => e.WeaponAttack && !e.Dodged && e.CritMultiplier is null);
-        Assert.Equal(10, hitNaked.Damage, 3);
-        Assert.Equal(10 * (1 - 0.15), hitShirt.Damage, 3);
+        Assert.Equal(9, hitNaked.Damage, 3);
+        Assert.Equal(9 * (1 - 0.12), hitShirt.Damage, 3);
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class CombatTests
         var tank = TestHelpers.Build(null, "z7fox.shirt", "z7fox.chain", "generic.horseshoe", "pepf.dragon");
         tank.Shirt = TestHelpers.Own("z7fox.shirt");
         var stats = Combat.PreviewStats(tank);
-        Assert.Equal(0.8, stats["damage_reduction"], 6);
+        Assert.Equal(Combat.MaxDamageReduction, stats["damage_reduction"], 6);
     }
 
     [Fact]

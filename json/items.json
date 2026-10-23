@@ -36,7 +36,7 @@
     "sprite": "pepf/shirt.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.35
+      "damage_reduction": 0.28
     },
     "effects": ["pepf.shirt.weapon_cooldown_buff"],
     "description": "An extremely cool looking shirt. Looks kinda familiar."
@@ -105,7 +105,7 @@
     "sprite": "z7fox/shirt.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.45
+      "damage_reduction": 0.36
     },
     "effects": ["z7fox.shirt.stun_chance"],
     "description": "A shirt with an interesting color... No one could ever joke about that."
@@ -118,8 +118,8 @@
     "sprite": "z7fox/chain.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.25,
-      "dodge_chance": 0.25
+      "damage_reduction": 0.2,
+      "dodge_chance": 0.2
     },
     "description": "Your faith will protect you."
   },
@@ -131,7 +131,7 @@
     "sprite": "z7fox/football.png",
     "price": 50,
     "base_stats": {
-      "dodge_chance": 0.25
+      "dodge_chance": 0.2
     },
     "effects": ["z7fox.football.weapon_cooldown_buff"],
     "description": "A football, that somehow makes you agile?! Also, it's red..."
@@ -173,7 +173,7 @@
     "sprite": "ely7/shirt.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.2
+      "damage_reduction": 0.16
     },
     "effects": [
       "ely7.shirt.weapon_crit_chance_buff",
@@ -242,7 +242,7 @@
     "sprite": "xxzweiradxx/shirt.png",
     "price": 50,
     "base_stats": {
-      "damage_reduction": 0.35
+      "damage_reduction": 0.28
     },
     "effects": ["xxzweiradxx.shirt.weapon_damage_buff"],
     "description": "A shirt that has been seen quite often. Wearing it makes you feel a sudden rush of strength."
@@ -255,8 +255,8 @@
     "sprite": "xxzweiradxx/chain.png",
     "price": 50,
     "base_stats": {
-      "dodge_chance": 0.15,
-      "damage_reduction": 0.05
+      "dodge_chance": 0.12,
+      "damage_reduction": 0.04
     },
     "effects": ["xxzweiradxx.chain.weapon_crit_chance_buff"],
     "description": "A chain, that reminds of a game studio. Gives immense strength, for some reason."
@@ -300,16 +300,16 @@
     "sprite": "generic/hammer.png",
     "price": 10,
     "base_stats": {
-      "damage": 10,
+      "damage": 9,
       "cooldown": 2,
       "crit_chance": 0.05,
-      "crit_damage": 2.5
+      "crit_damage": 2.2
     },
     "level_stats": {
-      "damage_add": 1.5,
+      "damage_add": 1.2,
       "cooldown_add": 0.1,
       "crit_chance_add": 0.025,
-      "crit_damage_add": 0.125
+      "crit_damage_add": 0.1
     },
     "description": "A hammer. This is not supposed to be used for combat, but that's fine."
   },
@@ -363,12 +363,12 @@
     "sprite": "generic/beige_shirt.png",
     "price": 10,
     "base_stats": {
-      "dodge_chance": 0.15,
-      "damage_reduction": 0.05
+      "dodge_chance": 0.12,
+      "damage_reduction": 0.04
     },
     "level_stats": {
-      "dodge_chance_add": 0.025,
-      "damage_reduction_add": 0.0075
+      "dodge_chance_add": 0.02,
+      "damage_reduction_add": 0.006
     },
     "description": "A plain, beige shirt."
   },
@@ -380,12 +380,12 @@
     "sprite": "generic/brown_shirt.png",
     "price": 10,
     "base_stats": {
-      "dodge_chance": 0.05,
-      "damage_reduction": 0.15
+      "dodge_chance": 0.04,
+      "damage_reduction": 0.12
     },
     "level_stats": {
-      "dodge_chance_add": 0.0075,
-      "damage_reduction_add": 0.025
+      "dodge_chance_add": 0.006,
+      "damage_reduction_add": 0.02
     },
     "description": "A plain, brown shirt."
   },
@@ -397,10 +397,10 @@
     "sprite": "generic/band_shirt.png",
     "price": 10,
     "base_stats": {
-      "damage_reduction": 0.15
+      "damage_reduction": 0.12
     },
     "level_stats": {
-      "damage_reduction_add": 0.0325
+      "damage_reduction_add": 0.026
     },
     "description": "You have to survive moshpits somehow."
   },
@@ -412,10 +412,10 @@
     "sprite": "generic/mike_shirt.png",
     "price": 10,
     "base_stats": {
-      "dodge_chance": 0.15
+      "dodge_chance": 0.12
     },
     "level_stats": {
-      "dodge_chance_add": 0.0325
+      "dodge_chance_add": 0.026
     },
     "description": "This sports shirt makes you agile."
   },
@@ -427,10 +427,10 @@
     "sprite": "generic/knight.png",
     "price": 10,
     "base_stats": {
-      "dodge_chance": 0.1
+      "dodge_chance": 0.08
     },
     "level_stats": {
-      "dodge_chance_add": 0.025
+      "dodge_chance_add": 0.02
     },
     "effects": ["generic.knight.weapon_cooldown_buff"],
     "description": "A very familiar figure, that doesn't look happy to be here."
@@ -443,10 +443,10 @@
     "sprite": "generic/horseshoe.png",
     "price": 10,
     "base_stats": {
-      "damage_reduction": 0.1
+      "damage_reduction": 0.08
     },
     "level_stats": {
-      "damage_reduction_add": 0.025
+      "damage_reduction_add": 0.02
     },
     "effects": ["generic.horseshoe.weapon_crit_chance_buff"],
     "description": "Looks lucky, might actually be lucky."
