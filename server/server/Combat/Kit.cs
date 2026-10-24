@@ -28,6 +28,7 @@ public class Ability
     public double? Add { get; set; }
     public double? Taken { get; set; }
     public double? Reflect { get; set; }
+    public double? Block { get; set; }
     public double? Fraction { get; set; }
     public int? Hits { get; set; }
     public double? Chance { get; set; }

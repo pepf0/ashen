@@ -206,6 +206,7 @@ export class Arena {
             f.stun = s.stun;
             f.invuln = s.invuln;
             f.parry = s.parry;
+            f.bulwark = s.bulwark ?? 0;
             f.windup = s.windup;
             f.ult = s.ult ?? 0;
             f.mods = s.mods ?? [];
@@ -322,6 +323,7 @@ export class Arena {
                 this.sparks(this.x(tgt), this.headY(tgt) + 18, src?.color ?? "#ffffff", 6);
                 this.flashHit(tgt, 0.8);
             }
+            if (ev.bulwark > 0) { this.sfx("block"); this.bubble(tgt, "#ffdc78"); this.float(tgt, `-${Math.round(ev.bulwark)} bulwark`, "invuln"); }
             if (ev.absorbed > 0) { this.sfx("block"); this.bubble(tgt, "#cfe8ff"); this.float(tgt, `-${Math.round(ev.absorbed)} shield`, "invuln"); }
         };
         if (delay > 0) this.later(delay, show); else show();
@@ -709,8 +711,8 @@ export class Arena {
             ctx.fillRect(Math.round(x + Math.cos(a) * 11), Math.round(top + 2 + Math.sin(a) * 3), 2, 2);
         }
         // Invulnerability / shield bubble
-        if (f.invuln > 0 || f.shield > 0) {
-            ctx.strokeStyle = f.invuln > 0 ? `rgba(255, 220, 120, ${0.6 + Math.sin(t * 10) * 0.25})` : `rgba(190, 230, 255, ${0.25 + f.shield})`;
+        if (f.invuln > 0 || f.bulwark > 0 || f.shield > 0) {
+            ctx.strokeStyle = f.invuln > 0 || f.bulwark > 0 ? `rgba(255, 220, 120, ${0.6 + Math.sin(t * 10) * 0.25})` : `rgba(190, 230, 255, ${0.25 + f.shield})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.ellipse(x, CY - 4 + this.offset(f).y, 38, 30, 0, 0, Math.PI * 2);

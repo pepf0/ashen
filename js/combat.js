@@ -259,10 +259,11 @@ export function createCombatView(app) {
             p.root.classList.toggle("stunned", s.stun > 0);
             p.root.classList.toggle("invulnerable", s.invuln > 0);
             p.root.classList.toggle("sudden", !!snap.suddenDeath);
-            const statusKey = `${s.stun.toFixed(1)}|${s.invuln.toFixed(1)}|${s.parry}|${s.windup == null ? "" : Math.max(0, s.windup).toFixed(1)}`;
+            const statusKey = `${s.stun.toFixed(1)}|${s.invuln.toFixed(1)}|${(s.bulwark ?? 0).toFixed(1)}|${s.parry}|${s.windup == null ? "" : Math.max(0, s.windup).toFixed(1)}`;
             if (p.statusKey !== statusKey) p.status.replaceChildren(...[
                 s.stun > 0 ? el("span", { class: "badge stun", text: `Stunned ${s.stun.toFixed(1)}s` }) : null,
                 s.invuln > 0 ? el("span", { class: "badge invuln", text: `Invulnerable ${s.invuln.toFixed(1)}s` }) : null,
+                s.bulwark > 0 ? el("span", { class: "badge invuln", text: `Bulwark ${s.bulwark.toFixed(1)}s` }) : null,
                 s.parry ? el("span", { class: "badge invuln", text: "Parry ready" }) : null,
                 s.windup != null ? el("span", { class: "badge stun", text: `Headshot in ${Math.max(0, s.windup).toFixed(1)}s` }) : null
             ].filter(Boolean));

@@ -186,7 +186,7 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
 |---|---|---|---|---|
 | Duelist | Parry (7 s): blocks the next hit within 0.6 s, reflects 50 % | Lunge (7 s): instant extra weapon attack | Feint (12 s): enemy's next weapon attack misses | Flurry: 5 extra weapon attacks over 1.5 s |
 | Berserker | Rage (10 s): +60 % damage dealt, +15 % taken, 4 s | Bloodlust (12 s): heal 40 % of damage dealt, 5 s | Shout (8 s): stun 0.5 s | Rampage: weapon cooldown ×0.5 + stun immune 6 s, breaks stuns |
-| Guardian | Shield (12 s): absorb 9 % max HP, 4 s | Brace (12 s): +20 % damage reduction (past the item cap), 3 s | Cleanse (12 s): remove stun + enemy debuffs, works while stunned | Bulwark: invulnerable 1.5 s, reflects 50 % of blocked damage |
+| Guardian | Shield (12 s): absorb 9 % max HP, 4 s | Brace (12 s): +20 % damage reduction (past the item cap), 3 s | Cleanse (12 s): remove stun + enemy debuffs, works while stunned | Bulwark: 2 s, blocks 50 % of incoming damage and throws the blocked part back at the attacker (not invulnerable; Headshot is blocked but not thrown back) |
 | Trickster | Smoke (8 s): +30 % dodge, 3 s | Hex (11 s): enemy weapon cooldown ×1.6, 4 s | Blink (5 s): next weapon attack crits | Mirror: copy the enemy's active upsides for 6 s (copied stacks capped at ×1.5) |
 | Gambler | Coin Flip (3.5 s): next hit ×3 or ×0.75 | Double Down (10 s): +50 % crit chance, 5 s | Jackpot (12 s): 25 % stun 1.5 s, else +3 $ | All In: next 4 hits each 65 % to deal ×3.5, else miss |
 | Sniper | Aim (8 s): next hit +125 % | Mark (12 s): enemy takes +20 % damage, 5 s | Retreat (12 s): +30 % dodge, 2 s | Headshot: 2 s wind-up, then 40 % of the enemy's current HP |

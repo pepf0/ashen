@@ -153,11 +153,10 @@ public class KitTests
     }
 
     [Fact]
-    public void ReflectedDamageIsReducedByTheAttackersDamageReduction()
+    public void BulwarkHalvesDamageAndReflectsHalf()
     {
-        // A tanky attacker hitting into Bulwark takes the reflect through its own damage reduction.
-        var attacker = TestHelpers.Build("generic.bow", "generic.band_shirt", "generic.horseshoe");
-        attacker.Shirt = TestHelpers.Own("generic.band_shirt", 5);
+        // Bulwark is not invulnerability: the hit still lands for half, and the blocked half comes back.
+        var attacker = TestHelpers.Build("generic.bow");
         attacker.MaxHealth = 1000;
         var guardian = WithKit("guardian", null, hp: 200);
         var fight = Start(attacker, guardian);
@@ -168,14 +167,12 @@ public class KitTests
             fight.Step();
             events.AddRange(fight.TakeNewEvents());
         }
-        var blocked = events.OfType<DamageEvent>().FirstOrDefault(e => e.Blocked && e.Source == 0 && e.WeaponAttack);
-        var reflect = events.OfType<DamageEvent>().FirstOrDefault(e => e.Reflected && e.AbilitySource == "bulwark");
-        Assert.True(blocked is not null, $"no blocked hit; abilities: {string.Join(",", events.OfType<AbilityEvent>().Select(a => a.Ability))}; finished {fight.Finished}");
-        Assert.NotNull(reflect);
-        // 50% of the blocked bow hit comes back, reduced by the attacker's own damage reduction.
-        double raw = 2 * (blocked!.CritMultiplier ?? 1);
-        double dr = Combat.PreviewStats(attacker)["damage_reduction"];
-        Assert.True(dr > 0.25);
-        Assert.Equal(0.5 * raw * (1 - dr), reflect!.Damage, 2);
+        var hit = events.OfType<DamageEvent>().FirstOrDefault(e => e.Bulwark > 0 && e.Source == 0 && e.WeaponAttack);
+        Assert.NotNull(hit);
+        Assert.False(hit!.Blocked);
+        Assert.Equal(hit.Bulwark, hit.Damage + hit.Absorbed, 2);
+        var reflect = events.OfType<DamageEvent>().First(e => e.Reflected && e.AbilitySource == "bulwark");
+        Assert.Equal(hit.Bulwark, reflect.Damage, 1);
     }
+
 }

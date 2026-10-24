@@ -41,6 +41,8 @@ public class DamageEvent : CombatEvent
     public bool Missed { get; set; }
     /// <summary>Damage soaked up by a Shield.</summary>
     public double Absorbed { get; set; }
+    /// <summary>Damage blocked by Bulwark.</summary>
+    public double Bulwark { get; set; }
     /// <summary>Damage sent back by Parry or Bulwark.</summary>
     public bool Reflected { get; set; }
     /// <summary>Kit ability that caused this damage (Flurry, Headshot, ...).</summary>
