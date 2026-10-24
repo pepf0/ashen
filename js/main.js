@@ -202,7 +202,7 @@ async function showProgress(p) {
     const ach = await loadAchievements();
     const cosmetic = id => id.replace(/^(name|frame|victory|nb|pb|ws|t)_/, "").replace(/_/g, " ");
     const pct = p.nextLevelXp ? Math.min(100, (p.levelXp / p.nextLevelXp) * 100) : 100;
-    panel.replaceChildren(
+    panel.replaceChildren(...[
         el("div", { class: "row spread" }, el("b", { text: `+${p.xpGained} XP` }),
             el("span", { text: p.levelsGained > 0 ? `Level up! Level ${p.level}` : `Level ${p.level}` })),
         el("div", { class: "xp-bar" }, el("div", { class: "xp-fill grow-in", style: `width:${pct}%` }),
@@ -210,7 +210,8 @@ async function showProgress(p) {
         p.newAchievements.length ? el("div", { class: "new-unlocks" }, el("span", { class: "muted small", text: "Achievements: " }),
             ...p.newAchievements.map(id => el("span", { class: "unlock-chip", text: ach.list.find(a => a.id === id)?.name ?? id }))) : null,
         p.newCosmetics.length ? el("div", { class: "new-unlocks" }, el("span", { class: "muted small", text: "New cosmetics: " }),
-            ...p.newCosmetics.map(id => el("span", { class: "unlock-chip cosmetic", text: cosmetic(id) }))) : null);
+            ...p.newCosmetics.map(id => el("span", { class: "unlock-chip cosmetic", text: cosmetic(id) }))) : null
+    ].filter(Boolean));
     panel.hidden = false;
     if (p.levelsGained > 0) setTimeout(() => sfx("levelup"), 800);
 }
