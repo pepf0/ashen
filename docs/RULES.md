@@ -353,7 +353,7 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     player a turquoise aura in fights (light column, rolling tide, orbiting
     stars, drifting notes and a pixel crown), highlighted rows in the lobby,
     match sidebar and standings, light rays and a turquoise podium, a
-    deep-sea profile banner, and an "has arrived" announcement with a chime
+    deep-sea profile banner, and a "has arrived" announcement with a chime
     when they join a lobby. The menu's demo duel sometimes shows the set off.
 - Click any player name to see their profile.
 
