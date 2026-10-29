@@ -349,7 +349,12 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
   - **Admin set "Pepf Prime"** (only for `ASHEN_ADMINS`, hidden from everyone
     else): Pepf Prime name color, Tidecrown name border, "The Creator"
     title, Pepf Aura portrait border, Pepf Tide fighter frame, Pepf Teal weapon
-    skin and the Encore victory effect.
+    skin and the Encore victory effect. Wearing any piece also gives the
+    player a turquoise aura in fights (light column, rolling tide, orbiting
+    stars, drifting notes and a pixel crown), highlighted rows in the lobby,
+    match sidebar and standings, light rays and a turquoise podium, a
+    deep-sea profile banner, and an "has arrived" announcement with a chime
+    when they join a lobby. The menu's demo duel sometimes shows the set off.
 - Click any player name to see their profile.
 
 ## Fights on screen

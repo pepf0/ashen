@@ -1044,3 +1044,222 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 /* Gradient (text-clipped) names: a heading's text-shadow would show through the transparent text. */
 .nc-name_pepf, .nc-name_ash, .nc-name_molten, .nc-name_abyssal, .nc-name_celestial, .nc-name_hellfire, .nc-name_legend,
 .nc-name_bounty, .nc-name_rainbow, .nc-name_sunset, .nc-name_aurora, .nc-name_dragon, .title-t_pepf { text-shadow: none !important; }
+
+/* ---------- Pepf Prime, deluxe ---------- */
+@keyframes prime-orbit { to { transform: rotate(360deg); } }
+@keyframes prime-sweep { 0% { transform: translateX(-120%) skewX(-20deg); } 55%, 100% { transform: translateX(260%) skewX(-20deg); } }
+@keyframes prime-tide { to { background-position: 64px 0, -48px 0; } }
+@keyframes prime-rays { to { transform: translateX(-50%) rotate(360deg); } }
+@keyframes prime-breathe { 50% { opacity: 0.55; } }
+@keyframes prime-gem { 0%, 100% { transform: translateY(-50%) rotate(45deg) scale(0.8); box-shadow: 0 0 4px #40e0d0; } 50% { transform: translateY(-50%) rotate(45deg) scale(1.15); box-shadow: 0 0 10px #b8fff6, 0 0 2px #fff; } }
+@keyframes prime-ornament { to { transform: rotate(360deg); } }
+
+/* Name: a second, offset star twinkling in counter-time. */
+.nc-name_pepf::before {
+    content: "\2726";
+    position: absolute;
+    left: -0.6em;
+    bottom: -0.25em;
+    font-size: 0.45em;
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    text-shadow: 0 0 6px #40e0d0;
+    animation: pepf-twinkle 1.8s ease-in-out 0.9s infinite;
+}
+
+/* Name border: a light sweep over the plate and pulsing gems on both ends. */
+.nb_pepf { position: relative; overflow: visible; isolation: isolate; }
+.nb_pepf::before, .nb_pepf::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, #ffffff, #40e0d0 60%, #0a8f86);
+    animation: prime-gem 1.6s ease-in-out infinite;
+    z-index: 1;
+}
+.nb_pepf::before { left: -4px; }
+.nb_pepf::after { right: -4px; animation-delay: 0.8s; }
+.nb_pepf > .player-name::selection { background: rgba(64, 224, 208, 0.3); }
+
+/* Title: the diamond ornaments turn. */
+.title-t_pepf::before, .title-t_pepf::after { display: inline-block; animation: prime-ornament 3s linear infinite; margin: 0 0.25em; }
+.title-t_pepf::after { animation-direction: reverse; }
+
+/* Portrait: a comet orbiting the frame and a light sweep across the glass. */
+.portrait.pb_pepf::before {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 2px, #ffffff 0 1.5px, #40e0d0 2.5px, rgba(64, 224, 208, 0.35) 4px, transparent 5px);
+    animation: prime-orbit 2.8s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+}
+.portrait.pb_pepf img { position: relative; z-index: 1; filter: drop-shadow(0 0 4px rgba(64, 224, 208, 0.6)); }
+.portrait.xs.pb_pepf::before { inset: -4px; background: radial-gradient(circle at 50% 1px, #ffffff 0 1px, #40e0d0 1.5px, transparent 2.5px); }
+
+/* Fighter panel: rolling tide along the bottom and a sheen. */
+.fighter.frame-frame_pepf { position: relative; overflow: hidden; }
+.fighter.frame-frame_pepf::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 14px;
+    background:
+        radial-gradient(14px 8px at 16px 14px, rgba(64, 224, 208, 0.35) 70%, transparent 72%) 0 0 / 32px 14px repeat-x,
+        radial-gradient(12px 7px at 12px 14px, rgba(184, 255, 246, 0.22) 70%, transparent 72%) 0 0 / 24px 14px repeat-x;
+    animation: prime-tide 2.4s linear infinite;
+    pointer-events: none;
+}
+.fighter.frame-frame_pepf::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgba(184, 255, 246, 0.08), transparent);
+    animation: prime-sweep 5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Skinned item cards: a turquoise shine passes over the weapon. */
+.item-card.skin-ws_pepf { position: relative; overflow: hidden; box-shadow: 0 0 10px rgba(64, 224, 208, 0.35), inset 0 0 10px rgba(64, 224, 208, 0.12); }
+.item-card.skin-ws_pepf::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 35%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    animation: prime-sweep 3.2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Rows (lobby, match sidebar, final standings) of a Prime player. */
+.member-list li.prime, .player-list li.prime, #standingsTable tr.prime td {
+    background:
+        linear-gradient(90deg, rgba(64, 224, 208, 0.16), rgba(64, 224, 208, 0.03) 60%, rgba(184, 255, 246, 0.08)),
+        rgba(6, 30, 34, 0.6) !important;
+}
+.member-list li.prime, .player-list li.prime { position: relative; overflow: hidden; border-color: rgba(64, 224, 208, 0.45) !important; box-shadow: 0 0 14px rgba(64, 224, 208, 0.18), inset 0 0 0 1px rgba(184, 255, 246, 0.06); }
+.member-list li.prime::after, .player-list li.prime::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 30%;
+    background: linear-gradient(90deg, transparent, rgba(184, 255, 246, 0.1), transparent);
+    animation: prime-sweep 4.5s ease-in-out infinite;
+    pointer-events: none;
+}
+#standingsTable tr.prime td:first-child { box-shadow: inset 3px 0 0 #40e0d0; }
+
+/* Podium: turning light rays behind a Prime player, and a turquoise crown. */
+.podium-spot.prime { z-index: 1; }
+.prime-rays {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    width: 260px;
+    height: 260px;
+    transform: translateX(-50%);
+    background: repeating-conic-gradient(from 0deg, rgba(64, 224, 208, 0.24) 0 8deg, transparent 8deg 22deg);
+    -webkit-mask: radial-gradient(circle, #000 15%, transparent 68%);
+    mask: radial-gradient(circle, #000 15%, transparent 68%);
+    animation: prime-rays 18s linear infinite, prime-breathe 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+.podium-spot.prime .podium-crown {
+    background: linear-gradient(90deg, #40e0d0, #ffffff, #7af0e0, #ffffff, #40e0d0);
+    background-size: 300% 100%;
+    animation: crown-float 1.6s ease-in-out infinite, pepf-flow 3s linear infinite;
+    filter: drop-shadow(0 0 10px rgba(64, 224, 208, 0.95));
+}
+.podium-spot.prime .podium-block { border-color: #40e0d0; box-shadow: 0 0 40px rgba(64, 224, 208, 0.3), inset 0 3px 0 rgba(184, 255, 246, 0.3); }
+.podium-spot.prime.first .podium-block { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 14px), linear-gradient(180deg, #0f6a64, #062a2a); }
+
+/* Profile header: deep-sea banner with drifting light. */
+.profile-head.prime {
+    position: relative;
+    overflow: hidden;
+    padding: 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(64, 224, 208, 0.45);
+    background:
+        radial-gradient(circle at 15% 50%, rgba(64, 224, 208, 0.28), transparent 45%),
+        radial-gradient(circle at 85% 20%, rgba(184, 255, 246, 0.12), transparent 40%),
+        linear-gradient(135deg, #04201f, #0a0f26 70%);
+    box-shadow: 0 0 30px rgba(64, 224, 208, 0.2), inset 0 0 30px rgba(64, 224, 208, 0.08);
+}
+.profile-head.prime::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 18px;
+    background:
+        radial-gradient(14px 8px at 16px 18px, rgba(64, 224, 208, 0.3) 70%, transparent 72%) 0 4px / 32px 14px repeat-x,
+        radial-gradient(12px 7px at 12px 18px, rgba(184, 255, 246, 0.18) 70%, transparent 72%) 0 4px / 24px 14px repeat-x;
+    animation: prime-tide 2.4s linear infinite;
+    pointer-events: none;
+}
+.profile-head.prime::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 30%;
+    background: linear-gradient(90deg, transparent, rgba(184, 255, 246, 0.1), transparent);
+    animation: prime-sweep 5s ease-in-out infinite;
+    pointer-events: none;
+}
+.profile-head.prime > * { position: relative; z-index: 1; }
+
+/* Arrival toast: "Pepf has arrived". */
+.toast.prime-arrival {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid transparent;
+    background:
+        linear-gradient(135deg, #062a2a, #0a1026) padding-box,
+        conic-gradient(from var(--pa), #40e0d0, #ffffff, #0a8f86, #b8fff6, #40e0d0) border-box;
+    box-shadow: 0 0 24px rgba(64, 224, 208, 0.45);
+    animation: pepf-spin 2.4s linear infinite;
+    color: #d8fffa;
+    font-weight: 700;
+}
+.prime-arrival-star { color: #b8fff6; text-shadow: 0 0 8px #40e0d0; display: inline-block; animation: prime-ornament 2s linear infinite; }
+
+/* Winner heading of a Prime champion. */
+.gameover-title.prime {
+    background: linear-gradient(90deg, #0a8f86, #40e0d0, #b8fff6, #ffffff, #7af0e0, #40e0d0, #0a8f86);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: none;
+    animation: pepf-flow 4s linear infinite;
+    filter: drop-shadow(0 0 14px rgba(64, 224, 208, 0.6)) drop-shadow(0 3px 0 #05020c);
+}
+
+/* "ENCORE!" float over the arena. */
+.afloat.prime {
+    font-family: var(--font-pixel);
+    font-weight: 700;
+    font-size: clamp(1.3rem, 3vw, 2.2rem);
+    animation-name: afloat-big;
+    animation-duration: 1.2s;
+    background: linear-gradient(90deg, #40e0d0, #ffffff, #7af0e0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    filter: drop-shadow(0 0 10px rgba(64, 224, 208, 0.9)) drop-shadow(0 3px 0 #05020c);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .prime-rays, .nb_pepf::before, .nb_pepf::after, .portrait.pb_pepf::before, .item-card.skin-ws_pepf::after,
+    .member-list li.prime::after, .player-list li.prime::after, .profile-head.prime::before, .profile-head.prime::after,
+    .fighter.frame-frame_pepf::before, .fighter.frame-frame_pepf::after { animation: none; }
+}

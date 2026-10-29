@@ -30,6 +30,11 @@ export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
     return wrap;
 }
 
+/** Whether the player wears any piece of the admin set "Pepf Prime" (rows, podiums and profiles get extra flair). */
+export function isPrime(appearance) {
+    return !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith("_pepf"));
+}
+
 /** A title; title cosmetics get their own style class (e.g. the admin set). */
 export function titleEl(title) {
     const c = data.cosmetics.find(x => x.kind === "title" && x.name === title);
@@ -62,12 +67,12 @@ export async function openProfile(userId) {
         const [p, ach] = await Promise.all([api(`profile/${userId}`), loadAchievements()]);
         const unlocked = new Map(p.achievements.map(a => [a.id, a.at]));
         const body = el("div", { class: "profile" },
-            el("div", { class: "profile-head" },
+            el("div", { class: "profile-head" + (isPrime(p.appearance) ? " prime" : "") },
                 portraitEl(p.kits?.[0]?.kit ?? "none", p.appearance, "lg"),
                 el("div", { class: "profile-level", text: `${p.level}` }),
                 el("div", { class: "grow" },
                     el("div", { class: "profile-name" }, nameNode(p.name, p.appearance)),
-                    el("div", { class: "muted small" }, `@${p.username}`, p.appearance?.title ? ` · ${p.appearance.title}` : "", p.mastery ? ` · ${p.mastery}` : ""),
+                    el("div", { class: "muted small" }, `@${p.username}`, p.appearance?.title ? [" · ", titleEl(p.appearance.title)] : "", p.mastery ? ` · ${p.mastery}` : ""),
                     bar(p.levelXp, p.nextLevelXp))),
             el("div", { class: "profile-stats" }, [
                 ["Games", p.stats.games], ["Wins", p.stats.wins], ["Win rate", `${Math.round(p.stats.winRate * 100)}%`],

@@ -147,6 +147,11 @@ const SOUNDS = {
     defeat: () => [392, 349, 311, 262].forEach((f, k) => tone({ type: "triangle", f0: f, f1: f * 0.97, dur: k === 3 ? 0.6 : 0.18, vol: 0.13, delay: k * 0.18 })),
     crumble: () => noise({ dur: 0.9, vol: 0.25, freq: 900, f1: 120, type: "lowpass" }),
     announce: () => [784, 988, 1175].forEach((f, k) => tone({ type: "triangle", f0: f, dur: 0.14, vol: 0.09, delay: k * 0.08 })),
+    encore: () => {
+        [523, 659, 784, 1047, 1319, 1568].forEach((f, k) => tone({ type: "square", f0: f, dur: k === 5 ? 0.5 : 0.1, vol: 0.08, delay: k * 0.07 }));
+        [1047, 1319, 1568].forEach(f => tone({ type: "triangle", f0: f, dur: 0.7, vol: 0.06, delay: 0.45 }));
+        noise({ dur: 0.6, vol: 0.06, freq: 6000, f1: 9000, q: 1, delay: 0.42 });
+    },
     whoosh: () => noise({ dur: 0.25, vol: 0.12, freq: 400, f1: 2400, q: 0.8 })
 };
 

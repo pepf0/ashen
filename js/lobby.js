@@ -1,6 +1,7 @@
 // Waiting room: members, host settings, start/leave/kick.
 import { el, data, kitCard } from "./data.js";
-import { nameEl, portraitEl } from "./profile.js";
+import { nameEl, portraitEl, isPrime } from "./profile.js";
+import { sfx } from "./fx.js";
 import { toast } from "./ui.js";
 
 const FIELDS = [
@@ -58,13 +59,33 @@ export function createLobbyView(app) {
         app.socket.send("addBot", { difficulty: document.getElementById("botDifficulty").value }));
     document.getElementById("leaveLobby").addEventListener("click", () => app.socket.send("leave"));
 
+    // Members already seen in this lobby, so "The Creator has arrived" only shows when they actually arrive.
+    let seen = null, seenCode = null;
+    function announceArrivals(lobby) {
+        if (seenCode !== lobby.code) { seen = new Set(); seenCode = lobby.code; }
+        for (const m of lobby.members) {
+            if (seen.has(m.id)) continue;
+            seen.add(m.id);
+            if (!isPrime(m.appearance)) continue;
+            const t = el("div", { class: "toast prime-arrival" },
+                el("span", { class: "prime-arrival-star", text: "\u2726" }),
+                el("span", {}, nameEl(m.name, m.appearance, 0, { showTitle: false }), m.id === app.user.id ? " has entered the lobby" : " has arrived"),
+                el("span", { class: "prime-arrival-star", text: "\u2726" }));
+            document.getElementById("toasts").append(t);
+            setTimeout(() => t.classList.add("out"), 4200);
+            setTimeout(() => t.remove(), 4700);
+            sfx("encore");
+        }
+    }
+
     return {
         render(lobby) {
+            announceArrivals(lobby);
             const isHost = lobby.hostId === app.user.id;
             document.getElementById("lobbyCode").textContent = lobby.code;
             document.getElementById("playerCount").textContent = `${lobby.members.length}/8`;
             document.getElementById("memberList").replaceChildren(...lobby.members.map(m =>
-                el("li", { class: (m.connected ? "" : "offline") + (m.id === app.user.id ? " me" : "") },
+                el("li", { class: (m.connected ? "" : "offline") + (m.id === app.user.id ? " me" : "") + (isPrime(m.appearance) ? " prime" : "") },
                     portraitEl(m.kit, m.appearance, "sm"),
                     el("span", { class: "grow" }, nameEl(m.name, m.appearance, m.id), m.mastery ? el("span", { class: "mastery", text: ` ${m.mastery}` }) : null),
                     m.bot ? el("span", { class: "tag bot", text: `Bot · ${m.bot}` }) : null,

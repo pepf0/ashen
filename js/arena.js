@@ -13,6 +13,10 @@ const CY = GROUND - 30; // height the item clusters hover at
 const RANGED = { "generic.bow": "arrow", "pepf.guitar": "note" };
 const LASH = { "z7fox.whip": true };
 
+/** Wearing any piece of the admin set "Pepf Prime" gives the item cluster its aura in fights. */
+const isPrime = appearance => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith("_pepf"));
+const PRIME = ["#40e0d0", "#7af0e0", "#b8fff6", "#ffffff"];
+
 const PACK_GLOW = { pepf: "#40e0d0", z7fox: "#e0407a", ely7: "#a8ff40", xxzweiradxx: "#8a6aff", generic: "#e8e4ff" };
 
 const MOD_COLORS = {
@@ -82,7 +86,7 @@ export class Arena {
                 ranged: RANGED[weaponId] ?? null, lash: !!LASH[weaponId],
                 atk: -9, hit: -9, dodge: -9, cast: -9, castColor: "#fff", hop: -9, dead: -9, win: -9,
                 hp: 1, maxHp: 1, ghost: 1, shield: 0, stun: 0, invuln: 0, parry: false, windup: null, ult: 0, mods: [],
-                ashDone: false
+                ashDone: false, prime: isPrime(info.appearance), primeIntro: false, primeNote: 0
             };
         });
         this.start = performance.now();
@@ -360,7 +364,7 @@ export class Arena {
         node.className = `afloat ${kind}`;
         node.textContent = text;
         const x = (this.x(f) + (this.rng() - 0.5) * 22) / W * 100;
-        const lift = { ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
+        const lift = { prime: 30, ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
         const y = (this.headY(f) - lift) / H * 100;
         node.style.left = `${x}%`;
         node.style.top = `${y}%`;
@@ -459,13 +463,26 @@ export class Arena {
             victory_crown: ["#ffd166"]
         };
         if (effect === "victory_pepf") {
-            // Encore: a chord ring, then a fountain of turquoise notes and sparkles.
-            this.ring(x, CY, "#40e0d0", 60);
-            this.ring(x, GROUND - 2, "#b8fff6", 50, true);
-            for (let k = 0; k < 18; k++) this.later(k * 0.06, () => this.projectiles.push({
-                kind: "note", x0: x + (this.rng() - 0.5) * 30, y0: CY, x1: x + (this.rng() - 0.5) * 160, y1: -10,
-                t0: this.now, dur: 1.2, dir: 1, color: ["#40e0d0", "#b8fff6", "#ffffff"][k % 3] }));
-            for (let k = 0; k < 40; k++) this.particle(x + (this.rng() - 0.5) * 100, CY + (this.rng() - 0.5) * 40, (this.rng() - 0.5) * 30, -20 - this.rng() * 40, 1.8, k % 3 ? "#40e0d0" : "#ffffff", 1, 0);
+            // Encore: three chord rings, a tidal wave across the whole arena, a fountain of notes from both
+            // edges, a firework crown and a turquoise flash.
+            this.sfx("encore");
+            this.float(f, "ENCORE!", "prime");
+            for (let r = 0; r < 3; r++) this.later(r * 0.18, () => { this.ring(x, CY, PRIME[r], 40 + r * 25); this.ring(x, GROUND - 2, PRIME[r + 1], 50 + r * 20, true); });
+            for (let k = 0; k < 24; k++) this.later(k * 0.05, () => {
+                const fromLeft = k % 2 === 0, ex = fromLeft ? 4 : W - 4;
+                this.projectiles.push({ kind: "note", x0: ex, y0: GROUND - 4, x1: x + (this.rng() - 0.5) * 120, y1: -10, t0: this.now, dur: 1.3, dir: 1, color: PRIME[k % 4] });
+            });
+            for (let dx = 0; dx < W; dx += 3) this.later(Math.abs(dx - x) / W * 0.6, () =>
+                this.particle(dx, GROUND, 0, -40 - this.rng() * 30, 0.8, PRIME[Math.floor(this.rng() * 4)], 1, 60));
+            this.later(0.5, () => {
+                const bx = x, by = 26;
+                for (let k = 0; k < 36; k++) {
+                    const a = (k / 36) * Math.PI * 2;
+                    this.particle(bx, by, Math.cos(a) * 60, Math.sin(a) * 40, 1.2, PRIME[k % 4], 1, 30);
+                }
+                this.sparks(bx, by, "#40e0d0", 20);
+            });
+            for (let k = 0; k < 50; k++) this.particle(x + (this.rng() - 0.5) * 100, CY + (this.rng() - 0.5) * 40, (this.rng() - 0.5) * 30, -20 - this.rng() * 40, 1.8, PRIME[k % 4], 1, 0);
             this.flashEl.style.setProperty("--flash", "#40e0d0");
             this.flashEl.classList.remove("on");
             void this.flashEl.offsetWidth;
@@ -579,6 +596,7 @@ export class Arena {
         ctx.ellipse(x, GROUND + 1, 30, 4, 0, 0, Math.PI * 2);
         ctx.fill();
         if (f.dead >= 0) return;
+        if (f.prime) this.drawPrime(ctx, f, t, x);
         // Kit rune circle: slowly turning ticks in the kit's color, brighter with ult charge.
         const glow = 0.25 + Math.min(1, f.ult) * 0.35 + (f.ult >= 1 ? Math.sin(t * 6) * 0.2 : 0);
         ctx.strokeStyle = f.color;
@@ -600,6 +618,80 @@ export class Arena {
             if (this.rng() < (effectsLevel() > 0 ? 0.35 : 0.1))
                 this.particle(x + (this.rng() - 0.5) * 40, CY + 10 - this.rng() * 30, 0, -18, 0.6, c, 1, 0);
         }
+    }
+
+    /** Pepf Prime aura: a light column, a rolling tide on the ground, orbiting stars and drifting notes. */
+    drawPrime(ctx, f, t, x) {
+        const rich = effectsLevel() > 0;
+        if (!f.primeIntro) {
+            f.primeIntro = true;
+            this.ring(x, CY - 4, "#40e0d0", 46);
+            this.ring(x, GROUND, "#b8fff6", 44, true);
+            for (let k = 0; k < (rich ? 30 : 10); k++) {
+                const a = (k / 30) * Math.PI * 2;
+                this.particle(x + Math.cos(a) * 6, CY - 4 + Math.sin(a) * 6, Math.cos(a) * 45, Math.sin(a) * 30 - 10, 0.9, PRIME[k % 4], 1, 0);
+            }
+        }
+        const oy = this.offset(f).y;
+        // Light column behind the cluster.
+        const pulse = 0.5 + Math.sin(t * 2.2) * 0.5;
+        const col = ctx.createLinearGradient(0, 0, 0, GROUND);
+        col.addColorStop(0, "rgba(64, 224, 208, 0)");
+        col.addColorStop(1, `rgba(64, 224, 208, ${0.05 + pulse * 0.04})`);
+        ctx.fillStyle = col;
+        // Stacked strips fade the column out to the sides.
+        for (const [w, a] of [[46, 0.35], [36, 0.55], [26, 0.8], [16, 1]]) {
+            ctx.globalAlpha = a;
+            ctx.fillRect(x - w / 2, 0, w, GROUND);
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = `rgba(184, 255, 246, ${0.04 + pulse * 0.05})`;
+        ctx.fillRect(x - 4, 0, 8, GROUND);
+        // Rolling tide: two pixel waves along the ground, turquoise into white.
+        for (let dx = -40; dx <= 40; dx++) {
+            const fade = 1 - Math.abs(dx) / 41;
+            const y1 = GROUND + 2 + Math.sin(dx * 0.25 + t * 3) * 1.5;
+            const y2 = GROUND + 4 + Math.sin(dx * 0.18 - t * 2.4) * 1.2;
+            ctx.globalAlpha = fade * 0.9;
+            ctx.fillStyle = PRIME[(Math.floor(dx / 3 + t * 6) % 4 + 4) % 4];
+            ctx.fillRect(x + dx, Math.round(y1), 1, 1);
+            ctx.globalAlpha = fade * 0.45;
+            ctx.fillStyle = "#40e0d0";
+            ctx.fillRect(x + dx, Math.round(y2), 1, 1);
+        }
+        ctx.globalAlpha = 1;
+        // Three stars orbiting the cluster (behind it on the far side, in front on the near side via size).
+        for (let k = 0; k < 3; k++) {
+            const a = t * 1.6 + (k / 3) * Math.PI * 2;
+            const sx = Math.round(x + Math.cos(a) * 34), sy = Math.round(CY - 4 + oy + Math.sin(a) * 12);
+            const big = Math.sin(a) > 0;
+            ctx.fillStyle = k === 0 ? "#ffffff" : PRIME[k];
+            ctx.fillRect(sx, sy, 1, 1);
+            if (big) { ctx.fillRect(sx - 1, sy, 3, 1); ctx.fillRect(sx, sy - 1, 1, 3); }
+            if (rich && this.rng() < 0.4) this.particle(sx, sy, 0, 0, 0.35, PRIME[(k + 1) % 4], 1, 0);
+        }
+        // Now and then a note drifts up out of the cluster.
+        if (t > f.primeNote) {
+            f.primeNote = t + (rich ? 0.9 : 2) + this.rng() * 0.8;
+            const nx = x + (this.rng() - 0.5) * 30;
+            this.projectiles.push({ kind: "note", x0: nx, y0: CY + oy, x1: nx + (this.rng() - 0.5) * 30, y1: CY - 50, t0: t, dur: 1.4, dir: 1, color: PRIME[Math.floor(this.rng() * 4)] });
+        }
+        if (rich && this.rng() < 0.25)
+            this.particle(x + (this.rng() - 0.5) * 50, GROUND - 1, 0, -14 - this.rng() * 10, 1.2, PRIME[Math.floor(this.rng() * 4)], 1, 0);
+    }
+
+    /** A small floating pixel crown over the HP bar of a Pepf Prime cluster. */
+    drawPrimeCrown(ctx, x, top, t) {
+        const y = Math.round(top - 14 + Math.sin(t * 2.5) * 1.5);
+        const shine = Math.floor(t * 4) % 7;
+        const rows = ["1.1.1", "11111", "11111"];
+        rows.forEach((row, ry) => [...row].forEach((c, rx) => {
+            if (c !== "1") return;
+            ctx.fillStyle = rx === shine ? "#ffffff" : ry === 0 ? "#b8fff6" : "#40e0d0";
+            ctx.fillRect(x - 2 + rx, y + ry, 1, 1);
+        }));
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(x, y + 1, 1, 1);
     }
 
     drawFighter(ctx, f, t) {
@@ -700,6 +792,7 @@ export class Arena {
         ctx.fillStyle = f.hp < 0.3 ? "#ffb347" : f.side === 0 ? "#4fdf8f" : "#ff5a6e";
         ctx.fillRect(bx, by, Math.round(bw * f.hp), 3);
         if (f.shield > 0) { ctx.fillStyle = "#dff2ff"; ctx.fillRect(bx, by - 2, Math.max(1, Math.round(bw * f.shield)), 1); }
+        if (f.prime) this.drawPrimeCrown(ctx, x, top, t);
         // Ult charge pips under the bar.
         ctx.fillStyle = f.ult >= 1 ? f.color : "rgba(255,255,255,0.25)";
         ctx.fillRect(bx, by + 4, Math.round(bw * Math.min(1, f.ult)), 1);

@@ -2,7 +2,7 @@
 import { el, item, itemCard, statPretty, kitCard, augmentCard, data, abilityPretty, abilityTooltip, attachTooltip } from "./data.js";
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
-import { nameEl, portraitEl } from "./profile.js";
+import { nameEl, portraitEl, isPrime } from "./profile.js";
 import { sfx } from "./fx.js";
 
 const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
@@ -315,7 +315,7 @@ export function createGameView(app) {
 
     function renderSide() {
         document.getElementById("gPlayers").replaceChildren(...state.players.map(p =>
-            el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") },
+            el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") + (isPrime(p.appearance) ? " prime" : "") },
                 portraitEl(p.kit, p.appearance, "xs"),
                 el("span", { class: "grow" }, nameEl(p.name, p.appearance, p.id, { showTitle: false }), p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null,
                     p.mastery ? el("div", { class: "mastery", text: p.mastery }) : null),
