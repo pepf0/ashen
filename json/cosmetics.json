@@ -132,5 +132,12 @@
   {"id": "pb_raul", "kind": "border", "name": "Entry Plug", "unlock": {"users": ["canyoubeat"]}},
   {"id": "frame_raul", "kind": "frame", "name": "Berserk Mode", "unlock": {"users": ["canyoubeat"]}},
   {"id": "ws_raul", "kind": "weapon_skin", "name": "Unit Violet", "unlock": {"users": ["canyoubeat"]}},
-  {"id": "victory_raul", "kind": "victory", "name": "Synchro 400%", "unlock": {"users": ["canyoubeat"]}}
+  {"id": "victory_raul", "kind": "victory", "name": "Synchro 400%", "unlock": {"users": ["canyoubeat"]}},
+  {"id": "name_domix", "kind": "name_color", "name": "Bassline", "unlock": {"users": ["domix"]}},
+  {"id": "nb_domix", "kind": "name_border", "name": "Equalizer", "unlock": {"users": ["domix"]}},
+  {"id": "t_domix", "kind": "title", "name": "On the Decks", "unlock": {"users": ["domix"]}},
+  {"id": "pb_domix", "kind": "border", "name": "Headphones", "unlock": {"users": ["domix"]}},
+  {"id": "frame_domix", "kind": "frame", "name": "Strobe", "unlock": {"users": ["domix"]}},
+  {"id": "ws_domix", "kind": "weapon_skin", "name": "Neon Vinyl", "unlock": {"users": ["domix"]}},
+  {"id": "victory_domix", "kind": "victory", "name": "Drop the Bass", "unlock": {"users": ["domix"]}}
 ]

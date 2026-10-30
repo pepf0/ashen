@@ -19,6 +19,7 @@ export const SKINS = {
     ws_pepf: { ramp: ["#021c1c", "#077a73", "#40e0d0", "#b8fff6", "#ffffff"], glow: "#40e0d0" },
     ws_z7fox: { ramp: ["#1a0210", "#7a0a2e", "#e0407a", "#ff9ac0", "#ffffff"], glow: "#ff4e8a" },
     ws_ely7: { ramp: ["#061402", "#2e6a0a", "#a8ff40", "#fff2a0", "#ffffff"], glow: "#a8ff40" },
+    ws_domix: { ramp: ["#020814", "#123a9a", "#2f7bff", "#ffb000", "#fff4d0"], glow: "#ffb000" },
     ws_raul: { ramp: ["#120624", "#4a1f8a", "#7a4ad8", "#7cff3a", "#e8ffd8"], glow: "#7cff3a" },
     ws_xxz: { ramp: ["#0a0420", "#2a0f6a", "#8a6aff", "#d8c8ff", "#ffffff"], glow: "#b26bff" }
 };

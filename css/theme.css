@@ -1826,3 +1826,40 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 @keyframes ult-banner-r { 0% { transform: translateX(100%); } 18%, 78% { transform: translateX(0); } 100% { transform: translateX(100%); opacity: 0; } }
 .afloat.victory { font-family: var(--font-pixel); font-weight: 700; font-size: clamp(1.3rem, 3vw, 2.2rem); animation-name: afloat-big; animation-duration: 1.4s;
     color: #fff; text-shadow: 0 0 14px var(--kc), 0 0 2px var(--kc), 0 3px 0 #05020c; letter-spacing: 0.1em; }
+
+/* ==========================================================================
+   DOMIX (DJ): electric blue and amber, equalizers, headphones and strobes
+   ========================================================================== */
+.nc-name_domix {
+    background-image: linear-gradient(90deg, #5a9aff, #ffb000, #fff4d0, #2f7bff, #ffd060, #5a9aff); background-size: 300% 100%;
+    background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    animation: pepf-flow 2.2s linear infinite, domix-beat 0.476s ease-out infinite; font-weight: 700; text-shadow: none !important;
+    filter: drop-shadow(0 1px 0 #020814) drop-shadow(0 0 4px rgba(47, 123, 255, 0.6));
+}
+@keyframes domix-beat { 0% { filter: drop-shadow(0 1px 0 #020814) drop-shadow(0 0 7px rgba(255, 176, 0, 0.9)); } 100% { filter: drop-shadow(0 1px 0 #020814) drop-shadow(0 0 3px rgba(47, 123, 255, 0.5)); } }
+/* Equalizer: bars dance along the bottom of the plate. */
+.nb_domix { position: relative; padding: 1px 9px 3px !important; border: 1px solid #2f7bff; border-radius: 3px !important;
+    background: linear-gradient(180deg, rgba(4, 10, 30, 0.96), rgba(2, 4, 14, 0.96)) !important; box-shadow: 0 0 10px rgba(47, 123, 255, 0.5); overflow: hidden; }
+.nb_domix::after { content: ""; position: absolute; left: 2px; right: 2px; bottom: 0; height: 4px;
+    background: repeating-linear-gradient(90deg, #ffb000 0 2px, transparent 2px 4px); -webkit-mask: linear-gradient(90deg, #000 0 100%); 
+    transform-origin: bottom; animation: domix-eq 0.476s ease-in-out infinite alternate; }
+@keyframes domix-eq { from { clip-path: polygon(0 60%, 10% 20%, 20% 70%, 30% 0, 40% 50%, 50% 10%, 60% 80%, 70% 30%, 80% 60%, 90% 0, 100% 40%, 100% 100%, 0 100%); }
+    to { clip-path: polygon(0 10%, 10% 70%, 20% 0, 30% 60%, 40% 20%, 50% 80%, 60% 10%, 70% 70%, 80% 0, 90% 50%, 100% 0, 100% 100%, 0 100%); } }
+.title-t_domix { color: #ffb000; font-weight: 700; text-shadow: 0 0 8px rgba(255, 176, 0, 0.6), 0 1px 0 #020814 !important; }
+.title-t_domix::before, .title-t_domix::after { content: "\266B"; color: #5a9aff; opacity: 1; margin: 0 0.25em; text-shadow: 0 0 6px #2f7bff; display: inline-block; animation: domix-note 0.952s ease-in-out infinite; }
+@keyframes domix-note { 50% { transform: translateY(-2px) rotate(-10deg); } }
+/* Headphones: a band over the portrait with glowing ear cups that pulse to the beat. */
+.portrait.pb_domix { overflow: visible; border: 2px solid #2f7bff; box-shadow: 0 0 12px rgba(47, 123, 255, 0.55); }
+.portrait.pb_domix::before { content: ""; position: absolute; left: 6%; right: 6%; top: -9px; height: 14px; border: 3px solid #1a2238; border-bottom: none; border-radius: 14px 14px 0 0; pointer-events: none; }
+.portrait.pb_domix::after { content: ""; position: absolute; left: -6px; right: -6px; top: 32%; height: 34%; pointer-events: none;
+    background: radial-gradient(circle at 4px 50%, #ffb000 0 4px, transparent 5px), radial-gradient(circle at calc(100% - 4px) 50%, #ffb000 0 4px, transparent 5px);
+    animation: domix-cups 0.476s ease-out infinite; }
+@keyframes domix-cups { 0% { filter: drop-shadow(0 0 5px #ffb000); } 100% { filter: none; } }
+.portrait.xs.pb_domix::before { top: -5px; height: 8px; border-width: 2px; }
+/* Strobe: the frame flashes on the beat. */
+.fighter.frame-frame_domix { border: 2px solid #2f7bff; animation: domix-strobe 0.476s steps(1) infinite; }
+@keyframes domix-strobe { 0% { box-shadow: 0 0 34px rgba(255, 176, 0, 0.55), inset 0 0 30px rgba(47, 123, 255, 0.25); border-color: #ffb000; } 30% { box-shadow: 0 0 20px rgba(47, 123, 255, 0.4), inset 0 0 20px rgba(47, 123, 255, 0.1); border-color: #2f7bff; } }
+.frame-swatch.frame-frame_domix { border-color: #2f7bff; box-shadow: 0 0 8px rgba(255, 176, 0, 0.6); }
+.skin-ws_domix { --sk: #ffb000; }
+.sig-domix { --s0: #2f7bff; --s1: #ffb000; --s2: #fff4d0; --sd: #040a1e; }
+@media (prefers-reduced-motion: reduce) { .fighter.frame-frame_domix, .nc-name_domix, .nb_domix::after, .portrait.pb_domix::after { animation: none; } }

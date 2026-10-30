@@ -27,7 +27,7 @@ public class DataTests
         var prime = GameData.Cosmetics.Single(c => c.Id == "name_pepf");
         Assert.True(Progression.Unlocked(prime, 1, empty, new CosmeticOwner(true, "pepf")));
         Assert.False(Progression.Unlocked(prime, 99, empty, new CosmeticOwner(false, "z7fox")));
-        foreach (var key in new[] { "z7fox", "ely7", "xxz", "raul" })
+        foreach (var key in new[] { "z7fox", "ely7", "xxz", "raul", "domix" })
             Assert.Equal(7, GameData.Cosmetics.Count(c => c.Id.EndsWith("_" + key) && c.Unlock.Users.Count > 0));
     }
 

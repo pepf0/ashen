@@ -19,6 +19,7 @@ const SIG = {
     z7fox: { key: "z7fox", pal: ["#e0407a", "#ff9ac0", "#ff4e6a", "#ffffff"], word: "RED CARD!", tag: "takes the pitch" },
     ely7: { key: "ely7", pal: ["#a8ff40", "#ffd166", "#fff2a0", "#ffffff"], word: "JACKPOT!", tag: "rolls the dice" },
     xxz: { key: "xxz", pal: ["#8a6aff", "#b26bff", "#d8c8ff", "#ffffff"], word: "OVERLOAD!", tag: "channels the arcane" },
+    domix: { key: "domix", pal: ["#2f7bff", "#ffb000", "#7ab4ff", "#ffffff"], word: "DROP THE BASS!", tag: "drops the beat" },
     // Raul: cosmetics only, so no aura in fights, but the entrance, cut-in and arena.
     raul: { key: "raul", pal: ["#7a4ad8", "#7cff3a", "#ff7a1a", "#ffffff"], word: "SYNCHRO 400%", tag: "synchronizes", noAura: true }
 };
@@ -624,6 +625,23 @@ export class Arena {
             this.flashEl.classList.remove("on");
             void this.flashEl.offsetWidth;
             this.flashEl.classList.add("on");
+            return;
+        }
+        if (effect === "victory_domix") {
+            // Drop the Bass: a build-up riser, then the drop: shockwaves on every beat, equalizer bars across the floor and strobes.
+            this.float(f, SIG.domix.word, "sig");
+            this.sfx("whoosh");
+            for (let b = 0; b < 4; b++) this.later(0.25 + b * 0.24, () => {
+                this.ring(x, CY - 4, b % 2 ? "#ffb000" : "#2f7bff", 50 + b * 12);
+                this.ring(x, GROUND - 2, "#7ab4ff", 60 + b * 14, true);
+                this.skyFlash = 0.7; this.skyRgb = b % 2 ? "255, 200, 90" : "120, 170, 255";
+                this.shake = Math.max(this.shake, 3);
+                this.sfx("smash");
+                for (let k = 0; k < 24; k++) {
+                    const ex = (k + 0.5) * (W / 24);
+                    this.particle(ex, GROUND, 0, -40 - this.rng() * 60 * (1 - Math.abs(ex - x) / W), 0.4, k % 2 ? "#2f7bff" : "#ffb000", 2, 160, true);
+                }
+            });
             return;
         }
         if (effect === "victory_raul") {
@@ -2038,6 +2056,56 @@ function drawBackground(id, rng) {
                 // Candle flames on the shelves.
                 for (const fx of [20, 46, 270, 300]) { c.fillStyle = Math.sin(t * 12 + fx) > 0 ? "#ffd166" : "#ff9a3d"; c.fillRect(fx, 26, 1, 2); }
                 sparks(c, t, dt);
+            };
+            break;
+        }
+        case "sig_domix": {
+            // DOMIX's club: a DJ booth with decks, a crowd with hands up, sweeping lasers and an LED dance floor.
+            bands(ctx, ["#02030a", "#040614", "#060a1e", "#080e28", "#0a1232"]);
+            // Speaker stacks.
+            for (const sx of [8, 280]) {
+                ctx.fillStyle = "#0c0e18"; ctx.fillRect(sx, GROUND - 70, 32, 70);
+                for (let y = GROUND - 64; y < GROUND - 6; y += 20) { ctx.fillStyle = "#1a1e30"; ctx.beginPath(); ctx.arc(sx + 16, y + 8, 7, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#2a2f48"; ctx.beginPath(); ctx.arc(sx + 16, y + 8, 3, 0, Math.PI * 2); ctx.fill(); }
+            }
+            // DJ booth with two decks and a mixer.
+            ctx.fillStyle = "#10141f"; ctx.fillRect(118, GROUND - 40, 84, 18);
+            ctx.fillStyle = "#2f7bff"; ctx.fillRect(118, GROUND - 40, 84, 1);
+            ctx.fillStyle = "#1a1f30"; ctx.beginPath(); ctx.arc(136, GROUND - 44, 8, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(184, GROUND - 44, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#3a3f58"; ctx.fillRect(154, GROUND - 48, 12, 6);
+            ctx.fillStyle = "#ffb000"; ctx.font = "bold 7px monospace"; ctx.fillText("DOMIX", 147, GROUND - 28);
+            // Crowd silhouettes.
+            for (let x = 0; x < W; x += 6) { const h = 8 + Math.floor(rng() * 6); ctx.fillStyle = "#05060c"; ctx.fillRect(x, GROUND - h, 5, h); ctx.fillRect(x + 1, GROUND - h - 3, 3, 3); }
+            // LED floor grid.
+            ctx.fillStyle = "#06081a"; ctx.fillRect(0, GROUND, W, H - GROUND);
+            vignette(ctx);
+            animate = (c, t) => {
+                const beat = Math.pow(1 - ((t * 2.1) % 1), 3); // 126 bpm kick
+                // Lasers sweeping from the booth.
+                c.save();
+                c.globalCompositeOperation = "lighter";
+                for (let k = 0; k < 6; k++) {
+                    const a = -Math.PI / 2 + Math.sin(t * 1.3 + k * 1.1) * 1.1;
+                    c.strokeStyle = k % 2 ? `rgba(47, 123, 255, ${0.35 + beat * 0.3})` : `rgba(255, 176, 0, ${0.3 + beat * 0.3})`;
+                    c.lineWidth = 0.8;
+                    c.beginPath(); c.moveTo(160, GROUND - 46); c.lineTo(160 + Math.cos(a) * 260, GROUND - 46 + Math.sin(a) * 260); c.stroke();
+                }
+                // Strobe wash on the kick.
+                c.fillStyle = `rgba(122, 180, 255, ${beat * 0.08})`; c.fillRect(0, 0, W, GROUND);
+                // Spinning records.
+                for (const dx of [136, 184]) { const a = t * 6; c.fillStyle = "#7ab4ff"; c.fillRect(Math.round(dx + Math.cos(a) * 5), Math.round(GROUND - 44 + Math.sin(a) * 5), 1, 1); }
+                // Hands up in the crowd on the beat.
+                c.fillStyle = "#05060c";
+                for (let x = 2; x < W; x += 12) if ((x + Math.floor(t * 4)) % 3 === 0) c.fillRect(x, GROUND - 18 - Math.round(beat * 3), 1, 5);
+                // LED floor tiles light up in patterns with the music.
+                for (let y = GROUND + 2, r = 0; y < H; y += 7, r++) for (let x = 0, col = 0; x < W; x += 16, col++) {
+                    const on = (Math.floor(t * 4) + col + r * 2) % 5 === 0;
+                    c.fillStyle = on ? (col % 2 ? `rgba(47, 123, 255, ${0.35 + beat * 0.3})` : `rgba(255, 176, 0, ${0.3 + beat * 0.3})`) : "rgba(20, 30, 60, 0.6)";
+                    c.fillRect(x + 1, y, 14, 5);
+                }
+                // Speaker cones thump.
+                c.fillStyle = `rgba(122, 180, 255, ${beat * 0.6})`;
+                for (const sx of [8, 280]) for (let y = GROUND - 64; y < GROUND - 6; y += 20) { c.beginPath(); c.arc(sx + 16, y + 8, 3 + beat * 2, 0, Math.PI * 2); c.fill(); }
+                c.restore();
             };
             break;
         }

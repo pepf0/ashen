@@ -390,6 +390,11 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     - **xXZweiradXx** (arcane violet, runes): Arcane Might, Runebound,
       "The Mighty", Noel's Sigil, Arcane Surge, Arcane Violet and the
       Overload victory.
+  - **DOMIX** (only for `domix`; electric blue and amber, a DJ): Bassline
+    name color that pulses to 126 bpm, Equalizer name border with dancing
+    bars, "On the Decks", Headphones portrait border, Strobe frame, Neon Vinyl
+    weapon skin, the Drop the Bass victory (shockwaves and strobes on the
+    beat) and a DJ club arena with lasers, an LED floor and a crowd.
   - **Raul's cosmetics** (only for `canyoubeat`; cosmetics only, no aura),
     Evangelion-inspired in unit violet, neon green and barrier orange: Unit
     Violet name color and weapon skin, Hex Field name border, "The Third
@@ -407,10 +412,11 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
 - **Every player:** ultimates show a banner in the kit's color, crits flash a
   lens flare in the kit's color, and fights won without a victory cosmetic
   end with a VICTORY stamp and a kit-colored burst.
-- **Friend signature sets** (Z7FOX, ely7, xXZweiradXx, Raul) also bring a
+- **Friend signature sets** (Z7FOX, ely7, xXZweiradXx, DOMIX, Raul) also bring a
   lighter entrance card, an ultimate cut-in and their own arena backdrop
   (visual only; the arena rule still applies): Z7FOX's floodlit stadium,
-  ely7's casino, xXZweiradXx's arcane tower and Raul's geofront.
+  ely7's casino, xXZweiradXx's arcane tower, DOMIX's DJ club and Raul's
+  geofront.
 - **Pepf Prime stays on top:** the full cinematics (letterbox, glitch name,
   kill cam, dragon) are Pepf's alone; friends in a signature set bow when
   Pepf enters a lobby or fight; a golden halo, gold motes, golden rays and a

@@ -10,7 +10,7 @@ export function primeLetters(name) {
 }
 
 /** Which friend signature set (if any) the appearance wears. */
-export const sigKey = appearance => ["z7fox", "ely7", "xxz", "raul"].find(k => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith(`_${k}`)));
+export const sigKey = appearance => ["z7fox", "ely7", "xxz", "raul", "domix"].find(k => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith(`_${k}`)));
 
 /** Wearing any piece of the set. */
 export const isPrime = appearance => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith("_pepf"));
