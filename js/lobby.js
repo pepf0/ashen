@@ -88,9 +88,11 @@ export function createLobbyView(app) {
             const isHost = lobby.hostId === app.user.id;
             document.getElementById("lobbyCode").textContent = lobby.code;
             document.getElementById("playerCount").textContent = `${lobby.members.length}/8`;
-            document.getElementById("memberList").replaceChildren(...lobby.members.map(m =>
-                el("li", { class: (m.connected ? "" : "offline") + (m.id === app.user.id ? " me" : "") + (isPrime(m.appearance) ? " prime" : "") },
-                    portraitEl(m.kit, m.appearance, "sm"),
+            // Pepf Prime sits on the throne: first, on a big card with a turning portrait.
+            const members = [...lobby.members].sort((a, b) => isPrime(b.appearance) - isPrime(a.appearance));
+            document.getElementById("memberList").replaceChildren(...members.map(m =>
+                el("li", { class: (m.connected ? "" : "offline") + (m.id === app.user.id ? " me" : "") + (isPrime(m.appearance) ? " prime throne" : "") },
+                    isPrime(m.appearance) ? el("span", { class: "throne-stage" }, portraitEl(m.kit, m.appearance, "md")) : portraitEl(m.kit, m.appearance, "sm"),
                     el("span", { class: "grow" }, nameEl(m.name, m.appearance, m.id), m.mastery ? el("span", { class: "mastery", text: ` ${m.mastery}` }) : null),
                     m.bot ? el("span", { class: "tag bot", text: `Bot · ${m.bot}` }) : null,
                     el("span", { class: "tag", text: data.kits[m.kit]?.name ?? m.kit }),

@@ -80,6 +80,19 @@ const HEADS = {
         "..oHHkkkkkkkHo..",
         "...ooooooooooo.."
     ],
+    // Pepf Prime: a turquoise crown with jewels over dark hair.
+    pepf: [
+        "...Y...Y...Y....",
+        "...YY.YYY.YY....",
+        "...oYYYYYYYYo...",
+        "...oyjyyjyyjo...",
+        "..oHHHHHHHHHHo..",
+        "..oHsssssssssHo.",
+        "..ossssssesseo..",
+        "..ossssssesseo..",
+        "..osssssmmmsso..",
+        "...ooooooooooo.."
+    ],
     none: [
         "................",
         ".....oooooo.....",
@@ -107,6 +120,21 @@ const BODY = [
     "...oooo.oooo...."
 ];
 
+// Pepf Prime: the body wears a flowing turquoise cape.
+const BODIES = {
+    pepf: [
+        "..kkoccccco.....",
+        "..koccccccco....",
+        ".koccaaaaaccoss.",
+        ".koccccccccooss.",
+        ".KoCcccccccCo...",
+        ".KkoCCCCCCCo....",
+        "KK.oCCo.oCCo....",
+        "...obbo.obbo....",
+        "...oooo.oooo...."
+    ]
+};
+
 export const KIT_COLORS = {
     duelist: "#5b8cff", berserker: "#ff5a4e", guardian: "#ffd166",
     trickster: "#b26bff", gambler: "#4fd67f", sniper: "#40e0d0", none: "#a7a3c8"
@@ -119,7 +147,8 @@ const PALETTES = {
     trickster: { H: "#6a3fb8", k: "#1a1030", g: "#ff6dff", c: "#4e2c8a", C: "#2a1650", a: "#ff6dff" },
     gambler: { H: "#1f2a22", a: "#2fae5c", m: "#3a2a1a", c: "#2fae5c", C: "#1b6a38" },
     sniper: { H: "#2f8a7e", g: "#3a3020", G: "#40e0d0", k: "#1d4f49", c: "#2f6f68", C: "#1a403c", a: "#ffd166" },
-    none: { H: "#5d5a78", c: "#4a4760", C: "#2c2a3c", a: "#8783a8" }
+    none: { H: "#5d5a78", c: "#4a4760", C: "#2c2a3c", a: "#8783a8" },
+    pepf: { Y: "#40e0d0", y: "#b8fff6", j: "#ffffff", H: "#2a2140", m: "#c98f6a", c: "#13756e", C: "#0a4a46", a: "#b8fff6", k: "#40e0d0", K: "#0a8f86" }
 };
 
 const cache = new Map();
@@ -134,7 +163,7 @@ export function fighterSprite(kit, { flash = false } = {}) {
     canvas.width = SPRITE_W;
     canvas.height = SPRITE_H;
     const ctx = canvas.getContext("2d");
-    const rows = [...HEADS[k], ...BODY];
+    const rows = [...HEADS[k], ...(BODIES[k] ?? BODY)];
     rows.forEach((row, y) => {
         const line = row.padEnd(SPRITE_W, ".").slice(0, SPRITE_W);
         for (let x = 0; x < SPRITE_W; x++) {

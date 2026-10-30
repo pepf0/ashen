@@ -53,6 +53,41 @@ export function primeCutIn(root, { name, kit }, ability, side) {
         el("div", { class: "pc-flash" })), 1.4);
 }
 
+/** Shown to Pepf's opponent: hazard stripes and a warning banner. */
+export function primeWarning(root, name) {
+    mount(root, el("div", { class: "prime-cine pc-warning" },
+        el("div", { class: "pc-hazard top" }), el("div", { class: "pc-hazard bottom" }),
+        el("div", { class: "pc-warn-box" },
+            el("div", { class: "pc-warn-sign", text: "\u26A0 WARNING \u26A0" }),
+            el("div", { class: "pc-warn-text", text: `You are facing ${name}` }),
+            el("div", { class: "pc-warn-sub", text: "The Creator" }))), 2.4);
+}
+
+/** Hit-streak counter on Pepf's side: grows and changes rank as the streak climbs. */
+const RANKS = [[25, "GODLIKE"], [15, "LEGENDARY"], [10, "AMAZING"], [5, "GREAT"], [3, "COMBO"]];
+export function primeCombo(root, n, side) {
+    let node = root.querySelector(".pc-combo");
+    if (!node) {
+        node = el("div", { class: "pc-combo" }, el("b", {}), el("span", {}));
+        root.append(node);
+    }
+    node.classList.toggle("right", side === 1);
+    node.dataset.rank = RANKS.find(([min]) => n >= min)?.[0] ?? 3;
+    node.firstChild.textContent = `${n}`;
+    node.lastChild.textContent = `HITS · ${RANKS.find(([min]) => n >= min)?.[1] ?? "COMBO"}`;
+    node.classList.remove("pop");
+    void node.offsetWidth;
+    node.classList.add("pop");
+}
+
+/** Kill cam overlay: film bars, a blinking REC dot and "REPLAY". */
+export function primeReplay(root) {
+    mount(root, el("div", { class: "prime-cine pc-replay" },
+        el("div", { class: "pc-bar top" }), el("div", { class: "pc-bar bottom" }),
+        el("div", { class: "pc-rec" }, el("i"), "REPLAY"),
+        el("div", { class: "pc-scan" })), 1.65);
+}
+
 /** Holographic foil: the element tilts toward the pointer and a rainbow-teal sheen follows it. */
 export function holo(node, tilt = 8) {
     if (!node || node.dataset.holo) return node;

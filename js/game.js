@@ -21,6 +21,9 @@ export function createGameView(app) {
     let timerEnd = 0;
     let rerender = () => {};
     // For "juice": what changed since the last render (new roll, bought slot, level up, money).
+    // When each slot of the current roll was bought: the shop re-renders right after a purchase, so the
+    // "just bought" animation resumes where it was instead of being cut off.
+    const boughtAt = new Map();
     let lastRoll = "", lastBought = new Set(), lastLevels = new Map(), shownMoney = null, moneyAnim = 0;
     const mySkin = () => state?.players?.find(p => p.id === app.user?.id)?.appearance?.weaponSkin;
 
@@ -169,6 +172,14 @@ export function createGameView(app) {
         const bought = new Set(you.shop.items.map((x, i) => x.bought ? i : -1).filter(i => i >= 0));
         const justBought = newRoll ? new Set() : new Set([...bought].filter(i => !lastBought.has(i)));
         if (justBought.size) sfx("buy");
+        const now = performance.now();
+        if (newRoll) boughtAt.clear();
+        for (const i of justBought) boughtAt.set(i, now);
+        // Pepf Prime: legendary reveal on buys, a slot-machine spin on rerolls.
+        const prime = isPrime(state.players.find(p => p.id === app.user?.id)?.appearance);
+        grid.classList.toggle("prime-shop", prime);
+        if (prime && justBought.size) sfx("encore");
+        if (prime && newRoll && lastRoll) sfx("reroll");
         lastRoll = rollKey;
         lastBought = bought;
         grid.replaceChildren(...you.shop.items.map((slot, i) => {
@@ -180,7 +191,8 @@ export function createGameView(app) {
             const label = slot.bought ? "Bought" : maxed ? "Max level" : mine ? `Lv ${mine.level + 1}` : `Buy`;
             const syn = slot.bought ? [] : synergies(you, it);
             return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? ` special pack-${it.pack}` : "") + (syn.length ? " synergy" : "")
-                + (newRoll ? " deal" : "") + (justBought.has(i) ? " just-bought" : ""), style: `--i:${i}`, dataset: { pack: it.pack } },
+                + (newRoll ? " deal" : "") + (now - (boughtAt.get(i) ?? -1e9) < 1100 ? " just-bought" : ""),
+                style: `--i:${i}; --bd:${-Math.round(now - (boughtAt.get(i) ?? now))}ms`, dataset: { pack: it.pack } },
                 syn.length ? el("span", { class: "synergy-tag", title: syn.join(", "), text: syn[0] + (syn.length > 1 ? ` +${syn.length - 1}` : "") }) : null,
                 itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large", skin: mySkin() }),
                 el("div", { class: "shop-name", text: it.name }),

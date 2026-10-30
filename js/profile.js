@@ -24,7 +24,7 @@ export async function loadAchievements() {
 export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
     const node = nameNode(name, appearance);
     const wrap = el("span", { class: "name-wrap" + (userId > 0 ? " clickable" : ""), onclick: userId > 0 ? e => { e.stopPropagation(); openProfile(userId); } : undefined },
-        appearance?.level ? el("span", { class: "level-badge-sm", text: `${appearance.level}` }) : null,
+        appearance?.level ? el("span", { class: "level-badge-sm" + (isPrime(appearance) ? " crown" : ""), text: `${appearance.level}` }) : null,
         node,
         showTitle && appearance?.title ? titleEl(appearance.title) : null);
     return wrap;
@@ -53,8 +53,10 @@ export function nameNode(name, appearance, cls = "") {
 /** Pixel portrait of the player's kit inside their portrait border cosmetic. size: "sm" | "md" | "lg". */
 export function portraitEl(kit, appearance, size = "sm") {
     const border = appearance?.border && appearance.border !== "pb_none" ? appearance.border : "pb_default";
+    // Pepf Prime has their own character instead of the kit's.
+    const who = isPrime(appearance) ? "pepf" : kit ?? "none";
     return el("span", { class: `portrait ${size} ${border}`, dataset: { kit: kit ?? "none" } },
-        el("img", { src: portraitUrl(kit ?? "none", 4), alt: "", draggable: "false" }));
+        el("img", { src: portraitUrl(who, 4), alt: "", draggable: "false" }));
 }
 
 function bar(into, needed) {
@@ -70,7 +72,7 @@ export async function openProfile(userId) {
         const body = el("div", { class: "profile" },
             el("div", { class: "profile-head" + (isPrime(p.appearance) ? " prime" : "") },
                 portraitEl(p.kits?.[0]?.kit ?? "none", p.appearance, "lg"),
-                el("div", { class: "profile-level", text: `${p.level}` }),
+                el("div", { class: "profile-level" + (isPrime(p.appearance) ? " crown" : ""), text: `${p.level}` }),
                 el("div", { class: "grow" },
                     el("div", { class: "profile-name" }, nameNode(p.name, p.appearance)),
                     el("div", { class: "muted small" }, `@${p.username}`, p.appearance?.title ? [" · ", titleEl(p.appearance.title)] : "", p.mastery ? ` · ${p.mastery}` : ""),

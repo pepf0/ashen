@@ -120,7 +120,7 @@ export function createCombatView(app) {
         fight.panel = i => fight.panels[fight.sideOf(i)];
         fight.arena = new Arena(document.getElementById("arenaStage"), {
             fighters: msg.fighters.map(f => ({ name: f.name, kit: f.kit, appearance: f.appearance, items: f.items })),
-            left, arenaId: msg.arena?.id, seed: typeof msg.fightId === "number" ? msg.fightId : 7
+            left, arenaId: msg.arena?.id, seed: typeof msg.fightId === "number" ? msg.fightId : 7, viewer: msg.you ?? null
         });
         document.getElementById("arenaName").textContent = msg.arena?.name ?? "The Ashen Wastes";
         fight.lastCount = null;
@@ -320,7 +320,7 @@ export function createCombatView(app) {
         if (!fight || msg.fightId !== fight.id) return;
         fight.ended = true;
         const r = msg.result;
-        fight.arena?.finish(r.winner);
+        const extra = fight.arena?.finish(r.winner) ?? 0;
         if (fight.you == null) {
             const title = document.getElementById("cOvertime");
             title.textContent = r.winner === -1 ? "Draw" : `${r.fighters[r.winner].name} wins`;
@@ -331,7 +331,7 @@ export function createCombatView(app) {
         const won = r.winner === you, draw = r.winner === -1;
         const title = document.getElementById("resultTitle");
         title.textContent = draw ? "Draw" : won ? "Victory" : "Defeat";
-        setTimeout(() => sfx(won ? "victory" : "defeat"), 500);
+        setTimeout(() => sfx(won ? "victory" : "defeat"), 500 + extra * 1000);
         title.className = draw ? "draw" : won ? "win" : "lose";
         const opp = 1 - you;
         const rows = [
@@ -344,7 +344,7 @@ export function createCombatView(app) {
         if (won && r.damageTaken[you] <= 0) rows.push(["Flawless victory", "Yes"]);
         document.getElementById("resultStats").replaceChildren(...rows.map(([k, v]) =>
             el("li", {}, el("span", { class: "muted", text: k }), el("b", { text: String(v) }))));
-        setTimeout(() => { if (fight?.ended && fight.you != null) document.getElementById("resultScreen").hidden = false; }, 2100);
+        setTimeout(() => { if (fight?.ended && fight.you != null) document.getElementById("resultScreen").hidden = false; }, 2100 + extra * 1000);
         updateWait(app.game.state);
     }
 

@@ -4,7 +4,7 @@ import { KIT_COLORS, image } from "./sprites.js";
 import { data } from "./data.js";
 import { effectsLevel, sfx as playSfx } from "./fx.js";
 import { SKINS, skinApplies, skinnedCanvas } from "./skins.js";
-import { isPrime, primeIntro, primeCutIn, primeVictory } from "./prime.js";
+import { isPrime, primeIntro, primeCutIn, primeVictory, primeWarning, primeCombo, primeReplay } from "./prime.js";
 
 export const W = 320, H = 144, GROUND = 118;
 const RES = 3; // canvas pixels per arena pixel: backgrounds stay chunky, item art stays crisp
@@ -48,7 +48,7 @@ export class Arena {
     /**
      * fighters: [{ name, kit, weaponId, appearance }] in server order. left: index drawn on the left.
      */
-    constructor(root, { fighters, left = 0, arenaId = null, seed = 1, silent = false }) {
+    constructor(root, { fighters, left = 0, arenaId = null, seed = 1, silent = false, viewer = null }) {
         this.silent = silent;
         this.clock = 0;
         this.freezeUntil = 0;
@@ -101,13 +101,23 @@ export class Arena {
         });
         // Pepf Prime entrance card (live fights and replays, not the menu demo).
         const star = this.f.find(f => f.prime);
+        // Pepf Prime fights take place in the Tidal Throne (visual only; the arena's rule still applies).
+        if (star && !silent) this.bg = drawBackground("tidal_throne", mulberry(seed * 7 + 3));
         this.primeSky = !!star;
         root.classList.toggle("prime-stage", !!star && !silent);
         this.meteors = [];
         if (star && !silent) {
-            primeIntro(root, { name: star.info.name ?? "Pepf", kit: star.kit, title: star.info.appearance?.title }, star.side);
+            primeIntro(root, { name: star.info.name ?? "Pepf", kit: "pepf", title: star.info.appearance?.title }, star.side);
             this.sfx("primeIntro");
+            // The opponent is warned, and their items shiver for a moment.
+            const me = viewer != null ? this.f[viewer] : null;
+            if (me && !me.prime) {
+                setTimeout(() => { if (this.running) primeWarning(root, star.info.name ?? "Pepf"); }, 1900);
+                me.shiverUntil = 4.5;
+            }
         }
+        this.timeScale = 1;
+        this.dragon = image(`img/item/${data.items["pepf.dragon"]?.sprite}`);
         this.start = performance.now();
         this.last = this.start;
         this.running = true;
@@ -144,6 +154,7 @@ export class Arena {
     offset(f) {
         const t = this.now;
         let x = 0, y = 0;
+        if (f.shiverUntil && t < f.shiverUntil && t > 1.9) { x += Math.sin(t * 70) * 1.2; y += Math.cos(t * 53) * 0.6; }
         const pa = (t - f.atk) / 0.3;
         if (pa >= 0 && pa < 1 && f.ranged) x -= f.dir * 3 * Math.sin(pa * Math.PI);
         const ph = (t - f.hit) / 0.22;
@@ -287,10 +298,11 @@ export class Arena {
                 src.castColor = MOD_COLORS[ev.ability] ?? src.color;
                 if (a?.ultimate) this.ultFx(src, src.prime ? "#40e0d0" : src.color);
                 if (a?.ultimate && src.prime && !this.silent) {
-                    primeCutIn(this.root, { name: src.info.name ?? "Pepf", kit: src.kit }, a.name, src.side);
+                    primeCutIn(this.root, { name: src.info.name ?? "Pepf", kit: "pepf" }, a.name, src.side);
                     this.hitStop(0.4);
                     this.sfx("cutin");
                     this.primeNova(src);
+                    this.dragonBreath(src, this.f[1 - src.i]);
                 }
                 else this.ring(this.x(src), GROUND - 2, src.castColor, 22, true);
                 if (ev.ability === "shout") this.ring(this.x(src) + src.dir * 10, this.headY(src) + 10, "#ffffff", 40);
@@ -366,7 +378,17 @@ export class Arena {
                 this.sparks(this.x(tgt), this.headY(tgt) + 18, src?.color ?? "#ffffff", 6);
                 this.flashHit(tgt, 0.8);
             }
-            if (src?.prime && !ev.reflected) this.primeImpact(tgt, !!ev.critMultiplier || ev.abilitySource === "headshot");
+            if (src?.prime && !ev.reflected) {
+                this.primeImpact(tgt, !!ev.critMultiplier || ev.abilitySource === "headshot");
+                if (!ev.replay) {
+                    this.lastPrimeHit = { ev, src, tgt };
+                    // Combo: hits within 1.6s of each other chain up.
+                    src.combo = this.now - (src.comboT ?? -9) < 1.6 ? (src.combo ?? 0) + 1 : 1;
+                    src.comboT = this.now;
+                    if (src.combo >= 3 && !this.silent) primeCombo(this.root, src.combo, src.side);
+                }
+                if (ev.critMultiplier) this.dragonBreath(src, tgt);
+            }
             if (ev.bulwark > 0) { this.sfx("block"); this.bubble(tgt, "#ffdc78"); this.float(tgt, `-${Math.round(ev.bulwark)} bulwark`, "invuln"); }
             if (ev.absorbed > 0) { this.sfx("block"); this.bubble(tgt, "#cfe8ff"); this.float(tgt, `-${Math.round(ev.absorbed)} shield`, "invuln"); }
         };
@@ -479,9 +501,25 @@ export class Arena {
     }
 
     /** End of the fight: the loser crumbles to ash, the winner celebrates. winner -1 = draw. */
+    /** Returns how many extra seconds the end takes (Pepf Prime kill cam and finisher), so the result screen waits. */
     finish(winner) {
-        if (this.ended) return;
+        if (this.ended) return 0;
         this.ended = true;
+        const hit = this.lastPrimeHit;
+        if (winner >= 0 && this.f[winner].prime && hit && hit.src === this.f[winner] && !this.silent && effectsLevel() > 0) {
+            // Kill cam: the final blow again, in slow motion, before anyone falls.
+            primeReplay(this.root);
+            this.timeScale = 0.3;
+            this.sfx("whoosh");
+            this.later(0.15, () => this.damage({ ...hit.ev, replay: true }, hit.src, hit.tgt));
+            this.later(1.6, () => { this.timeScale = 1; this.finishNow(winner); });
+            return 3.2;
+        }
+        this.finishNow(winner);
+        return winner >= 0 && this.f[winner].prime && !this.silent ? 1.6 : 0;
+    }
+
+    finishNow(winner) {
         this.f.forEach(f => {
             if (winner === -1 || f.i !== winner) f.dead = this.now;
             else f.win = this.now + 0.4;
@@ -637,7 +675,7 @@ export class Arena {
         if (!this.running) return;
         const real = Math.min(0.05, (ts - this.last) / 1000);
         this.last = ts;
-        const dt = ts < this.freezeUntil ? real * 0.06 : real;
+        const dt = (ts < this.freezeUntil ? real * 0.06 : real) * this.timeScale;
         this.clock += dt;
         if (!this.root.isConnected || this.root.closest("[hidden]")) { this.raf = requestAnimationFrame(this.frame); return; }
         const ctx = this.ctx, t = this.now;
@@ -910,6 +948,50 @@ export class Arena {
             this.particle(x + (this.rng() - 0.5) * 44, GROUND - 1, 0, -14 - this.rng() * 10, 1.3, f.sig.pal[Math.floor(this.rng() * 4)], 1, 0, true);
     }
 
+    /** Pepf's dragon: floats behind the cluster, flapping, and breathes turquoise fire on crits and ultimates. */
+    dragonPos(f, t) {
+        const x = this.x(f) - f.dir * 34 + Math.sin(t * 0.9) * 4, y = CY - 30 + this.offset(f).y + Math.sin(t * 2.2) * 3;
+        return { x, y };
+    }
+
+    drawDragon(ctx, f, t) {
+        const img = this.dragon;
+        if (!img?.complete || !img.naturalWidth) return;
+        const { x, y } = this.dragonPos(f, t);
+        const flap = 1 + Math.sin(t * 9) * 0.1;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.sin(t * 1.4) * 0.08 + (t - (f.breath ?? -9) < 0.5 ? -0.25 * f.dir : 0));
+        ctx.scale(f.dir, flap);
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = "#40e0d0";
+        ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1;
+        ctx.imageSmoothingEnabled = true;
+        const dark = tintOf(img, "#05020c");
+        for (const [dx, dy] of [[-0.7, 0], [0.7, 0], [0, -0.7], [0, 0.7]]) ctx.drawImage(dark, -10 + dx, -10 + dy, 20, 20);
+        ctx.drawImage(img, -10, -10, 20, 20);
+        ctx.imageSmoothingEnabled = false;
+        ctx.restore();
+        if (effectsLevel() > 0 && this.rng() < 0.2) this.particle(x - f.dir * 6, y + 6, -f.dir * 6, 4, 0.6, PRIME[Math.floor(this.rng() * 4)], 1, 0, true);
+    }
+
+    dragonBreath(f, tgt) {
+        if (!tgt) return;
+        f.breath = this.now;
+        const { x, y } = this.dragonPos(f, this.now);
+        const mx = x + f.dir * 9, my = y - 3, tx = this.x(tgt), ty = this.headY(tgt) + 16;
+        const n = effectsLevel() > 0 ? 34 : 10;
+        for (let k = 0; k < n; k++) {
+            const spread = (this.rng() - 0.5) * 0.5, sp = 120 + this.rng() * 80;
+            const a = Math.atan2(ty - my, tx - mx) + spread;
+            this.particle(mx, my, Math.cos(a) * sp, Math.sin(a) * sp, 0.35 + this.rng() * 0.25, k % 3 ? "#40e0d0" : k % 2 ? "#ffffff" : "#b8fff6", k % 4 ? 1 : 2, 0, true);
+        }
+        this.sfx("whoosh");
+    }
+
     /** Ribbon of light behind a Pepf Prime weapon (additive, fades along its length). */
     drawPrimeTrail(ctx, f, w, t) {
         f.trail ??= [];
@@ -1012,6 +1094,7 @@ export class Arena {
             }
         }
         if (w && f.prime) this.drawPrimeTrail(ctx, f, w, t);
+        if (f.prime) this.drawDragon(ctx, f, t);
         for (const p of placed) this.drawItem(ctx, p, t, { alpha: smoke ? 0.5 : f.invuln > 0 ? 0.8 + Math.sin(t * 20) * 0.2 : 1, flash, f });
         if (w && f.skin && SKINS[f.skin] && this.rng() < 0.25)
             this.particle(w.x + (this.rng() - 0.5) * 14, w.y + (this.rng() - 0.5) * 14, 0, -10, 0.6, SKINS[f.skin].glow, 1, 0);
@@ -1524,6 +1607,81 @@ function drawBackground(id, rng) {
                 c.globalAlpha = 1;
                 c.fillStyle = "rgba(10, 6, 24, 0.25)";
                 c.fillRect(0, 36, W, GROUND - 36);
+            };
+            break;
+        }
+        case "tidal_throne": {
+            // Pepf Prime's own arena: a sunken palace under a giant moon, jellyfish, waves and caustics.
+            bands(ctx, ["#010a10", "#021219", "#031b24", "#04242f", "#062e3a", "#083945", "#0a4450"]);
+            stars(ctx, rng, 40, 50);
+            // Moon with halo rings.
+            for (const [r, a] of [[34, 0.06], [27, 0.1], [22, 0.16]]) { ctx.fillStyle = `rgba(184, 255, 246, ${a})`; ctx.beginPath(); ctx.arc(160, 30, r, 0, Math.PI * 2); ctx.fill(); }
+            ctx.fillStyle = "#d8fffa"; ctx.beginPath(); ctx.arc(160, 30, 17, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#b8f0ea"; ctx.fillRect(152, 24, 4, 3); ctx.fillRect(164, 33, 5, 3); ctx.fillRect(158, 38, 3, 2);
+            // Distant sea horizon.
+            ctx.fillStyle = "#0b4e58"; ctx.fillRect(0, GROUND - 30, W, 30);
+            ctx.fillStyle = "#0d5c66"; ctx.fillRect(0, GROUND - 30, W, 1);
+            // Palace: a central throne hall with spires, flanking towers and glowing windows.
+            const stone = "#031d22", edge = "#0c4a50", glowWin = "#40e0d0";
+            const tower = (x, w, h, spire) => {
+                ctx.fillStyle = stone; ctx.fillRect(x, GROUND - h, w, h);
+                ctx.fillStyle = edge; ctx.fillRect(x, GROUND - h, w, 1); ctx.fillRect(x, GROUND - h, 1, h);
+                if (spire) { ctx.fillStyle = stone; for (let k = 0; k < spire; k++) ctx.fillRect(x + Math.floor(w / 2) - Math.floor((spire - k) / 2), GROUND - h - k, spire - k, 1); }
+                ctx.fillStyle = glowWin;
+                for (let y = GROUND - h + 6; y < GROUND - 8; y += 9) ctx.fillRect(x + Math.floor(w / 2) - 1, y, 2, 3);
+            };
+            tower(108, 14, 62, 10); tower(198, 14, 62, 10); tower(126, 68, 48, 0); tower(150, 20, 78, 16);
+            ctx.fillStyle = "#010c10"; ctx.beginPath(); ctx.arc(160, GROUND - 22, 12, Math.PI, 0); ctx.fill(); ctx.fillRect(148, GROUND - 22, 24, 22);
+            ctx.fillStyle = "rgba(64, 224, 208, 0.35)"; ctx.fillRect(156, GROUND - 30, 8, 30);
+            tower(40, 10, 40, 6); tower(270, 10, 40, 6);
+            // Kelp silhouettes at the edges.
+            ctx.fillStyle = "#03262a";
+            for (const x0 of [6, 18, 30, 286, 298, 310]) for (let y = GROUND; y > GROUND - 40 - (x0 % 12); y -= 2) ctx.fillRect(Math.round(x0 + Math.sin(y * 0.25) * 2), y, 2, 2);
+            // Polished floor with tiles and the moon's reflection.
+            ctx.fillStyle = "#0e5560"; ctx.fillRect(0, GROUND, W, 2);
+            ctx.fillStyle = "#072e34"; ctx.fillRect(0, GROUND + 2, W, H - GROUND - 2);
+            ctx.fillStyle = "#0a3e45"; for (let x = 0; x < W; x += 20) ctx.fillRect(x, GROUND + 2, 1, H - GROUND);
+            for (let y = GROUND + 9; y < H; y += 9) ctx.fillRect(0, y, W, 1);
+            vignette(ctx);
+            const jellies = Array.from({ length: 5 }, () => ({ x: rng() * W, y: 20 + rng() * 70, p: rng() * 6, s: 0.6 + rng() * 0.6 }));
+            const bubbles = flakeLayer(22, "rgba(184, 255, 246, 0.55)", 0, -12);
+            animate = (c, t, dt) => {
+                // Rolling waves along the horizon.
+                for (let x = 0; x < W; x += 2) {
+                    const y = GROUND - 30 + Math.round(Math.sin(x * 0.08 + t * 1.6) * 1.5);
+                    c.fillStyle = (x + Math.floor(t * 20)) % 14 < 3 ? "rgba(216, 255, 250, 0.7)" : "rgba(64, 224, 208, 0.35)";
+                    c.fillRect(x, y, 2, 1);
+                }
+                // Moon reflection shimmering on the floor.
+                for (let y = GROUND + 3; y < H; y += 2) {
+                    const w = 8 - (y - GROUND) * 0.15 + Math.sin(t * 3 + y) * 2;
+                    c.fillStyle = `rgba(184, 255, 246, ${0.22 - (y - GROUND) * 0.006})`;
+                    c.fillRect(Math.round(160 - w / 2 + Math.sin(t * 2 + y * 0.7) * 2), y, Math.max(1, Math.round(w)), 1);
+                }
+                // Caustics: drifting bright specks across the floor.
+                for (let k = 0; k < 26; k++) {
+                    const x = (k * 37 + t * 9 + Math.sin(t * 0.8 + k) * 10) % W, y = GROUND + 4 + ((k * 13) % (H - GROUND - 6));
+                    c.fillStyle = `rgba(122, 240, 224, ${0.15 + 0.2 * Math.max(0, Math.sin(t * 2.4 + k))})`;
+                    c.fillRect(Math.round(x), Math.round(y), 3, 1);
+                }
+                // Jellyfish: pulsing bells with trailing tentacles, drifting upward and wrapping around.
+                for (const j of jellies) {
+                    j.y -= dt * 4 * j.s;
+                    if (j.y < -16) { j.y = GROUND - 30; j.x = rng() * W; }
+                    const pulse = Math.sin(t * 2.5 * j.s + j.p), x = Math.round(j.x + Math.sin(t * 0.7 + j.p) * 6), y = Math.round(j.y);
+                    // Dome-shaped bell (wider as it goes down), a soft glow and wavy tentacles.
+                    const w = 5 + Math.round(pulse);
+                    c.fillStyle = "rgba(64, 224, 208, 0.12)"; c.beginPath(); c.arc(x, y, w + 4, 0, Math.PI * 2); c.fill();
+                    const rows = [w - 3, w - 1, w, w, w + 1];
+                    rows.forEach((half, r) => {
+                        c.fillStyle = r === 0 ? "rgba(216, 255, 250, 0.85)" : r < 3 ? "rgba(122, 240, 224, 0.65)" : "rgba(64, 224, 208, 0.5)";
+                        c.fillRect(x - half, y - 4 + r, half * 2, 1);
+                    });
+                    c.fillStyle = "rgba(255, 255, 255, 0.8)"; c.fillRect(x - w + 2, y - 2, 1, 1);
+                    c.fillStyle = "rgba(122, 240, 224, 0.45)";
+                    for (let k = -2; k <= 2; k++) for (let s = 0; s < 7; s++) c.fillRect(x + k * 2 + Math.round(Math.sin(t * 3 + s * 0.8 + k) * (s / 4)), y + 2 + s * 2, 1, 1);
+                }
+                bubbles(c, t, dt);
             };
             break;
         }

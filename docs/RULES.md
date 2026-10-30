@@ -367,6 +367,16 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     an "awakening" heartbeat below 35% HP, turquoise damage numbers, a
     slow-motion finisher zoom, a turquoise countdown and HP bar, chat messages
     in Pepf colors, and a name whose letters wave one after another.
+    Pepf Prime fights also take place in the **Tidal Throne** (a sunken palace
+    under a giant moon with jellyfish, waves and caustics; visual only, the
+    drawn arena's rule still applies). Pepf's dragon floats beside the items
+    and breathes turquoise fire on crits and ultimates, hit streaks show a
+    combo counter (COMBO, GREAT, AMAZING, LEGENDARY, GODLIKE), and the final
+    blow of a won fight is replayed in slow motion before the finisher. The
+    opponent gets a "You are facing Pepf" warning and their items shiver.
+    Outside fights: a custom crowned pixel portrait, a crown level badge, a
+    throne card at the top of the lobby with a turning portrait, and a
+    legendary reveal on purchases and slot-machine spins on rerolls.
   - **Signature sets** (only for that player's account, hidden from everyone
     else; listed by username under `unlock.users` in cosmetics.json): each
     has a name color, name border, title, portrait border, fighter frame,
