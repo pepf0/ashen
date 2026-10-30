@@ -526,7 +526,7 @@ button.augment-card:hover { transform: translateY(-4px) scale(1.02); }
     background: radial-gradient(circle at 50% 70%, rgba(150, 130, 220, 0.18), transparent 70%), #0a0618;
     box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.5), 0 2px 0 #05020c;
 }
-.portrait img { image-rendering: pixelated; width: 86%; height: auto; margin-bottom: -2%; }
+.portrait img { image-rendering: pixelated; width: 100%; height: auto; margin-bottom: 0; }
 .portrait.xs { width: 24px; height: 24px; border-width: 1px; border-radius: 3px; }
 .portrait.sm { width: 34px; height: 34px; }
 .portrait.md { width: 52px; height: 52px; }
@@ -1674,3 +1674,87 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 }
 /* Resume the buy animation across re-renders (js/game.js sets --bd to minus the time since the purchase). */
 .shop-item.just-bought, .prime-shop .shop-item.just-bought, .prime-shop .shop-item.just-bought::after { animation-delay: var(--bd, 0ms); }
+
+/* ==========================================================================
+   Raul (canyoubeat): Evangelion-inspired cosmetics. Unit violet, neon green, barrier orange.
+   ========================================================================== */
+.nc-name_raul {
+    background-image: linear-gradient(90deg, #b48aff, #7cff3a, #e8ffd8, #9a6aff, #b48aff);
+    background-size: 300% 100%; background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    animation: pepf-flow 3.5s linear infinite; font-weight: 700; text-shadow: none !important;
+    filter: drop-shadow(0 1px 0 #120624) drop-shadow(0 0 4px rgba(124, 255, 58, 0.5));
+}
+/* Hex Field: an octagonal barrier plate in warning orange that ripples. */
+.nb_raul { padding: 1px 12px !important; position: relative; border-radius: 0 !important; isolation: isolate;
+    background: linear-gradient(135deg, rgba(30, 10, 50, 0.96), rgba(14, 6, 26, 0.96)) !important;
+    clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%); }
+.nb_raul::before { content: ""; position: absolute; inset: 0; z-index: -1;
+    background: linear-gradient(90deg, #ff7a1a, #ffb347, #ff7a1a); clip-path: inherit;
+    -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    padding: 2px; animation: nb-raul 1.6s ease-in-out infinite; }
+@keyframes nb-raul { 50% { filter: brightness(1.6) drop-shadow(0 0 4px #ff7a1a); } }
+.title-t_raul { color: #7cff3a; font-weight: 700; letter-spacing: 0.06em; text-shadow: 0 0 6px rgba(124, 255, 58, 0.6), 0 1px 0 #120624 !important; }
+.title-t_raul::before, .title-t_raul::after { content: "\2B22"; color: #ff7a1a; opacity: 1; margin: 0 0.25em; text-shadow: 0 0 5px #ff7a1a; }
+/* Entry Plug: violet hull, neon green trim and a hazard stripe on top. */
+.portrait.pb_raul { overflow: visible; border: 2px solid #7cff3a;
+    background: radial-gradient(circle at 50% 75%, rgba(124, 255, 58, 0.25), transparent 65%), linear-gradient(180deg, #2a1050, #120624);
+    box-shadow: 0 0 0 2px #4a1f8a, 0 0 14px rgba(124, 255, 58, 0.45); }
+.portrait.pb_raul::after { content: ""; position: absolute; left: -2px; right: -2px; top: -7px; height: 5px;
+    background: repeating-linear-gradient(-45deg, #ff7a1a 0 4px, #120624 4px 8px); border: 1px solid #ff7a1a; }
+.portrait.xs.pb_raul::after { top: -4px; height: 3px; }
+/* Berserk Mode: violet frame, a neon green core that surges. */
+.fighter.frame-frame_raul { border: 2px solid #7a4ad8; box-shadow: 0 0 24px rgba(122, 74, 216, 0.5), inset 0 0 0 1px rgba(124, 255, 58, 0.3), inset 0 -20px 40px rgba(124, 255, 58, 0.08);
+    animation: frame-raul 2.2s ease-in-out infinite; }
+@keyframes frame-raul { 50% { box-shadow: 0 0 34px rgba(124, 255, 58, 0.45), inset 0 0 0 1px rgba(124, 255, 58, 0.7), inset 0 -20px 50px rgba(124, 255, 58, 0.18); border-color: #9a6aff; } }
+.frame-swatch.frame-frame_raul { border-color: #7a4ad8; box-shadow: 0 0 8px rgba(124, 255, 58, 0.5); }
+.skin-ws_raul { --sk: #7cff3a; }
+.afloat.sig.raul { color: #7cff3a; text-shadow: 0 0 12px #ff7a1a, 0 3px 0 #120624; }
+
+/* Shop stat preview: what buying the item would change, shown while hovering it. */
+.shop-item { position: relative; }
+.stat-diff {
+    /* Under the card, so it never sits beneath the item tooltip (which opens above/beside it). */
+    position: absolute; left: 50%; top: calc(100% + 4px); translate: -50% 4px; z-index: 30; min-width: 130px; pointer-events: none;
+    padding: 6px 9px; border-radius: 4px; background: rgba(10, 6, 24, 0.97); border: 1px solid #4a4070; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+    font-size: 0.78rem; line-height: 1.45; text-align: left; white-space: nowrap; opacity: 0; transition: opacity 0.12s, translate 0.12s;
+}
+.shop-item:hover .stat-diff, .shop-item:focus-within .stat-diff { opacity: 1; translate: -50% 0; }
+.stat-diff .good b { color: #6be08a; } .stat-diff .bad b { color: #ff6a7a; }
+.stat-diff div { color: var(--text-dim, #a7a3c8); }
+
+/* Round recap panel (match sidebar). */
+.recap-panel.fresh { animation: recap-in 0.6s cubic-bezier(.2, 1.2, .3, 1); }
+@keyframes recap-in { from { opacity: 0; transform: translateY(-8px); box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.7); } }
+.recap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.recap-list li { padding: 6px 8px; border-radius: 4px; background: rgba(10, 6, 24, 0.45); font-size: 0.85rem; line-height: 1.35; }
+.recap-list li.mine { border-left: 2px solid var(--ember, #ff7a3d); }
+.recap-win { color: #6be08a; } .recap-lose { color: #ff8a9a; }
+.recap-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+.recap-tags .tag { font-size: 0.65rem; }
+.recap-flawless { color: #7af0e0; border-color: rgba(64, 224, 208, 0.5); }
+.recap-clutch { color: #ffb347; border-color: rgba(255, 179, 71, 0.5); }
+.recap-big { color: #ffd166; border-color: rgba(255, 209, 102, 0.5); }
+
+/* End-of-match awards and rivalries. */
+.awards { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 0 auto 22px; max-width: 1000px; }
+.award {
+    width: 150px; padding: 10px 10px 12px; text-align: center; border-radius: 6px; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    background: linear-gradient(180deg, #221a40, #120c26); border: 1px solid #4a4070; box-shadow: var(--pixel-shadow, 0 4px 0 #05020c);
+    opacity: 0; animation: award-in 0.5s cubic-bezier(.2, 1.4, .4, 1) forwards; animation-delay: calc(1.6s + var(--k) * 0.18s);
+}
+@keyframes award-in { from { opacity: 0; transform: translateY(14px) scale(0.9); } to { opacity: 1; transform: none; } }
+.award-name { font-family: var(--font-pixel); font-size: 0.95rem; color: var(--gold, #ffd166); text-shadow: 0 0 10px rgba(255, 209, 102, 0.5); }
+.award-mvp { border-color: var(--gold, #ffd166); box-shadow: 0 0 22px rgba(255, 209, 102, 0.25), var(--pixel-shadow, 0 4px 0 #05020c); }
+.award.prime { border-color: #40e0d0; box-shadow: 0 0 22px rgba(64, 224, 208, 0.3), var(--pixel-shadow, 0 4px 0 #05020c); }
+.award-value { font-weight: 700; color: #f4f0ff; }
+.award-player { font-size: 0.9rem; }
+.nemesis { font-size: 0.72rem; color: #ff8a9a; margin-top: 2px; }
+.nemesis b { color: #ff5a6e; }
+
+/* Match sidebar: keep level, bordered name and tags on one line; long names end in an ellipsis. */
+.player-list .name-wrap { flex-wrap: nowrap; align-items: center; max-width: 100%; }
+.player-list .nb { padding-left: 5px !important; padding-right: 5px !important; max-width: 118px; }
+.player-list .nb .player-name, .player-list .player-name { display: inline-block; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+.player-list .nc-name_pepf.lettered { overflow: visible; }
+.shop-item:hover, .shop-item:focus-within { z-index: 5; }
+.player-list .level-badge-sm { display: none; }

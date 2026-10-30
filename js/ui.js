@@ -1,5 +1,6 @@
 // Small UI helpers: views, toasts, dialogs and the event banner.
 import { el, hideTooltip } from "./data.js";
+import { setMusic } from "./fx.js";
 
 const VIEWS = ["Auth", "Menu", "Compendium", "Leaderboard", "Settings", "Admin", "Lobby", "Game", "Combat", "GameOver"];
 
@@ -7,6 +8,8 @@ export function showView(name) {
     hideTooltip();
     for (const v of VIEWS) document.getElementById(`view${v}`).hidden = v !== name;
     document.body.dataset.view = name;
+    // Background music follows the screen: shop music in the match, fight music in combat.
+    setMusic(name === "Auth" ? null : name === "Game" ? "shop" : name === "Combat" ? "fight" : "menu");
 }
 
 export function currentView() { return document.body.dataset.view; }

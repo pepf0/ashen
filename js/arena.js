@@ -71,6 +71,9 @@ export class Arena {
         this.projectiles = [];
         this.rings = [];
         this.stars = [];
+        this.crosses = [];
+        this.slashes = [];
+        this.chains = [];
         this.bolts = [];
         this.timers = [];
         this.shake = 0;
@@ -387,7 +390,12 @@ export class Arena {
                     src.comboT = this.now;
                     if (src.combo >= 3 && !this.silent) primeCombo(this.root, src.combo, src.side);
                 }
-                if (ev.critMultiplier) this.dragonBreath(src, tgt);
+                if (ev.critMultiplier) {
+                    this.dragonBreath(src, tgt);
+                    this.chainLightning(src, tgt);
+                    this.noteStorm(src, tgt);
+                    this.groundWave(src, tgt);
+                }
             }
             if (ev.bulwark > 0) { this.sfx("block"); this.bubble(tgt, "#ffdc78"); this.float(tgt, `-${Math.round(ev.bulwark)} bulwark`, "invuln"); }
             if (ev.absorbed > 0) { this.sfx("block"); this.bubble(tgt, "#cfe8ff"); this.float(tgt, `-${Math.round(ev.absorbed)} shield`, "invuln"); }
@@ -399,6 +407,7 @@ export class Arena {
     attack(f, tgt) {
         f.atk = this.now;
         this.sfx(f.ranged ?? "swing");
+        if (f.prime && !f.ranged && !f.lash && f.weaponItem) this.later(f.heavy ? 0.12 : 0.08, () => this.slashes.push({ f, t0: this.now, dur: 0.28, heavy: f.heavy }));
         if (f.ranged) {
             const dur = 0.13;
             this.projectiles.push({ kind: f.ranged, x0: this.x(f) + f.dir * 14, y0: this.headY(f) + 22, x1: this.x(tgt), y1: this.headY(tgt) + 18, t0: this.now, dur, dir: f.dir, color: f.color });
@@ -427,7 +436,7 @@ export class Arena {
         node.textContent = text;
         if (kind === "sig" && f.sig) node.style.setProperty("--sig", f.sig.pal[0]);
         const x = (this.x(f) + (this.rng() - 0.5) * 22) / W * 100;
-        const lift = { "hit prime-dmg": 4, prime: 30, sig: 26, ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
+        const lift = { "sig raul": 26, "hit prime-dmg": 4, prime: 30, sig: 26, ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
         const y = (this.headY(f) - lift) / H * 100;
         node.style.left = `${x}%`;
         node.style.top = `${y}%`;
@@ -582,6 +591,21 @@ export class Arena {
             this.flashEl.classList.add("on");
             return;
         }
+        if (effect === "victory_raul") {
+            // Synchro 400%: orange octagonal barrier rings, then cross-shaped pillars of light rise around the winner.
+            this.float(f, "SYNCHRO 400%", "sig raul");
+            for (let r = 0; r < 4; r++) this.later(r * 0.12, () => {
+                this.rings.push({ x, y: CY - 4, color: r % 2 ? "#ffb347" : "#ff7a1a", radius: 40 + r * 18, oct: true, t0: this.now, dur: 0.6 });
+                this.rings.push({ x, y: GROUND - 2, color: "#7cff3a", radius: 50 + r * 14, oct: true, flat: true, t0: this.now, dur: 0.6 });
+            });
+            [-60, 0, 60].forEach((dx, k) => this.later(0.35 + k * 0.2, () => {
+                this.crosses.push({ x: x + dx, t0: this.now, dur: 1.1, big: dx === 0 });
+                this.sfx("smash");
+                this.shake = Math.max(this.shake, 3);
+            }));
+            for (let k = 0; k < 30; k++) this.particle(x + (this.rng() - 0.5) * 120, GROUND, (this.rng() - 0.5) * 10, -30 - this.rng() * 40, 1.4, k % 3 ? "#9a6aff" : "#7cff3a", 1, 0, true);
+            return;
+        }
         if (effect === "victory_z7fox") {
             // Red Card: a cross of crimson light, a falling red card and magenta embers.
             const pal = SIG.z7fox.pal;
@@ -701,6 +725,9 @@ export class Arena {
         this.drawProjectiles(ctx, t);
         this.drawRings(ctx, t);
         this.drawStars(ctx, t);
+        this.drawCrosses(ctx, t);
+        this.drawSlashes(ctx, t);
+        this.drawChains(ctx, t);
         this.drawBolts(ctx, t);
         this.drawParticles(ctx, dt);
         for (const f of this.f) this.drawOver(ctx, f, t);
@@ -948,6 +975,114 @@ export class Arena {
             this.particle(x + (this.rng() - 0.5) * 44, GROUND - 1, 0, -14 - this.rng() * 10, 1.3, f.sig.pal[Math.floor(this.rng() * 4)], 1, 0, true);
     }
 
+    /** Pepf Prime weapon aura, growing with the weapon's level: a glow (L1), orbiting runes (L3), a crown of flames (L5). */
+    drawWeaponAura(ctx, f, w, t) {
+        const lvl = f.weaponItem?.level ?? 1, rich = effectsLevel() > 0;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const g = ctx.createRadialGradient(w.x, w.y, 1, w.x, w.y, 14 + lvl * 2);
+        g.addColorStop(0, `rgba(122, 240, 224, ${0.18 + lvl * 0.04})`);
+        g.addColorStop(1, "rgba(64, 224, 208, 0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(w.x, w.y, 14 + lvl * 2, 0, Math.PI * 2); ctx.fill();
+        if (lvl >= 3) {
+            // Runes circling the blade.
+            for (let k = 0; k < 4; k++) {
+                const a = t * 2.4 + (k / 4) * Math.PI * 2, rx = w.x + Math.cos(a) * 14, ry = w.y + Math.sin(a) * 6;
+                ctx.fillStyle = k % 2 ? "rgba(184, 255, 246, 0.9)" : "rgba(64, 224, 208, 0.9)";
+                ctx.fillRect(rx - 1, ry - 1, 2, 2);
+                ctx.fillRect(rx - 0.5, ry - 2, 1, 4);
+            }
+        }
+        if (lvl >= 5) {
+            // Crown of turquoise flames around the weapon, licking upward.
+            for (let k = 0; k < 7; k++) {
+                const a = (k / 7) * Math.PI * 2 + t * 0.8, fx = w.x + Math.cos(a) * 9, fy = w.y + Math.sin(a) * 4;
+                const h = 4 + Math.abs(Math.sin(t * 9 + k * 1.7)) * 5;
+                const fl = ctx.createLinearGradient(0, fy, 0, fy - h);
+                fl.addColorStop(0, "rgba(64, 224, 208, 0.75)");
+                fl.addColorStop(1, "rgba(255, 255, 255, 0)");
+                ctx.fillStyle = fl;
+                ctx.beginPath(); ctx.moveTo(fx - 1.5, fy); ctx.lineTo(fx, fy - h); ctx.lineTo(fx + 1.5, fy); ctx.closePath(); ctx.fill();
+            }
+            if (rich && this.rng() < 0.5) this.particle(w.x + (this.rng() - 0.5) * 16, w.y - 4, 0, -24, 0.5, PRIME[Math.floor(this.rng() * 4)], 1, 0, true);
+        }
+        ctx.restore();
+    }
+
+    /** Glowing crescents traced by Pepf Prime's melee swings. */
+    drawSlashes(ctx, t) {
+        this.slashes = this.slashes.filter(s => t - s.t0 < s.dur);
+        if (!this.slashes.length) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        for (const s of this.slashes) {
+            const k = (t - s.t0) / s.dur, f = s.f;
+            const cx = this.x(f) + f.dir * 18, cy = CY - 6 + this.offset(f).y, r = s.heavy ? 30 : 24;
+            const start = f.dir > 0 ? -1.3 : Math.PI + 1.3, sweep = (f.dir > 0 ? 2.6 : -2.6) * Math.min(1, k * 2.5);
+            for (const [col, wid] of [["64, 224, 208", 5], ["184, 255, 246", 2.5], ["255, 255, 255", 1]]) {
+                ctx.strokeStyle = `rgba(${col}, ${(1 - k) * (wid > 3 ? 0.35 : 0.9)})`;
+                ctx.lineWidth = wid * (1 - k * 0.5);
+                ctx.beginPath(); ctx.arc(cx, cy, r, start, start + sweep, f.dir < 0); ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    /** Crit lightning: from the weapon into the target, then bouncing across the target's items. */
+    chainLightning(src, tgt) {
+        const w = src.lastLayout?.find(p => p.weapon);
+        const pts = [[w?.x ?? this.x(src), w?.y ?? CY]];
+        pts.push([this.x(tgt), this.headY(tgt) + 16]);
+        for (const p of (tgt.lastLayout ?? []).slice(0, 4)) pts.push([p.x, p.y]);
+        this.chains.push({ pts, t0: this.now, dur: 0.35 });
+        this.sfx("lightning", 0.3);
+    }
+
+    drawChains(ctx, t) {
+        this.chains = this.chains.filter(c => t - c.t0 < c.dur);
+        if (!this.chains.length) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const c of this.chains) {
+            const a = 1 - (t - c.t0) / c.dur;
+            for (const [col, wid] of [["64, 224, 208", 3], ["255, 255, 255", 1]]) {
+                ctx.strokeStyle = `rgba(${col}, ${a * (wid > 1 ? 0.5 : 1)})`;
+                ctx.lineWidth = wid;
+                ctx.beginPath();
+                c.pts.forEach(([x, y], i) => {
+                    if (i === 0) { ctx.moveTo(x, y); return; }
+                    const [px, py] = c.pts[i - 1];
+                    for (let s = 1; s <= 4; s++) ctx.lineTo(lerp(px, x, s / 4) + (s < 4 ? (this.rng() - 0.5) * 7 : 0), lerp(py, y, s / 4) + (s < 4 ? (this.rng() - 0.5) * 7 : 0));
+                });
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    /** Crit note storm: music notes burst out of the target in every direction, with a power-chord riff. */
+    noteStorm(src, tgt) {
+        const x = this.x(tgt), y = this.headY(tgt) + 14;
+        const n = effectsLevel() > 0 ? 12 : 5;
+        for (let k = 0; k < n; k++) {
+            const a = (k / n) * Math.PI * 2;
+            this.projectiles.push({ kind: "note", x0: x, y0: y, x1: x + Math.cos(a) * 60, y1: y + Math.sin(a) * 34 - 10, t0: this.now, dur: 0.6, dir: 1, color: PRIME[k % 4] });
+        }
+        this.sfx("riff", 0.4);
+    }
+
+    /** Crit shockwave: a wave runs along the ground from Pepf to the target and bursts under it. */
+    groundWave(src, tgt) {
+        const x0 = this.x(src), x1 = this.x(tgt), steps = 10;
+        for (let s = 0; s <= steps; s++) this.later(s * 0.018, () => {
+            const x = lerp(x0, x1, s / steps);
+            for (let k = 0; k < 2; k++) this.particle(x + (this.rng() - 0.5) * 6, GROUND - 1, (this.rng() - 0.5) * 20, -30 - this.rng() * 30, 0.4, PRIME[(s + k) % 4], 1, 120, true);
+        });
+        this.later(0.2, () => { this.ring(x1, GROUND - 2, "#b8fff6", 46, true); this.ring(x1, GROUND - 2, "#40e0d0", 30, true); });
+    }
+
     /** Pepf's dragon: floats behind the cluster, flapping, and breathes turquoise fire on crits and ultimates. */
     dragonPos(f, t) {
         const x = this.x(f) - f.dir * 34 + Math.sin(t * 0.9) * 4, y = CY - 30 + this.offset(f).y + Math.sin(t * 2.2) * 3;
@@ -1043,6 +1178,24 @@ export class Arena {
         this.shake = Math.max(this.shake, 5);
     }
 
+    /** Cross-shaped pillars of light (Raul's victory): rise from the ground, flare, then fade. */
+    drawCrosses(ctx, t) {
+        this.crosses = this.crosses.filter(c => t - c.t0 < c.dur);
+        if (!this.crosses.length) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const c of this.crosses) {
+            const k = (t - c.t0) / c.dur, grow = Math.min(1, k * 4), a = k < 0.25 ? 1 : 1 - (k - 0.25) / 0.75;
+            const h = (c.big ? 120 : 80) * grow, w = c.big ? 10 : 7, top = GROUND - h, arm = c.big ? 44 : 30;
+            for (const [col, pad] of [["255, 122, 26", 4], ["255, 210, 150", 1], ["255, 255, 255", 0]]) {
+                ctx.fillStyle = `rgba(${col}, ${a * (pad ? 0.35 : 0.9)})`;
+                ctx.fillRect(c.x - w / 2 - pad, top, w + pad * 2, h);
+                if (grow >= 1) ctx.fillRect(c.x - arm / 2 - pad, top + h * 0.22 - w / 2 - pad, arm + pad * 2, w + pad * 2);
+            }
+        }
+        ctx.restore();
+    }
+
     /** Four-pointed lens flares (additive), used by Prime hits and the nova. */
     drawStars(ctx, t) {
         this.stars = this.stars.filter(s => t - s.t0 < s.dur);
@@ -1095,6 +1248,7 @@ export class Arena {
         }
         if (w && f.prime) this.drawPrimeTrail(ctx, f, w, t);
         if (f.prime) this.drawDragon(ctx, f, t);
+        if (f.prime && w) this.drawWeaponAura(ctx, f, w, t);
         for (const p of placed) this.drawItem(ctx, p, t, { alpha: smoke ? 0.5 : f.invuln > 0 ? 0.8 + Math.sin(t * 20) * 0.2 : 1, flash, f });
         if (w && f.skin && SKINS[f.skin] && this.rng() < 0.25)
             this.particle(w.x + (this.rng() - 0.5) * 14, w.y + (this.rng() - 0.5) * 14, 0, -10, 0.6, SKINS[f.skin].glow, 1, 0);
@@ -1288,7 +1442,15 @@ export class Arena {
             ctx.strokeStyle = r.color;
             ctx.lineWidth = r.bubble ? 2 : 1;
             ctx.beginPath();
-            if (r.bubble) ctx.ellipse(r.x, r.y, r.radius, r.radius + 3, 0, 0, Math.PI * 2);
+            if (r.oct) {
+                // Octagonal barrier ring (Raul's victory).
+                const rad = r.radius * (0.2 + k * 0.8);
+                for (let i = 0; i <= 8; i++) {
+                    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+                    const px = r.x + Math.cos(a) * rad, py = r.y + Math.sin(a) * rad * (r.flat ? 0.25 : 1);
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+            } else if (r.bubble) ctx.ellipse(r.x, r.y, r.radius, r.radius + 3, 0, 0, Math.PI * 2);
             else if (r.flat) ctx.ellipse(r.x, r.y, r.radius * k + 4, (r.radius * k + 4) * 0.25, 0, 0, Math.PI * 2);
             else ctx.arc(r.x, r.y, r.radius * (0.2 + k * 0.8), 0, Math.PI * 2);
             ctx.stroke();

@@ -490,6 +490,7 @@ public partial class Lobby
                 {
                     State = LobbyState.Results;
                     phaseEndsAt = DateTime.UtcNow.AddSeconds(SimSeconds(ResultsSeconds));
+                    Broadcast(RoundRecap());
                     BroadcastState();
                 }
                 await WaitUntil(() => DateTime.UtcNow >= phaseEndsAt);
@@ -785,6 +786,9 @@ public partial class Lobby
                     if (lf.Players[i] is { } p && result.Winner != i) p.WinStreak = 0;
                 for (int i = 0; i < 2; i++)
                     if (lf.Players[i] is { } p) TrackFight(p, result, i);
+                // Rivalries: who beat whom (fights against ghosts don't count).
+                if (result.Winner >= 0 && lf.Players[1 - result.Winner] is { } loser && lf.Players[result.Winner] is { } winner)
+                    loser.Stats.LostTo[winner.Id] = loser.Stats.LostTo.GetValueOrDefault(winner.Id) + 1;
                 LogFight(lf.Players[0]!, lf.Players[1], result);
                 StoreReplay(lf, result);
                 var end = new { type = "fightEnd", fightId = lf.Id, result = ResultSummary(result) };
@@ -795,12 +799,63 @@ public partial class Lobby
         return fights.All(f => f.Ended);
     }
 
+    /// <summary>Recap of every fight this round: who won, by how much, the biggest single hit and notable finishes.</summary>
+    private object RoundRecap() => new
+    {
+        type = "roundRecap",
+        round,
+        fights = fights.Where(f => f.Fight.Result is not null).Select(f =>
+        {
+            var r = f.Fight.Result!;
+            var hits = r.Events.OfType<DamageEvent>().Where(e => e.Damage > 0 && !e.SuddenDeath).ToList();
+            var big = hits.OrderByDescending(e => e.Damage).FirstOrDefault();
+            int w = r.Winner;
+            double hpLeft = w >= 0 ? r.EndHp[w] / Math.Max(1, r.Fighters[w].MaxHp) : 0;
+            return new
+            {
+                names = new[] { r.Fighters[0].Name, r.Fighters[1].Name },
+                ids = new[] { f.Players[0]?.Id, f.Players[1]?.Id },
+                ghost = new[] { r.Fighters[0].Ghost, r.Fighters[1].Ghost },
+                winner = w,
+                hpLeft = Math.Round(hpLeft, 3),
+                duration = Math.Round(r.Duration, 1),
+                biggestHit = big is null ? null : new { by = big.Source, amount = Math.Round(big.Damage, 1), crit = big.CritMultiplier is not null },
+                flawless = w >= 0 && r.DamageTaken[w] <= 0,
+                clutch = w >= 0 && hpLeft <= 0.1
+            };
+        })
+    };
+
+    /// <summary>Stat preview of the player's build with one more copy of an item (level-up, new weapon/shirt, or a free dynamic slot).</summary>
+    private Dictionary<string, double>? PreviewWith(Player p, string itemId)
+    {
+        if (!GameData.Items.TryGetValue(itemId, out var item)) return null;
+        var l = p.ToLoadout();
+        var owned = l.AllItems().FirstOrDefault(o => o.Id == itemId);
+        if (owned is not null) { if (owned.Level >= OwnedItem.MaxLevel) return null; owned.Level++; }
+        else if (item.Type == ItemType.Weapon) l.Weapon = new OwnedItem(item);
+        else if (item.Type == ItemType.Shirt) l.Shirt = new OwnedItem(item);
+        else
+        {
+            int free = Array.IndexOf(l.Dynamics, null);
+            if (free < 0) return null;
+            l.Dynamics[free] = new OwnedItem(item);
+        }
+        return Combat.PreviewStats(l, Rules);
+    }
+
     private void TrackFight(Player p, CombatResult result, int i)
     {
         var s = p.Stats;
         bool won = result.Winner == i;
         var mine = result.Events.Where(e => e.Source == i).ToList();
         s.MaxFightDamage = Math.Max(s.MaxFightDamage, result.DamageDealt[i]);
+        s.TotalDamage += result.DamageDealt[i];
+        s.TotalTaken += result.DamageTaken[i];
+        var hits = mine.OfType<DamageEvent>().Where(e => e.Target != i && !e.SuddenDeath).ToList();
+        if (hits.Count > 0) s.BiggestHit = Math.Max(s.BiggestHit, hits.Max(e => e.Damage));
+        s.Crits += hits.Count(e => e.CritMultiplier is not null);
+        s.Healed += mine.OfType<HealEvent>().Sum(e => e.Amount);
         s.Stuns += mine.OfType<StunEvent>().Count(e => !e.Blocked && e.Target != i);
         var abilities = mine.OfType<AbilityEvent>().Where(e => e.Ability != "second_wind").ToList();
         s.Abilities += abilities.Count;
@@ -996,6 +1051,33 @@ public partial class Lobby
         return true;
     }
 
+    /// <summary>The opponent who beat this player most often (at least twice).</summary>
+    private object? Nemesis(Player p)
+    {
+        var top = p.Stats.LostTo.OrderByDescending(kv => kv.Value).FirstOrDefault();
+        if (top.Value < 2 || players.FirstOrDefault(o => o.Id == top.Key) is not { } rival) return null;
+        return new { id = rival.Id, name = rival.Name, times = top.Value };
+    }
+
+    /// <summary>End-of-match awards: the best player in a few categories (only awarded when someone has a value).</summary>
+    private List<object> Awards()
+    {
+        var list = new List<object>();
+        void Add(string id, string name, string description, Func<Player, double> score, Func<double, string> show)
+        {
+            var best = players.OrderByDescending(score).ThenByDescending(p => p.Stats.TotalDamage).FirstOrDefault();
+            if (best is null || score(best) <= 0) return;
+            list.Add(new { id, name, description, player = best.Name, playerId = best.Id, value = show(score(best)), appearance = best.Appearance, kit = best.Kit });
+        }
+        Add("mvp", "MVP", "Most fights won", p => p.Stats.FightsWon, v => $"{v} wins");
+        Add("heavy_hitter", "Heavy Hitter", "Biggest single hit", p => p.Stats.BiggestHit, v => $"{Math.Round(v)} damage");
+        Add("destroyer", "Destroyer", "Most damage dealt", p => p.Stats.TotalDamage, v => $"{Math.Round(v)} total");
+        Add("tank", "Iron Wall", "Most damage taken", p => p.Stats.TotalTaken, v => $"{Math.Round(v)} taken");
+        Add("crit_machine", "Crit Machine", "Most critical hits", p => p.Stats.Crits, v => $"{v} crits");
+        Add("medic", "Lifeline", "Most healing", p => p.Stats.Healed, v => $"{Math.Round(v)} healed");
+        return list;
+    }
+
     private void EndMatch()
     {
         var standings = players
@@ -1014,11 +1096,12 @@ public partial class Lobby
                 build = p.BuildView(),
                 kit = p.Kit,
                 augments = p.Augments,
-                appearance = p.Appearance
+                appearance = p.Appearance,
+                nemesis = Nemesis(p)
             })
             .ToList();
         var events = claimedEvents.Select(kv => new { id = kv.Key, by = kv.Value }).ToList();
-        lastGameOver = new { type = "gameOver", rounds = round, standings, events };
+        lastGameOver = new { type = "gameOver", rounds = round, standings, events, awards = Awards() };
         log?.Write("match_end", new { rounds = round, standings, events });
         log?.Dispose();
         log = null;
@@ -1596,6 +1679,8 @@ public partial class Lobby
                     dynamics = p.Dynamics.Select((d, i) => d is null ? null : new ItemView(d.Id, d.Level, $"dynamic{i}")),
                     shop = new { items = p.Shop.Items, pity = p.Shop.Pity, rerollsLeft = p.Shop.RerollsLeft, locked = p.Shop.Locked },
                     stats = Combat.PreviewStats(p.ToLoadout(), Rules),
+                    // Stats if each shop item were bought (null when it couldn't go in without a swap).
+                    shopPreview = p.Shop.Items.Select(i => i.Bought ? null : PreviewWith(p, i.ItemId)),
                     titles = p.Titles,
                     wins = p.Wins,
                     losses = p.Losses

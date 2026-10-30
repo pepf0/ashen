@@ -125,5 +125,12 @@
   {"id": "pb_xxz", "kind": "border", "name": "Noel's Sigil", "unlock": {"users": ["xxzweiradxx"]}},
   {"id": "frame_xxz", "kind": "frame", "name": "Arcane Surge", "unlock": {"users": ["xxzweiradxx"]}},
   {"id": "ws_xxz", "kind": "weapon_skin", "name": "Arcane Violet", "unlock": {"users": ["xxzweiradxx"]}},
-  {"id": "victory_xxz", "kind": "victory", "name": "Overload", "unlock": {"users": ["xxzweiradxx"]}}
+  {"id": "victory_xxz", "kind": "victory", "name": "Overload", "unlock": {"users": ["xxzweiradxx"]}},
+  {"id": "name_raul", "kind": "name_color", "name": "Unit Violet", "unlock": {"users": ["canyoubeat"]}},
+  {"id": "nb_raul", "kind": "name_border", "name": "Hex Field", "unlock": {"users": ["canyoubeat"]}},
+  {"id": "t_raul", "kind": "title", "name": "The Third Pilot", "unlock": {"users": ["canyoubeat"]}},
+  {"id": "pb_raul", "kind": "border", "name": "Entry Plug", "unlock": {"users": ["canyoubeat"]}},
+  {"id": "frame_raul", "kind": "frame", "name": "Berserk Mode", "unlock": {"users": ["canyoubeat"]}},
+  {"id": "ws_raul", "kind": "weapon_skin", "name": "Unit Violet", "unlock": {"users": ["canyoubeat"]}},
+  {"id": "victory_raul", "kind": "victory", "name": "Synchro 400%", "unlock": {"users": ["canyoubeat"]}}
 ]

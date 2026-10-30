@@ -154,6 +154,9 @@
                     <label class="field-row">Sound volume
                         <input type="range" id="fxVolume" min="0" max="1" step="0.05" />
                     </label>
+                    <label class="field-row">Music volume
+                        <input type="range" id="musicVolume" min="0" max="1" step="0.05" />
+                    </label>
                     <p class="muted small">Saved on this device.</p>
                 </div>
                 <div class="panel">
@@ -224,6 +227,7 @@
                         <h3>Players</h3>
                         <ul class="player-list" id="gPlayers"></ul>
                     </div>
+                    <div class="panel recap-panel" id="roundRecap" hidden></div>
                     <div class="panel">
                         <h3>Lobby events</h3>
                         <ul class="event-list" id="gEvents"></ul>
@@ -345,6 +349,7 @@
             <h2 class="gameover-title">Match over</h2>
             <div class="panel progress-panel" id="progressPanel" hidden></div>
             <div class="podium" id="podium"></div>
+            <div class="awards" id="awards"></div>
             <div class="panel standings">
                 <table class="table" id="standingsTable">
                     <thead><tr><th>#</th><th>Player</th><th>Build</th><th>W / L</th><th>Lives</th><th>Titles</th></tr></thead>

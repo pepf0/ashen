@@ -26,10 +26,20 @@ export function renderGameOver(msg, app) {
 
     document.querySelectorAll("#podium .podium-spot.prime .portrait").forEach(p => holo(p, 16));
 
+    // Awards: one card per category, revealed one after another.
+    document.getElementById("awards").replaceChildren(...(msg.awards ?? []).map((a, k) =>
+        el("div", { class: `award award-${a.id}` + (isPrime(a.appearance) ? " prime" : ""), style: `--k:${k}` },
+            el("div", { class: "award-name", text: a.name }),
+            portraitEl(a.kit, a.appearance, "sm"),
+            el("div", { class: "award-player" }, nameEl(a.player, a.appearance, a.playerId, { showTitle: false })),
+            el("div", { class: "award-value", text: a.value }),
+            el("div", { class: "award-desc muted small", text: a.description }))));
+
     const tbody = document.querySelector("#standingsTable tbody");
     tbody.replaceChildren(...standings.map(s => el("tr", { class: (s.id === app.user.id ? "me" : "") + (isPrime(s.appearance) ? " prime" : "") },
         el("td", { text: `${s.placement}` }),
-        el("td", {}, el("span", { class: "row nowrap" }, portraitEl(s.kit, s.appearance, "xs"), nameEl(s.name, s.appearance, s.id))),
+        el("td", {}, el("span", { class: "row nowrap" }, portraitEl(s.kit, s.appearance, "xs"), nameEl(s.name, s.appearance, s.id)),
+            s.nemesis ? el("div", { class: "nemesis", title: `${s.nemesis.name} beat ${s.name} ${s.nemesis.times} times` }, "Nemesis: ", el("b", { text: s.nemesis.name }), ` ×${s.nemesis.times}`) : null),
         el("td", {}, el("div", { class: "mini-build" }, s.build.map(b => itemCard(b.id, { level: b.level, size: "small" }))),
             el("div", { class: "mini-build" }, (s.augments ?? []).map(id => augmentCard(id, { small: true })))),
         el("td", { text: `${s.wins} / ${s.losses}` }),

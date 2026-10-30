@@ -390,7 +390,35 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     - **xXZweiradXx** (arcane violet, runes): Arcane Might, Runebound,
       "The Mighty", Noel's Sigil, Arcane Surge, Arcane Violet and the
       Overload victory.
+  - **Raul's cosmetics** (only for `canyoubeat`; cosmetics only, no aura),
+    Evangelion-inspired in unit violet, neon green and barrier orange: Unit
+    Violet name color and weapon skin, Hex Field name border, "The Third
+    Pilot", Entry Plug portrait border, Berserk Mode frame and the
+    Synchro 400% victory (octagonal barrier rings and cross-shaped pillars).
+  - Pepf Prime weapon effects: glowing slash crescents on every melee swing,
+    and on crits chain lightning through the target's items, a storm of
+    music notes with a power-chord riff and a shockwave along the ground. The
+    weapon's aura grows with its level (glow, orbiting runes at L3, a crown of
+    turquoise flames at L5).
 - Click any player name to see their profile.
+
+## Match feel
+
+- **Shop stat preview:** hovering a shop item shows exactly how buying it
+  would change your stats (green = better, red = worse).
+- **Round recap:** after each combat phase the match sidebar lists every
+  fight of the round with the winner's HP left and fight length, plus tags
+  for Flawless (no damage taken), Clutch (won with 10% HP or less) and the
+  round's biggest single hit.
+- **Awards:** the end screen hands out MVP (most fights won), Heavy Hitter
+  (biggest single hit), Destroyer (most damage dealt), Iron Wall (most damage
+  taken), Crit Machine (most crits) and Lifeline (most healing).
+- **Nemesis:** the standings show who beat each player most often (at least
+  twice; fights against ghosts don't count).
+- **Music:** procedural chiptune loops for menus, the shop and fights, with
+  its own volume slider under Settings → Effects & sound.
+- **Portraits:** every kit has a detailed 24×24 bust portrait holding its
+  signature gear (rapier, axe, shield, card, dice, rifle).
 
 ## Fights on screen
 

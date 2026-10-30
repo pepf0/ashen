@@ -163,6 +163,19 @@ export function createGameView(app) {
         return [...new Set(reasons)];
     }
 
+    /** "+12% Dodge"-style lines for how buying shop slot i would change your stats (green better, red worse). */
+    function statDiff(you, i) {
+        const pv = you.shopPreview?.[i];
+        if (!pv || !you.stats) return null;
+        const pct = k => ["crit_chance", "damage_reduction", "dodge_chance"].includes(k);
+        const lines = Object.keys(pv).filter(k => Math.abs((pv[k] ?? 0) - (you.stats[k] ?? 0)) > 1e-6).map(k => {
+            const d = pv[k] - (you.stats[k] ?? 0), good = k === "cooldown" ? d < 0 || !you.weapon : d > 0;
+            const amount = pct(k) ? `${Math.round(d * 1000) / 10}%` : k === "cooldown" ? `${Math.round(d * 100) / 100}s` : k === "crit_damage" ? `${Math.round(d * 100) / 100}x` : `${Math.round(d * 10) / 10}`;
+            return el("div", { class: good ? "good" : "bad" }, el("b", { text: `${d > 0 ? "+" : ""}${amount}` }), ` ${statPretty(k, 0)[0]}`);
+        });
+        return lines.length ? el("div", { class: "stat-diff" }, lines) : el("div", { class: "stat-diff" }, el("div", { class: "muted", text: "No stat change" }));
+    }
+
     function renderShop(you) {
         const grid = document.getElementById("shopGrid");
         const open = state.phase === "shop" && !you.eliminated;
@@ -196,6 +209,7 @@ export function createGameView(app) {
                 syn.length ? el("span", { class: "synergy-tag", title: syn.join(", "), text: syn[0] + (syn.length > 1 ? ` +${syn.length - 1}` : "") }) : null,
                 itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large", skin: mySkin() }),
                 el("div", { class: "shop-name", text: it.name }),
+                slot.bought ? null : statDiff(you, i),
                 el("div", { class: "shop-type muted small", text: it.pack !== "generic" ? `Special ${it.type}` : it.type }),
                 i < 6 ? el("span", { class: "kb-hint slot-hint", text: keyLabelOf(`buy${i + 1}`) }) : null,
                 el("button", { class: "btn btn-buy", disabled: !canBuy, onclick: () => buy(i) },

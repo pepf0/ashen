@@ -69,6 +69,14 @@ public class MatchStats
     public int MinLives { get; set; } = int.MaxValue;
     public int LivesLost { get; set; }
     public HashSet<string> FightWinKits { get; } = new();
+    // For end-of-match awards and rivalries.
+    public double TotalDamage { get; set; }
+    public double TotalTaken { get; set; }
+    public double BiggestHit { get; set; }
+    public int Crits { get; set; }
+    public double Healed { get; set; }
+    /// <summary>Losses by opponent player id (ghosts count as the player they copy).</summary>
+    public Dictionary<long, int> LostTo { get; } = new();
 }
 
 /// <summary>Result of a match for one player's account, sent to the game over screen.</summary>
