@@ -119,11 +119,11 @@
   {"id": "frame_ely7", "kind": "frame", "name": "Celestial Luck", "unlock": {"users": ["ely7"]}},
   {"id": "ws_ely7", "kind": "weapon_skin", "name": "Lucky Clover", "unlock": {"users": ["ely7"]}},
   {"id": "victory_ely7", "kind": "victory", "name": "Jackpot", "unlock": {"users": ["ely7"]}},
-  {"id": "name_xxz", "kind": "name_color", "name": "Arcane Might", "unlock": {"users": ["xxzweirwdxx", "xxzweiradxx"]}},
-  {"id": "nb_xxz", "kind": "name_border", "name": "Runebound", "unlock": {"users": ["xxzweirwdxx", "xxzweiradxx"]}},
-  {"id": "t_xxz", "kind": "title", "name": "The Mighty", "unlock": {"users": ["xxzweirwdxx", "xxzweiradxx"]}},
-  {"id": "pb_xxz", "kind": "border", "name": "Noel's Sigil", "unlock": {"users": ["xxzweirwdxx", "xxzweiradxx"]}},
-  {"id": "frame_xxz", "kind": "frame", "name": "Arcane Surge", "unlock": {"users": ["xxzweirwdxx", "xxzweiradxx"]}},
-  {"id": "ws_xxz", "kind": "weapon_skin", "name": "Arcane Violet", "unlock": {"users": ["xxzweirwdxx", "xxzweiradxx"]}},
-  {"id": "victory_xxz", "kind": "victory", "name": "Overload", "unlock": {"users": ["xxzweirwdxx", "xxzweiradxx"]}}
+  {"id": "name_xxz", "kind": "name_color", "name": "Arcane Might", "unlock": {"users": ["xxzweiradxx"]}},
+  {"id": "nb_xxz", "kind": "name_border", "name": "Runebound", "unlock": {"users": ["xxzweiradxx"]}},
+  {"id": "t_xxz", "kind": "title", "name": "The Mighty", "unlock": {"users": ["xxzweiradxx"]}},
+  {"id": "pb_xxz", "kind": "border", "name": "Noel's Sigil", "unlock": {"users": ["xxzweiradxx"]}},
+  {"id": "frame_xxz", "kind": "frame", "name": "Arcane Surge", "unlock": {"users": ["xxzweiradxx"]}},
+  {"id": "ws_xxz", "kind": "weapon_skin", "name": "Arcane Violet", "unlock": {"users": ["xxzweiradxx"]}},
+  {"id": "victory_xxz", "kind": "victory", "name": "Overload", "unlock": {"users": ["xxzweiradxx"]}}
 ]
