@@ -9,6 +9,9 @@ export function primeLetters(name) {
     return [...name].map((c, i) => el("span", { class: "pl", style: `--i:${i}`, text: c }));
 }
 
+/** Which friend signature set (if any) the appearance wears. */
+export const sigKey = appearance => ["z7fox", "ely7", "xxz", "raul"].find(k => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith(`_${k}`)));
+
 /** Wearing any piece of the set. */
 export const isPrime = appearance => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith("_pepf"));
 
@@ -51,6 +54,27 @@ export function primeCutIn(root, { name, kit }, ability, side) {
                 el("div", { class: "pc-cut-name", text: name }),
                 el("div", { class: "pc-cut-ability", dataset: { text: ability }, text: ability }))),
         el("div", { class: "pc-flash" })), 1.4);
+}
+
+/** Friend signature sets: a lighter entrance card (no letterbox, no glitch, no shards) in their colors. */
+export function sigIntro(root, { name, kit, title, key, tag }, side) {
+    mount(root, el("div", { class: `sig-cine sig-${key} side-${side}` },
+        el("div", { class: "sc-streak" }),
+        el("div", { class: "sc-card" },
+            el("img", { class: "sc-portrait", src: portraitUrl(kit ?? "none", 5), alt: "" }),
+            el("div", {},
+                title ? el("div", { class: "sc-sub", text: title }) : null,
+                el("div", { class: "sc-name", text: name }),
+                el("div", { class: "sc-tag", text: tag })))), 2.1);
+}
+
+/** Friend ultimate cut-in: a thin band in their colors with the ability name (no dim, no flash). */
+export function sigCutIn(root, { name, kit, key }, ability, side) {
+    if (effectsLevel() === 0) return;
+    mount(root, el("div", { class: `sig-cine sig-${key} sc-cut side-${side}` },
+        el("div", { class: "sc-band" },
+            el("img", { class: "sc-cut-portrait", src: portraitUrl(kit ?? "none", 6), alt: "" }),
+            el("div", {}, el("div", { class: "sc-cut-name", text: name }), el("div", { class: "sc-cut-ability", text: ability })))), 1.05);
 }
 
 /** Shown to Pepf's opponent: hazard stripes and a warning banner. */
@@ -118,6 +142,7 @@ export function primeVictory(root, { name, title }) {
         el("div", { class: "pc-bar top" }), el("div", { class: "pc-bar bottom" }),
         el("div", { class: "pc-veil" }),
         el("div", { class: "pc-rays" }),
+        el("div", { class: "pc-rays gold" }),
         shards(24),
         el("div", { class: "pc-vic" },
             el("div", { class: "pc-vic-word" }, [...word].map((c, k) => el("span", { style: `--k:${k}`, text: c }))),

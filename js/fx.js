@@ -177,6 +177,18 @@ const SOUNDS = {
         for (const [d, len] of [[0, 0.12], [0.14, 0.28]]) [110, 165, 220].forEach(f => tone({ type: "sawtooth", f0: f, f1: f * 0.98, dur: len, vol: 0.07, delay: d }));
         noise({ dur: 0.35, vol: 0.06, freq: 1800, q: 0.6 });
     },
+    choir: () => {
+        // A heavenly "aah": a soft major-seventh chord of detuned sines with vibrato that swells and fades.
+        if (!audio) return;
+        const t = audio.currentTime;
+        for (const f of [523.25, 659.25, 783.99, 987.77, 1046.5]) for (const det of [-3, 3]) {
+            const o = audio.createOscillator(), g = audio.createGain(), lfo = audio.createOscillator(), lg = audio.createGain();
+            o.type = "sine"; o.frequency.value = f; o.detune.value = det;
+            lfo.frequency.value = 5.5; lg.gain.value = 6; lfo.connect(lg).connect(o.detune);
+            g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.022, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
+            o.connect(g).connect(master); o.start(t); lfo.start(t); o.stop(t + 2.7); lfo.stop(t + 2.7);
+        }
+    },
     whoosh: () => noise({ dur: 0.25, vol: 0.12, freq: 400, f1: 2400, q: 0.8 })
 };
 

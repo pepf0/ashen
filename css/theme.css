@@ -1758,3 +1758,71 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 .player-list .nc-name_pepf.lettered { overflow: visible; }
 .shop-item:hover, .shop-item:focus-within { z-index: 5; }
 .player-list .level-badge-sm { display: none; }
+
+/* ==========================================================================
+   Friend signature cinematics (lighter than Pepf Prime's): entrance card and ultimate cut-in
+   ========================================================================== */
+.sig-cine { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; font-family: var(--font-pixel); }
+.sig-z7fox { --s0: #e0407a; --s1: #ff9ac0; --s2: #ffffff; --sd: #2a0618; }
+.sig-ely7 { --s0: #a8ff40; --s1: #ffd166; --s2: #fff2a0; --sd: #0e2206; }
+.sig-xxz { --s0: #8a6aff; --s1: #d8c8ff; --s2: #ffffff; --sd: #120830; }
+.sig-raul { --s0: #7cff3a; --s1: #ff7a1a; --s2: #e8ffd8; --sd: #160828; }
+.sc-streak { position: absolute; top: 50%; left: -50%; width: 50%; height: 2px; background: linear-gradient(90deg, transparent, var(--s0), #fff); box-shadow: 0 0 12px var(--s0); animation: pc-streak 0.5s cubic-bezier(.6, 0, .2, 1) 0.1s forwards; }
+.sc-card {
+    position: absolute; top: 50%; left: 50%; display: flex; align-items: center; gap: 3%; width: 62%; padding: 1.2% 3%;
+    transform: translate(-50%, -50%) skewX(-10deg); opacity: 0;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sd) 92%, transparent) 12%, color-mix(in srgb, var(--sd) 92%, transparent) 88%, transparent);
+    border-top: 2px solid var(--s0); border-bottom: 2px solid var(--s1); box-shadow: 0 0 30px color-mix(in srgb, var(--s0) 40%, transparent);
+    animation: pc-card 2s cubic-bezier(.2, .9, .1, 1) 0.2s forwards;
+}
+.side-1 .sc-card { animation-name: pc-card-r; }
+.sc-card > * { transform: skewX(10deg); }
+.sc-portrait { width: 13%; image-rendering: pixelated; border: 2px solid var(--s0); border-radius: 4px; background: var(--sd); box-shadow: 0 0 14px var(--s0); }
+.sc-sub { font-size: clamp(0.55rem, 1.2vw, 0.85rem); letter-spacing: 0.35em; color: var(--s1); text-transform: uppercase; }
+.sc-name { font-size: clamp(1.6rem, 5vw, 3.6rem); line-height: 1; font-weight: 700;
+    background: linear-gradient(90deg, var(--s0), var(--s2), var(--s1), var(--s0)); background-size: 300% 100%; animation: pepf-flow 2.5s linear infinite;
+    -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--s0) 70%, transparent)) drop-shadow(0 3px 0 var(--sd)); }
+.sc-tag { font-size: clamp(0.5rem, 1vw, 0.75rem); letter-spacing: 0.3em; color: var(--s2); opacity: 0.75; text-transform: uppercase; margin-top: 2%; }
+.sc-band {
+    position: absolute; left: -10%; right: -10%; top: 36%; height: 28%; display: flex; align-items: center; gap: 3%; padding: 0 18%;
+    background: linear-gradient(90deg, var(--sd), color-mix(in srgb, var(--s0) 55%, var(--sd)) 50%, var(--sd)); border-top: 2px solid var(--s1); border-bottom: 2px solid var(--s0);
+    transform: skewY(-4deg) translateX(-120%); animation: sc-band 1s cubic-bezier(.2, .9, .1, 1) forwards; overflow: hidden;
+}
+.side-1 .sc-band { flex-direction: row-reverse; transform: skewY(4deg) translateX(120%); animation-name: sc-band-r; }
+@keyframes sc-band { 0% { transform: skewY(-4deg) translateX(-120%); } 20%, 75% { transform: skewY(-4deg) translateX(0); } 100% { transform: skewY(-4deg) translateX(130%); } }
+@keyframes sc-band-r { 0% { transform: skewY(4deg) translateX(120%); } 20%, 75% { transform: skewY(4deg) translateX(0); } 100% { transform: skewY(4deg) translateX(-130%); } }
+.sc-cut-portrait { height: 120%; align-self: flex-end; image-rendering: pixelated; filter: drop-shadow(0 0 8px var(--s0)); }
+.side-1 .sc-cut-portrait { transform: scaleX(-1); }
+.side-1 .sc-band > div { text-align: right; }
+.sc-cut-name { font-size: clamp(0.6rem, 1.3vw, 0.9rem); letter-spacing: 0.35em; color: var(--s2); text-transform: uppercase; }
+.sc-cut-ability { font-size: clamp(1.6rem, 5.5vw, 4rem); line-height: 1; font-weight: 700; font-style: italic; text-transform: uppercase; color: #fff; text-shadow: 3px 3px 0 var(--sd), 0 0 16px var(--s0); }
+
+/* ---------- Golden Creator tier and the bow ---------- */
+.pc-rays.gold { background: repeating-conic-gradient(from 7deg, rgba(255, 209, 102, 0.2) 0 3deg, transparent 3deg 15deg); animation-delay: 0.15s; animation-direction: normal; rotate: 7deg; }
+.arena-stage.prime-stage { background: linear-gradient(#05020f, #05020f) padding-box, conic-gradient(from var(--pa), #40e0d0, #ffffff, #ffd166, #0a8f86, #b8fff6, #ffd166, #40e0d0) border-box; }
+.member-list li.throne { box-shadow: 0 0 14px rgba(64, 224, 208, 0.18), inset 0 0 0 1px rgba(255, 209, 102, 0.25); }
+.member-list li.throne::before { color: #ffd166; text-shadow: 0 0 6px #ff9a3d; }
+.nb_pepf { box-shadow: 0 0 10px rgba(64, 224, 208, 0.5), 0 0 0 1px rgba(255, 209, 102, 0.35), inset 0 0 8px rgba(64, 224, 208, 0.2); }
+/* Friends bow when the Creator arrives: their row dips and dims, the portrait leans forward. */
+.member-list li.sig-row.bowing { animation: row-bow 2.2s ease-in-out; }
+.member-list li.sig-row.bowing .portrait { animation: portrait-bow 2.2s ease-in-out; transform-origin: 50% 100%; }
+@keyframes row-bow { 20%, 70% { opacity: 0.6; transform: translateY(3px); } }
+@keyframes portrait-bow { 20%, 70% { transform: rotate(22deg) translateY(2px); } }
+
+/* ---------- Every player: ultimate banner and VICTORY stamp ---------- */
+.ult-banner {
+    position: absolute; top: 9%; left: 0; z-index: 4; pointer-events: none; display: flex; align-items: baseline; gap: 10px;
+    padding: 4px 22px 4px 14px; font-family: var(--font-pixel);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--kc) 85%, #000), color-mix(in srgb, var(--kc) 30%, transparent) 80%, transparent);
+    border-top: 1px solid rgba(255, 255, 255, 0.5); clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
+    animation: ult-banner 1.05s cubic-bezier(.2, .9, .2, 1) forwards;
+}
+.ult-banner.side-1 { left: auto; right: 0; flex-direction: row-reverse; padding: 4px 14px 4px 22px; clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%);
+    background: linear-gradient(270deg, color-mix(in srgb, var(--kc) 85%, #000), color-mix(in srgb, var(--kc) 30%, transparent) 80%, transparent); animation-name: ult-banner-r; }
+.ult-banner b { font-size: clamp(1rem, 2.6vw, 1.7rem); color: #fff; font-style: italic; text-transform: uppercase; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5); }
+.ult-banner span { font-size: clamp(0.55rem, 1.1vw, 0.8rem); letter-spacing: 0.2em; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; }
+@keyframes ult-banner { 0% { transform: translateX(-100%); } 18%, 78% { transform: translateX(0); } 100% { transform: translateX(-100%); opacity: 0; } }
+@keyframes ult-banner-r { 0% { transform: translateX(100%); } 18%, 78% { transform: translateX(0); } 100% { transform: translateX(100%); opacity: 0; } }
+.afloat.victory { font-family: var(--font-pixel); font-weight: 700; font-size: clamp(1.3rem, 3vw, 2.2rem); animation-name: afloat-big; animation-duration: 1.4s;
+    color: #fff; text-shadow: 0 0 14px var(--kc), 0 0 2px var(--kc), 0 3px 0 #05020c; letter-spacing: 0.1em; }

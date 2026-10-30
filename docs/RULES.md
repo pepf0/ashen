@@ -404,6 +404,19 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
 
 ## Match feel
 
+- **Every player:** ultimates show a banner in the kit's color, crits flash a
+  lens flare in the kit's color, and fights won without a victory cosmetic
+  end with a VICTORY stamp and a kit-colored burst.
+- **Friend signature sets** (Z7FOX, ely7, xXZweiradXx, Raul) also bring a
+  lighter entrance card, an ultimate cut-in and their own arena backdrop
+  (visual only; the arena rule still applies): Z7FOX's floodlit stadium,
+  ely7's casino, xXZweiradXx's arcane tower and Raul's geofront.
+- **Pepf Prime stays on top:** the full cinematics (letterbox, glitch name,
+  kill cam, dragon) are Pepf's alone; friends in a signature set bow when
+  Pepf enters a lobby or fight; a golden halo, gold motes, golden rays and a
+  choir on ENCORE; and every won fight ends in one of three finishers
+  (tidal wave, dragon nova, giant guitar smash).
+
 - **Shop stat preview:** hovering a shop item shows exactly how buying it
   would change your stats (green = better, red = worse).
 - **Round recap:** after each combat phase the match sidebar lists every

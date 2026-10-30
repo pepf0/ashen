@@ -4,7 +4,7 @@ import { KIT_COLORS, image } from "./sprites.js";
 import { data } from "./data.js";
 import { effectsLevel, sfx as playSfx } from "./fx.js";
 import { SKINS, skinApplies, skinnedCanvas } from "./skins.js";
-import { isPrime, primeIntro, primeCutIn, primeVictory, primeWarning, primeCombo, primeReplay } from "./prime.js";
+import { isPrime, primeIntro, primeCutIn, primeVictory, primeWarning, primeCombo, primeReplay, sigIntro, sigCutIn } from "./prime.js";
 
 export const W = 320, H = 144, GROUND = 118;
 const RES = 3; // canvas pixels per arena pixel: backgrounds stay chunky, item art stays crisp
@@ -16,9 +16,11 @@ const LASH = { "z7fox.whip": true };
 
 /** Friends' signature sets: a lighter aura in their pack color and their own victory effect. */
 const SIG = {
-    z7fox: { pal: ["#e0407a", "#ff9ac0", "#ff4e6a", "#ffffff"], word: "RED CARD!" },
-    ely7: { pal: ["#a8ff40", "#ffd166", "#fff2a0", "#ffffff"], word: "JACKPOT!" },
-    xxz: { pal: ["#8a6aff", "#b26bff", "#d8c8ff", "#ffffff"], word: "OVERLOAD!" }
+    z7fox: { key: "z7fox", pal: ["#e0407a", "#ff9ac0", "#ff4e6a", "#ffffff"], word: "RED CARD!", tag: "takes the pitch" },
+    ely7: { key: "ely7", pal: ["#a8ff40", "#ffd166", "#fff2a0", "#ffffff"], word: "JACKPOT!", tag: "rolls the dice" },
+    xxz: { key: "xxz", pal: ["#8a6aff", "#b26bff", "#d8c8ff", "#ffffff"], word: "OVERLOAD!", tag: "channels the arcane" },
+    // Raul: cosmetics only, so no aura in fights, but the entrance, cut-in and arena.
+    raul: { key: "raul", pal: ["#7a4ad8", "#7cff3a", "#ff7a1a", "#ffffff"], word: "SYNCHRO 400%", tag: "synchronizes", noAura: true }
 };
 const sigOf = appearance => appearance && Object.keys(SIG).find(k => Object.values(appearance).some(v => typeof v === "string" && v.endsWith(`_${k}`)));
 
@@ -74,6 +76,8 @@ export class Arena {
         this.crosses = [];
         this.slashes = [];
         this.chains = [];
+        this.waves = [];
+        this.beams = [];
         this.bolts = [];
         this.timers = [];
         this.shake = 0;
@@ -104,8 +108,15 @@ export class Arena {
         });
         // Pepf Prime entrance card (live fights and replays, not the menu demo).
         const star = this.f.find(f => f.prime);
-        // Pepf Prime fights take place in the Tidal Throne (visual only; the arena's rule still applies).
+        // Pepf Prime fights take place in the Tidal Throne; otherwise a friend's signature arena (the viewer's own first).
+        // Visual only: the drawn arena's rule still applies.
+        const friend = star ? null : [this.f[viewer ?? -1], ...this.f].find(f => f?.sig);
         if (star && !silent) this.bg = drawBackground("tidal_throne", mulberry(seed * 7 + 3));
+        else if (friend && !silent) {
+            this.bg = drawBackground(`sig_${friend.sig.key}`, mulberry(seed * 7 + 3));
+            sigIntro(root, { name: friend.info.name ?? "", kit: friend.kit, title: friend.info.appearance?.title, key: friend.sig.key, tag: friend.sig.tag }, friend.side);
+            this.sfx("announce");
+        }
         this.primeSky = !!star;
         root.classList.toggle("prime-stage", !!star && !silent);
         this.meteors = [];
@@ -113,6 +124,8 @@ export class Arena {
             primeIntro(root, { name: star.info.name ?? "Pepf", kit: "pepf", title: star.info.appearance?.title }, star.side);
             this.sfx("primeIntro");
             // The opponent is warned, and their items shiver for a moment.
+            // Friends in a signature set bow to the Creator: their cluster dips and their aura dims.
+            for (const f of this.f) if (f.sig && !f.prime) { f.bowFrom = 1.3; f.bowUntil = 3.3; this.later(1.4, () => this.float(f, "*bows*", "sig")); }
             const me = viewer != null ? this.f[viewer] : null;
             if (me && !me.prime) {
                 setTimeout(() => { if (this.running) primeWarning(root, star.info.name ?? "Pepf"); }, 1900);
@@ -158,6 +171,7 @@ export class Arena {
         const t = this.now;
         let x = 0, y = 0;
         if (f.shiverUntil && t < f.shiverUntil && t > 1.9) { x += Math.sin(t * 70) * 1.2; y += Math.cos(t * 53) * 0.6; }
+        if (f.bowUntil && t > f.bowFrom && t < f.bowUntil) { const b = Math.sin(((t - f.bowFrom) / (f.bowUntil - f.bowFrom)) * Math.PI); y += b * 9; x -= f.dir * b * 3; }
         const pa = (t - f.atk) / 0.3;
         if (pa >= 0 && pa < 1 && f.ranged) x -= f.dir * 3 * Math.sin(pa * Math.PI);
         const ph = (t - f.hit) / 0.22;
@@ -300,6 +314,21 @@ export class Arena {
                 src.cast = this.now;
                 src.castColor = MOD_COLORS[ev.ability] ?? src.color;
                 if (a?.ultimate) this.ultFx(src, src.prime ? "#40e0d0" : src.color);
+                if (a?.ultimate && !src.sig && !src.prime && !this.silent && src.info) {
+                    // Everyone else: a quick banner in the kit's color across the top of the arena.
+                    const banner = document.createElement("div");
+                    banner.className = `ult-banner side-${src.side}`;
+                    banner.style.setProperty("--kc", src.color);
+                    banner.innerHTML = "";
+                    banner.append(Object.assign(document.createElement("b"), { textContent: a.name }), Object.assign(document.createElement("span"), { textContent: src.info.name ?? "" }));
+                    this.root.append(banner);
+                    setTimeout(() => banner.remove(), 1100);
+                }
+                if (a?.ultimate && src.sig && !src.prime && !this.silent) {
+                    sigCutIn(this.root, { name: src.info.name ?? "", kit: src.kit, key: src.sig.key }, a.name, src.side);
+                    this.hitStop(0.2);
+                    this.sfx("whoosh");
+                }
                 if (a?.ultimate && src.prime && !this.silent) {
                     primeCutIn(this.root, { name: src.info.name ?? "Pepf", kit: "pepf" }, a.name, src.side);
                     this.hitStop(0.4);
@@ -371,6 +400,7 @@ export class Arena {
                 this.flashHit(tgt, 5);
             } else if (ev.critMultiplier) {
                 num(`${dmg}!`, "crit");
+                if (!src?.prime) this.stars.push({ x: this.x(tgt), y: this.headY(tgt) + 16, t0: this.now, dur: 0.22, r: 10, color: src?.color ?? "#ff9f43" });
                 this.sfx("crit");
                 this.hitStop(0.07);
                 this.sparks(this.x(tgt), this.headY(tgt) + 16, "#ff9f43", 18);
@@ -435,8 +465,9 @@ export class Arena {
         node.className = `afloat ${kind}`;
         node.textContent = text;
         if (kind === "sig" && f.sig) node.style.setProperty("--sig", f.sig.pal[0]);
+        node.style.setProperty("--kc", f.color);
         const x = (this.x(f) + (this.rng() - 0.5) * 22) / W * 100;
-        const lift = { "sig raul": 26, "hit prime-dmg": 4, prime: 30, sig: 26, ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
+        const lift = { victory: 26, "sig raul": 26, "hit prime-dmg": 4, prime: 30, sig: 26, ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
         const y = (this.headY(f) - lift) / H * 100;
         node.style.left = `${x}%`;
         node.style.top = `${y}%`;
@@ -522,10 +553,10 @@ export class Arena {
             this.sfx("whoosh");
             this.later(0.15, () => this.damage({ ...hit.ev, replay: true }, hit.src, hit.tgt));
             this.later(1.6, () => { this.timeScale = 1; this.finishNow(winner); });
-            return 3.2;
+            return 3.8;
         }
         this.finishNow(winner);
-        return winner >= 0 && this.f[winner].prime && !this.silent ? 1.6 : 0;
+        return winner >= 0 && this.f[winner].prime && !this.silent ? 2.2 : 0;
     }
 
     finishNow(winner) {
@@ -544,10 +575,13 @@ export class Arena {
             this.hitStop(0.5);
             this.stars.push({ x: this.x(loser), y: CY - 4, t0: this.now, dur: 0.8, r: 50 });
             this.sfx("cutin");
+            // One of three finishers, so a Pepf win never looks the same twice.
+            const pick = Math.floor(this.rng() * 3);
+            [() => this.tidalWave(this.f[winner], loser), () => this.dragonNova(this.f[winner], loser), () => this.guitarSmash(loser)][pick]();
         }
         if (winner >= 0) {
             const w = this.f[winner];
-            this.later(0.6, () => this.victoryFx(w));
+            this.later(w.prime && !this.silent ? 1.0 : 0.6, () => this.victoryFx(w));
         }
     }
 
@@ -567,6 +601,7 @@ export class Arena {
             // Encore: three chord rings, a tidal wave across the whole arena, a fountain of notes from both
             // edges, a firework crown and a turquoise flash.
             this.sfx("encore");
+            this.later(0.3, () => this.sfx("choir"));
             if (this.silent) this.float(f, "ENCORE!", "prime");
             else primeVictory(this.root, { name: f.info.name ?? "Pepf", title: f.info.appearance?.title });
             for (let r = 0; r < 3; r++) this.later(r * 0.18, () => { this.ring(x, CY, PRIME[r], 40 + r * 25); this.ring(x, GROUND - 2, PRIME[r + 1], 50 + r * 20, true); });
@@ -668,6 +703,12 @@ export class Arena {
             return;
         }
         const pal = palettes[effect] ?? [f.color, "#ffffff", "#ffd166"];
+        if (!palettes[effect]) {
+            // Default victory: a kit-colored burst, two rings and a VICTORY stamp.
+            this.float(f, "VICTORY", "victory");
+            this.ring(x, CY - 4, f.color, 50); this.later(0.12, () => this.ring(x, GROUND - 2, "#ffffff", 44, true));
+            for (let k = 0; k < 30; k++) { const a = (k / 30) * Math.PI * 2; this.particle(x, CY - 4, Math.cos(a) * 70, Math.sin(a) * 45, 0.8, k % 2 ? f.color : "#ffffff", 1, 20, true); }
+        }
         for (let k = 0; k < 40; k++) {
             const fromTop = effect !== "victory_ghosts";
             this.particle(x + (this.rng() - 0.5) * 120, fromTop ? -this.rng() * 30 : GROUND,
@@ -727,6 +768,7 @@ export class Arena {
         this.drawStars(ctx, t);
         this.drawCrosses(ctx, t);
         this.drawSlashes(ctx, t);
+        this.drawFinishers(ctx, t);
         this.drawChains(ctx, t);
         this.drawBolts(ctx, t);
         this.drawParticles(ctx, dt);
@@ -755,7 +797,7 @@ export class Arena {
         ctx.fill();
         if (f.dead >= 0) return;
         if (f.prime) this.drawPrime(ctx, f, t, x);
-        else if (f.sig) this.drawSig(ctx, f, t, x);
+        else if (f.sig && !f.sig.noAura) this.drawSig(ctx, f, t, x);
         // Kit rune circle: slowly turning ticks in the kit's color, brighter with ult charge.
         const glow = 0.25 + Math.min(1, f.ult) * 0.35 + (f.ult >= 1 ? Math.sin(t * 6) * 0.2 : 0);
         ctx.strokeStyle = f.color;
@@ -901,6 +943,23 @@ export class Arena {
             f.beat = 1.4;
             for (let k = 0; k < (rich ? 14 : 5); k++) this.particle(x + (this.rng() - 0.5) * 40, GROUND - 2, (this.rng() - 0.5) * 8, -50 - this.rng() * 40, 0.8, PRIME[k % 4], 1, 0, true);
         }
+        // Golden Creator tier: a halo of gold over the cluster, with gold motes rising among the turquoise.
+        const hy = CY - 40 + oy + Math.sin(t * 2) * 1.5;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = `rgba(255, 209, 102, ${0.55 + pulse * 0.3})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(x, hy, 13, 3, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "rgba(255, 242, 192, 0.5)";
+        ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.ellipse(x, hy, 15, 4, 0, 0, Math.PI * 2); ctx.stroke();
+        for (let k = 0; k < 6; k++) {
+            const a = t * 1.8 + (k / 6) * Math.PI * 2;
+            ctx.fillStyle = `rgba(255, 242, 192, ${0.5 + 0.5 * Math.sin(t * 5 + k)})`;
+            ctx.fillRect(x + Math.cos(a) * 13 - 0.5, hy + Math.sin(a) * 3 - 0.5, 1, 1);
+        }
+        ctx.restore();
+        if (rich && this.rng() < 0.18) this.particle(x + (this.rng() - 0.5) * 40, GROUND - 2, 0, -18 - this.rng() * 10, 1.4, this.rng() < 0.5 ? "#ffd166" : "#fff2c0", 1, 0, true);
         // Notes drift up out of the cluster.
         if (t > f.primeNote) {
             f.primeNote = t + (rich ? 0.9 : 2) + this.rng() * 0.8;
@@ -956,6 +1015,7 @@ export class Arena {
 
     /** Signature aura: a glowing ring in the friend's color and motes rising from it. */
     drawSig(ctx, f, t, x) {
+        if (f.bowUntil && t > f.bowFrom && t < f.bowUntil) return; // aura dims while bowing to the Creator
         const [c0, c1] = f.sig.pal;
         const pulse = 0.5 + Math.sin(t * 2.4) * 0.5;
         ctx.save();
@@ -1008,6 +1068,86 @@ export class Arena {
             if (rich && this.rng() < 0.5) this.particle(w.x + (this.rng() - 0.5) * 16, w.y - 4, 0, -24, 0.5, PRIME[Math.floor(this.rng() * 4)], 1, 0, true);
         }
         ctx.restore();
+    }
+
+    // ---------------- Pepf Prime finishers ----------------
+
+    /** A wall of water rises behind Pepf and rolls across the arena over the loser. */
+    tidalWave(winner, loser) {
+        this.waves.push({ x0: this.x(winner) - winner.dir * 40, x1: this.x(loser) + winner.dir * 120, dir: winner.dir, t0: this.now, dur: 1.1 });
+        this.sfx("smash");
+        this.later(0.45, () => { this.shake = 6; this.sfx("crumble"); });
+    }
+
+    /** The dragon rears up and fires a beam of turquoise light into the loser, ending in a nova. */
+    dragonNova(winner, loser) {
+        const d = this.dragonPos(winner, this.now);
+        winner.breath = this.now + 0.4;
+        this.beams.push({ x0: d.x + winner.dir * 9, y0: d.y - 3, x1: this.x(loser), y1: CY - 4, t0: this.now + 0.15, dur: 0.7 });
+        this.sfx("ult");
+        this.later(0.35, () => {
+            this.stars.push({ x: this.x(loser), y: CY - 4, t0: this.now, dur: 0.7, r: 60 });
+            for (let r = 0; r < 4; r++) this.ring(this.x(loser), CY - 4, PRIME[r], 40 + r * 22);
+            for (let k = 0; k < 50; k++) { const a = (k / 50) * Math.PI * 2; this.particle(this.x(loser), CY - 4, Math.cos(a) * 110, Math.sin(a) * 70, 0.8, PRIME[k % 4], 1, 0, true); }
+            this.shake = 7;
+            this.sfx("smash");
+        });
+    }
+
+    /** A giant guitar drops out of the sky and slams down on the loser. */
+    guitarSmash(loser) {
+        const x = this.x(loser);
+        this.projectiles.push({ kind: "giant", x0: x - 30, y0: -40, x1: x, y1: GROUND - 26, t0: this.now, dur: 0.45, dir: 1, img: image(`img/item/${data.items["pepf.guitar"]?.sprite}`) });
+        this.sfx("whoosh");
+        this.later(0.45, () => {
+            this.ring(x, GROUND - 2, "#ffffff", 80, true); this.ring(x, GROUND - 2, "#40e0d0", 60, true);
+            this.debris(x); this.debris(x);
+            this.sparks(x, GROUND - 10, "#40e0d0", 40);
+            this.shake = 9;
+            this.sfx("smash"); this.sfx("riff");
+        });
+    }
+
+    drawFinishers(ctx, t) {
+        this.waves = this.waves.filter(w => t - w.t0 < w.dur);
+        for (const w of this.waves) {
+            const k = (t - w.t0) / w.dur, x = lerp(w.x0, w.x1, k), h = 70 * Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5) * (k > 0.8 ? (1 - k) / 0.2 : 1);
+            const back = x - w.dir * 160;
+            const g = ctx.createLinearGradient(0, GROUND - h, 0, GROUND);
+            g.addColorStop(0, "rgba(184, 255, 246, 0.85)"); g.addColorStop(0.3, "rgba(64, 224, 208, 0.7)"); g.addColorStop(1, "rgba(10, 80, 90, 0.75)");
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(back, GROUND);
+            for (let s = 0; s <= 20; s++) {
+                const px = lerp(back, x, s / 20), crest = Math.pow(s / 20, 2.2);
+                ctx.lineTo(px, GROUND - h * crest + Math.sin(px * 0.2 + t * 8) * 2);
+            }
+            ctx.lineTo(x + w.dir * 6, GROUND - h * 0.8);
+            ctx.lineTo(x + w.dir * 10, GROUND);
+            ctx.closePath();
+            ctx.fill();
+            // Foam along the crest.
+            ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            for (let s = 12; s <= 20; s++) { const px = lerp(back, x, s / 20); ctx.fillRect(px, GROUND - h * Math.pow(s / 20, 2.2) - 1, 2, 2); }
+            if (this.rng() < 0.8) this.particle(x, GROUND - h * 0.9, w.dir * 40, -30, 0.5, "#ffffff", 1, 120);
+        }
+        this.beams = this.beams.filter(b => t - b.t0 < b.dur);
+        if (this.beams.length) {
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            ctx.lineCap = "round";
+            for (const b of this.beams) {
+                if (t < b.t0) continue;
+                const k = (t - b.t0) / b.dur, reach = Math.min(1, k * 4), a = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+                const ex = lerp(b.x0, b.x1, reach), ey = lerp(b.y0, b.y1, reach);
+                for (const [col, wid] of [["64, 224, 208", 9], ["184, 255, 246", 4], ["255, 255, 255", 1.5]]) {
+                    ctx.strokeStyle = `rgba(${col}, ${a * (wid > 5 ? 0.35 : 0.9)})`;
+                    ctx.lineWidth = wid * (1 + Math.sin(t * 40) * 0.1);
+                    ctx.beginPath(); ctx.moveTo(b.x0, b.y0); ctx.lineTo(ex, ey); ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
     }
 
     /** Glowing crescents traced by Pepf Prime's melee swings. */
@@ -1206,8 +1346,8 @@ export class Arena {
             const k = (t - s.t0) / s.dur, r = s.r * (0.4 + k * 0.8), a = 1 - k;
             const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
             g.addColorStop(0, `rgba(255, 255, 255, ${0.9 * a})`);
-            g.addColorStop(0.3, `rgba(122, 240, 224, ${0.5 * a})`);
-            g.addColorStop(1, "rgba(64, 224, 208, 0)");
+            g.addColorStop(0.3, s.color ? `${s.color}${Math.round(0.5 * a * 255).toString(16).padStart(2, "0")}` : `rgba(122, 240, 224, ${0.5 * a})`);
+            g.addColorStop(1, s.color ? `${s.color}00` : "rgba(64, 224, 208, 0)");
             ctx.fillStyle = g;
             ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * a})`;
@@ -1402,6 +1542,23 @@ export class Arena {
                 continue;
             }
             const x = lerp(p.x0, p.x1, k), y = lerp(p.y0, p.y1, k) - Math.sin(k * Math.PI) * (p.kind === "note" ? 10 : 4);
+            if (p.kind === "giant") {
+                if (p.img?.complete && p.img.naturalWidth) {
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(-0.6 + k * 0.6);
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.globalCompositeOperation = "lighter";
+                    ctx.globalAlpha = 0.4;
+                    ctx.drawImage(tintOf(p.img, "#40e0d0"), -30, -30, 60, 60);
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.globalAlpha = 1;
+                    ctx.drawImage(p.img, -26, -26, 52, 52);
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.restore();
+                }
+                continue;
+            }
             if (p.kind === "card") {
                 ctx.save();
                 ctx.translate(Math.round(x), Math.round(y));
@@ -1769,6 +1926,156 @@ function drawBackground(id, rng) {
                 c.globalAlpha = 1;
                 c.fillStyle = "rgba(10, 6, 24, 0.25)";
                 c.fillRect(0, 36, W, GROUND - 36);
+            };
+            break;
+        }
+        case "sig_z7fox": {
+            // Z7FOX's stadium: a packed night stadium under floodlights, a crimson crowd and a green pitch.
+            bands(ctx, ["#08020a", "#120410", "#1c0616", "#26081c", "#300a22"]);
+            stars(ctx, rng, 30, 30);
+            const crowdTop = 48, crowdBottom = GROUND - 22;
+            for (let y = crowdTop; y < crowdBottom; y += 3) {
+                ctx.fillStyle = (y / 3) % 2 ? "#2a0a1e" : "#220818"; ctx.fillRect(0, y, W, 3);
+                for (let x = (y % 6); x < W; x += 3) { const r = rng(); ctx.fillStyle = r < 0.35 ? "#e0407a" : r < 0.5 ? "#ff9ac0" : r < 0.6 ? "#f4f0ff" : "#5a1a36"; ctx.fillRect(x, y, 2, 2); }
+            }
+            ctx.fillStyle = "#3a0c24"; ctx.fillRect(0, crowdBottom, W, 4);
+            ctx.fillStyle = "#e0407a"; for (let x = 6; x < W; x += 40) ctx.fillRect(x, crowdBottom + 1, 26, 2);
+            for (const px of [24, 104, 216, 296]) { ctx.fillStyle = "#1a0812"; ctx.fillRect(px, 8, 3, crowdTop); ctx.fillStyle = "#f4f0ff"; ctx.fillRect(px - 5, 6, 13, 4); }
+            // Pitch with stripes and lines.
+            for (let x = 0; x < W; x += 16) { ctx.fillStyle = (x / 16) % 2 ? "#1f6a2a" : "#23762f"; ctx.fillRect(x, GROUND, 16, H - GROUND); }
+            ctx.fillStyle = "rgba(255, 255, 255, 0.75)"; ctx.fillRect(0, GROUND, W, 1); ctx.fillRect(W / 2, GROUND, 1, H - GROUND);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.6)"; ctx.beginPath(); ctx.ellipse(W / 2, GROUND + 12, 26, 7, 0, 0, Math.PI * 2); ctx.stroke();
+            vignette(ctx);
+            animate = (c, t) => {
+                // Floodlight cones, gently breathing.
+                for (const px of [24, 104, 216, 296]) {
+                    const a = 0.07 + Math.sin(t * 1.3 + px) * 0.02;
+                    c.fillStyle = `rgba(255, 230, 240, ${a})`;
+                    c.beginPath(); c.moveTo(px - 4, 10); c.lineTo(px + 7, 10); c.lineTo(px + 50, GROUND); c.lineTo(px - 46, GROUND); c.closePath(); c.fill();
+                }
+                // Camera flashes and a crowd wave.
+                for (let k = 0; k < 4; k++) if (Math.random() < 0.08) { c.fillStyle = "#ffffff"; c.fillRect(Math.floor(Math.random() * W), crowdTop + Math.floor(Math.random() * (crowdBottom - crowdTop)), 2, 2); }
+                const wx = ((t * 60) % (W + 40)) - 20;
+                c.fillStyle = "rgba(255, 154, 192, 0.35)"; c.fillRect(Math.round(wx), crowdTop, 14, crowdBottom - crowdTop);
+            };
+            break;
+        }
+        case "sig_ely7": {
+            // Ely7's casino: velvet walls, slot machines with chasing lights, gold trim and a green felt floor.
+            bands(ctx, ["#060a04", "#0a1206", "#0e1a08", "#12220a", "#16280c"]);
+            ctx.fillStyle = "#2a0a12"; ctx.fillRect(0, 20, W, GROUND - 20);
+            for (let x = 0; x < W; x += 8) { ctx.fillStyle = (x / 8) % 2 ? "#320c16" : "#2a0a12"; ctx.fillRect(x, 20, 8, GROUND - 20); }
+            ctx.fillStyle = "#ffd166"; ctx.fillRect(0, 20, W, 2); ctx.fillRect(0, GROUND - 3, W, 2);
+            const slots = [];
+            for (const sx of [14, 58, 236, 280]) {
+                ctx.fillStyle = "#1a1a24"; ctx.fillRect(sx, GROUND - 52, 26, 49);
+                ctx.fillStyle = "#c9a13a"; ctx.fillRect(sx, GROUND - 52, 26, 3); ctx.fillRect(sx, GROUND - 6, 26, 3);
+                ctx.fillStyle = "#f4f0ff"; ctx.fillRect(sx + 3, GROUND - 40, 20, 12);
+                ctx.fillStyle = "#b5302f"; ctx.fillRect(sx + 26, GROUND - 44, 2, 14); ctx.fillRect(sx + 25, GROUND - 46, 4, 3);
+                slots.push(sx);
+            }
+            // Chandelier.
+            ctx.fillStyle = "#ffd166"; ctx.fillRect(152, 0, 16, 2); ctx.fillRect(159, 0, 2, 12);
+            for (let k = -3; k <= 3; k++) { ctx.fillRect(160 + k * 7, 12 + Math.abs(k), 2, 4); }
+            ctx.fillStyle = "#1f6a2a"; ctx.fillRect(0, GROUND, W, H - GROUND);
+            ctx.fillStyle = "#c9a13a"; ctx.fillRect(0, GROUND, W, 2);
+            ctx.fillStyle = "#1a5a24"; for (let k = 0; k < 120; k++) ctx.fillRect(Math.floor(rng() * W), GROUND + 3 + Math.floor(rng() * (H - GROUND - 3)), 1, 1);
+            vignette(ctx);
+            const coins = flakeLayer(14, "rgba(255, 209, 102, 0.9)", 0, 16, 2);
+            animate = (c, t, dt) => {
+                // Marquee bulbs chasing along the gold trim.
+                for (let x = 2; x < W; x += 6) { const on = Math.floor(x / 6 + t * 10) % 3 === 0; c.fillStyle = on ? "#fff2a0" : "#6a4a14"; c.fillRect(x, 21, 2, 1); c.fillRect(W - x - 2, GROUND - 2, 2, 1); }
+                // Spinning reels.
+                for (const sx of slots) for (let r = 0; r < 3; r++) {
+                    const sym = Math.floor(t * 12 + r * 3 + sx) % 3;
+                    c.fillStyle = ["#a8ff40", "#ffd166", "#e0405a"][sym];
+                    c.fillRect(sx + 5 + r * 6, GROUND - 37 + Math.floor((t * 40 + r * 5) % 6), 4, 4);
+                }
+                // Chandelier glow.
+                const g = c.createRadialGradient(160, 14, 1, 160, 14, 50);
+                g.addColorStop(0, `rgba(255, 220, 140, ${0.22 + Math.sin(t * 2) * 0.04})`); g.addColorStop(1, "rgba(255, 220, 140, 0)");
+                c.fillStyle = g; c.fillRect(110, 0, 100, 64);
+                coins(c, t, dt);
+            };
+            break;
+        }
+        case "sig_xxz": {
+            // xXZweiradXx's arcane tower: bookshelves, a great rune circle on the wall, floating crystals and candles.
+            bands(ctx, ["#08041a", "#0e0624", "#140a30", "#1a0c3c", "#200e48"]);
+            for (const [x0, w] of [[0, 70], [250, 70]]) {
+                ctx.fillStyle = "#1a0e2a"; ctx.fillRect(x0, 14, w, GROUND - 14);
+                for (let y = 18; y < GROUND - 6; y += 12) {
+                    ctx.fillStyle = "#3a2410"; ctx.fillRect(x0, y + 9, w, 2);
+                    for (let x = x0 + 2; x < x0 + w - 3; x += 3) { const r = rng(); ctx.fillStyle = r < 0.3 ? "#5a2a8a" : r < 0.55 ? "#8a3a3a" : r < 0.75 ? "#2a4a7a" : "#6a5a2a"; ctx.fillRect(x, y + 2 + Math.floor(rng() * 3), 2, 7 - Math.floor(rng() * 3)); }
+                }
+            }
+            ctx.fillStyle = "#120a22"; ctx.fillRect(70, 0, 180, GROUND);
+            ctx.fillStyle = "#24163e"; for (let y = 0; y < GROUND; y += 10) for (let x = 70 + ((y / 10) % 2) * 10; x < 250; x += 20) ctx.fillRect(x, y, 19, 1);
+            ctx.fillStyle = "#2a1a4a"; ctx.fillRect(0, GROUND, W, H - GROUND);
+            ctx.fillStyle = "#3a2a6a"; for (let x = 0; x < W; x += 18) ctx.fillRect(x, GROUND, 1, H - GROUND); ctx.fillRect(0, GROUND, W, 1);
+            vignette(ctx);
+            const crystals = Array.from({ length: 6 }, (_, k) => ({ x: 84 + k * 30 + rng() * 10, y: 20 + rng() * 40, p: rng() * 6 }));
+            const sparks = flakeLayer(18, "rgba(216, 200, 255, 0.8)", 0, -8);
+            animate = (c, t, dt) => {
+                // The great rune circle turns slowly behind the fight.
+                const cx = 160, cy = 46;
+                c.strokeStyle = `rgba(178, 107, 255, ${0.35 + Math.sin(t * 1.5) * 0.1})`;
+                c.lineWidth = 1;
+                c.beginPath(); c.arc(cx, cy, 30, 0, Math.PI * 2); c.stroke();
+                c.beginPath(); c.arc(cx, cy, 22, 0, Math.PI * 2); c.stroke();
+                c.beginPath();
+                for (let k = 0; k <= 5; k++) { const a = t * 0.3 + (k * 4 * Math.PI) / 5; const x = cx + Math.cos(a) * 22, y = cy + Math.sin(a) * 22; if (k === 0) c.moveTo(x, y); else c.lineTo(x, y); }
+                c.stroke();
+                c.fillStyle = "rgba(216, 200, 255, 0.8)";
+                for (let k = 0; k < 12; k++) { const a = -t * 0.5 + (k / 12) * Math.PI * 2; c.fillRect(Math.round(cx + Math.cos(a) * 26), Math.round(cy + Math.sin(a) * 26), 1, 2); }
+                // Floating crystals.
+                for (const cr of crystals) {
+                    const y = Math.round(cr.y + Math.sin(t * 1.4 + cr.p) * 3), x = Math.round(cr.x);
+                    c.fillStyle = "rgba(138, 106, 255, 0.25)"; c.fillRect(x - 3, y - 4, 7, 9);
+                    c.fillStyle = "#b26bff"; c.fillRect(x, y - 3, 1, 7); c.fillRect(x - 1, y - 1, 3, 3);
+                    c.fillStyle = "#e8dcff"; c.fillRect(x, y - 2, 1, 2);
+                }
+                // Candle flames on the shelves.
+                for (const fx of [20, 46, 270, 300]) { c.fillStyle = Math.sin(t * 12 + fx) > 0 ? "#ffd166" : "#ff9a3d"; c.fillRect(fx, 26, 1, 2); }
+                sparks(c, t, dt);
+            };
+            break;
+        }
+        case "sig_raul": {
+            // Raul's geofront: an underground city hanging from the cavern roof, a pyramid HQ and a hex-lit floor.
+            bands(ctx, ["#120620", "#1a0828", "#220a30", "#2a0c34", "#3a1030", "#4a1428"]);
+            // Inverted towers hanging from the ceiling.
+            for (let x = 0; x < W; x += 14) {
+                const h = 10 + Math.floor(rng() * 34), w = 8 + Math.floor(rng() * 5);
+                ctx.fillStyle = "#0a0412"; ctx.fillRect(x, 0, w, h);
+                ctx.fillStyle = "rgba(255, 179, 71, 0.7)";
+                for (let y = 3; y < h - 2; y += 4) for (let wx = x + 2; wx < x + w - 2; wx += 3) if (rng() < 0.4) ctx.fillRect(wx, y, 1, 1);
+            }
+            // Pyramid headquarters.
+            ctx.fillStyle = "#0e0618"; ctx.beginPath(); ctx.moveTo(110, GROUND); ctx.lineTo(160, GROUND - 58); ctx.lineTo(210, GROUND); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = "#ff7a1a"; ctx.beginPath(); ctx.moveTo(110, GROUND); ctx.lineTo(160, GROUND - 58); ctx.lineTo(210, GROUND); ctx.stroke();
+            ridge(ctx, rng, "#1a0a20", GROUND - 10, 10, 8);
+            ctx.fillStyle = "#1a0a24"; ctx.fillRect(0, GROUND, W, H - GROUND);
+            ctx.strokeStyle = "rgba(255, 122, 26, 0.25)";
+            for (let row = 0; row < 4; row++) for (let x = (row % 2) * 9; x < W; x += 18) {
+                const y = GROUND + 4 + row * 7;
+                ctx.beginPath(); for (let k = 0; k <= 6; k++) { const a = (k / 6) * Math.PI * 2; const px = x + Math.cos(a) * 6, py = y + Math.sin(a) * 2.5; if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); } ctx.stroke();
+            }
+            vignette(ctx);
+            animate = (c, t) => {
+                // Warning beacons blink in sequence, and a hex barrier ripple runs across the floor.
+                for (const [k, bx] of [[0, 40], [1, 120], [2, 200], [3, 280]].map(([k, x]) => [k, x])) {
+                    if (Math.floor(t * 3 + k) % 4 === 0) { c.fillStyle = "#ff7a1a"; c.fillRect(bx, GROUND - 14, 3, 3); c.fillStyle = "rgba(255, 122, 26, 0.25)"; c.fillRect(bx - 3, GROUND - 17, 9, 9); }
+                }
+                const rx = ((t * 80) % (W + 60)) - 30;
+                c.strokeStyle = "rgba(124, 255, 58, 0.5)";
+                for (let row = 0; row < 4; row++) {
+                    const y = GROUND + 4 + row * 7;
+                    for (let x = (row % 2) * 9; x < W; x += 18) if (Math.abs(x - rx) < 14) {
+                        c.beginPath(); for (let k = 0; k <= 6; k++) { const a = (k / 6) * Math.PI * 2; const px = x + Math.cos(a) * 6, py = y + Math.sin(a) * 2.5; if (k === 0) c.moveTo(px, py); else c.lineTo(px, py); } c.stroke();
+                    }
+                }
+                c.fillStyle = `rgba(255, 122, 26, ${0.6 + Math.sin(t * 4) * 0.3})`; c.fillRect(158, GROUND - 60, 4, 3);
             };
             break;
         }
