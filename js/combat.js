@@ -3,6 +3,7 @@ import { data, el, item, itemCard, abilityById, abilityTooltip, attachTooltip, a
 import { formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl, portraitEl } from "./profile.js";
+import { isPrime } from "./prime.js";
 import { simControls } from "./game.js";
 import { Arena } from "./arena.js";
 import { sfx } from "./fx.js";
@@ -205,6 +206,7 @@ export function createCombatView(app) {
                 cd.hidden = false;
                 cd.textContent = text;
                 cd.classList.toggle("go", left <= 0);
+                cd.classList.toggle("prime", fight.fighters.some(f => isPrime(f.appearance)));
                 cd.classList.remove("pop");
                 void cd.offsetWidth;
                 cd.classList.add("pop");

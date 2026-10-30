@@ -76,6 +76,9 @@ export function createLobbyView(app) {
             setTimeout(() => t.classList.add("out"), 4200);
             setTimeout(() => t.remove(), 4700);
             sfx("encore");
+            const pulse = el("div", { class: "prime-page-pulse", "aria-hidden": "true" });
+            document.body.append(pulse);
+            setTimeout(() => pulse.remove(), 2200);
         }
     }
 

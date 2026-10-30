@@ -958,7 +958,7 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 /* Name color: flowing turquoise > mint > white gradient with a glow and a twinkling star. */
 .nc-name_pepf {
     position: relative;
-    background-image: linear-gradient(90deg, #0a8f86, #40e0d0, #b8fff6, #ffffff, #7af0e0, #1fb5aa, #0a8f86);
+    background-image: linear-gradient(90deg, #2fc4b8, #40e0d0, #b8fff6, #ffffff, #7af0e0, #3ad0c2, #2fc4b8);
     background-size: 300% 100%;
     background-clip: text;
     -webkit-background-clip: text;
@@ -1432,3 +1432,147 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 /* The podium bob uses translate so it doesn't fight the holo tilt (transform). */
 .podium-spot .portrait.holo { animation: idle-bob-t 1s steps(2) infinite, pepf-spin 2.6s linear infinite; }
 @keyframes idle-bob-t { 50% { translate: 0 -2px; } }
+
+/* ==========================================================================
+   Signature sets (one per friend, unlock.users): Z7FOX, Ely7, xXZweiradXx
+   ========================================================================== */
+.nc-name_z7fox, .nc-name_ely7, .nc-name_xxz, .title-t_z7fox, .title-t_ely7, .title-t_xxz {
+    background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    background-size: 300% 100%; animation: pepf-flow 4s linear infinite; font-weight: 700; text-shadow: none !important;
+}
+.title-t_z7fox::before, .title-t_z7fox::after, .title-t_ely7::before, .title-t_ely7::after, .title-t_xxz::before, .title-t_xxz::after {
+    -webkit-text-fill-color: currentColor; opacity: 1; display: inline-block; margin: 0 0.2em;
+}
+
+/* Z7FOX: crimson and magenta, crosses. */
+.nc-name_z7fox { background-image: linear-gradient(90deg, #ff4e8a, #ff9ac0, #ffffff, #ff6a8a, #e0407a, #ff4e8a); filter: drop-shadow(0 0 4px rgba(224, 64, 122, 0.7)); }
+.nb_z7fox { padding: 1px 9px !important; border: 2px solid #e0407a; border-radius: 2px !important; background: linear-gradient(135deg, rgba(50, 4, 22, 0.95), rgba(26, 6, 24, 0.95)) !important;
+    box-shadow: 0 0 10px rgba(224, 64, 122, 0.5), inset 0 0 8px rgba(224, 64, 122, 0.25); position: relative; }
+.nb_z7fox::before, .nb_z7fox::after { content: "\271A"; position: absolute; top: 50%; translate: 0 -50%; font-size: 0.6em; color: #ff9ac0; text-shadow: 0 0 6px #e0407a; }
+.nb_z7fox::before { left: -0.55em; } .nb_z7fox::after { right: -0.55em; }
+.title-t_z7fox { background-image: linear-gradient(90deg, #ff9ac0, #ffffff, #e0407a, #ff9ac0); filter: drop-shadow(0 0 4px rgba(224, 64, 122, 0.6)); }
+.title-t_z7fox::before, .title-t_z7fox::after { content: "\271A"; color: #e0407a; }
+.portrait.pb_z7fox { --bc: #e0407a; overflow: visible; box-shadow: 0 0 14px rgba(224, 64, 122, 0.65), inset 0 -10px 16px rgba(224, 64, 122, 0.3); animation: sig-pulse-z 1.8s ease-in-out infinite; }
+.portrait.pb_z7fox::after { content: "\271A"; position: absolute; top: -0.75em; left: 50%; translate: -50% 0; font-size: 12px; color: #ff9ac0; text-shadow: 0 0 6px #e0407a; animation: crown-float 1.6s ease-in-out infinite; }
+.portrait.xs.pb_z7fox::after { font-size: 7px; top: -0.8em; }
+@keyframes sig-pulse-z { 50% { box-shadow: 0 0 20px rgba(255, 78, 106, 0.9), inset 0 -10px 18px rgba(224, 64, 122, 0.45); } }
+.fighter.frame-frame_z7fox { border: 2px solid #e0407a; box-shadow: 0 0 24px rgba(224, 64, 122, 0.4), inset 0 -20px 40px rgba(224, 64, 122, 0.1); }
+.frame-swatch.frame-frame_z7fox { border-color: #e0407a; box-shadow: 0 0 8px rgba(224, 64, 122, 0.6); }
+.skin-ws_z7fox { --sk: #ff4e8a; }
+
+/* Ely7: lime and gold luck, clovers. */
+.nc-name_ely7 { background-image: linear-gradient(90deg, #8aef30, #c8ff70, #fff2a0, #ffffff, #ffd166, #a8ff40, #8aef30); filter: drop-shadow(0 0 4px rgba(168, 255, 64, 0.6)); }
+.nb_ely7 { padding: 1px 9px !important; border: 2px solid transparent; border-radius: 9px !important; position: relative;
+    background: linear-gradient(135deg, rgba(14, 34, 6, 0.95), rgba(20, 24, 6, 0.95)) padding-box, linear-gradient(90deg, #a8ff40, #ffd166, #a8ff40) border-box !important;
+    box-shadow: 0 0 10px rgba(168, 255, 64, 0.4); }
+.nb_ely7::after { content: "\2618"; position: absolute; right: -0.6em; top: -0.55em; font-size: 0.75em; color: #a8ff40; text-shadow: 0 0 6px #a8ff40; animation: pepf-twinkle 2.2s ease-in-out infinite; }
+.title-t_ely7 { background-image: linear-gradient(90deg, #ffd166, #ffffff, #a8ff40, #ffd166); filter: drop-shadow(0 0 4px rgba(255, 209, 102, 0.6)); }
+.title-t_ely7::before, .title-t_ely7::after { content: "\2618"; color: #a8ff40; }
+.portrait.pb_ely7 { overflow: visible; border: 3px solid transparent;
+    background: radial-gradient(circle at 50% 75%, rgba(168, 255, 64, 0.35), transparent 65%) padding-box, linear-gradient(180deg, #0e2206, #06100a) padding-box,
+        conic-gradient(from var(--pa), #a8ff40, #ffd166, #2e6a0a, #fff2a0, #a8ff40) border-box;
+    box-shadow: 0 0 12px rgba(168, 255, 64, 0.5); animation: pepf-spin 5s linear infinite; }
+.portrait.pb_ely7::after { content: "\2618"; position: absolute; top: -0.85em; left: 50%; translate: -50% 0; font-size: 13px; color: #a8ff40; text-shadow: 0 0 6px #a8ff40; animation: crown-float 1.6s ease-in-out infinite; }
+.portrait.xs.pb_ely7 { border-width: 2px; } .portrait.xs.pb_ely7::after { font-size: 7px; }
+.fighter.frame-frame_ely7 { border: 2px solid transparent;
+    background: linear-gradient(180deg, rgba(14, 30, 10, 0.96), rgba(10, 10, 20, 0.97)) padding-box, linear-gradient(120deg, #a8ff40, #ffd166, #2e6a0a, #a8ff40) border-box;
+    background-size: 100%, 300% 300%; animation: prism-border 5s linear infinite; box-shadow: 0 0 22px rgba(168, 255, 64, 0.25); }
+.frame-swatch.frame-frame_ely7 { border-color: #a8ff40; box-shadow: 0 0 8px rgba(168, 255, 64, 0.6); }
+.skin-ws_ely7 { --sk: #a8ff40; }
+
+/* xXZweiradXx: arcane violet, runes. */
+.nc-name_xxz { background-image: linear-gradient(90deg, #a68aff, #d8c8ff, #ffffff, #c08aff, #9a7aff, #a68aff); filter: drop-shadow(0 0 5px rgba(138, 106, 255, 0.7)); }
+.nb_xxz { padding: 1px 9px !important; border: 1px solid #8a6aff; border-radius: 3px !important; position: relative;
+    background: linear-gradient(135deg, rgba(20, 8, 50, 0.95), rgba(10, 6, 30, 0.95)) !important;
+    box-shadow: 0 0 0 2px rgba(10, 6, 30, 0.9), 0 0 0 3px #b26bff, 0 0 12px rgba(138, 106, 255, 0.6); animation: nb-xxz 2.4s ease-in-out infinite; }
+@keyframes nb-xxz { 50% { box-shadow: 0 0 0 2px rgba(10, 6, 30, 0.9), 0 0 0 3px #d8c8ff, 0 0 18px rgba(178, 107, 255, 0.9); } }
+.title-t_xxz { background-image: linear-gradient(90deg, #b26bff, #ffffff, #8a6aff, #d8c8ff, #b26bff); filter: drop-shadow(0 0 4px rgba(138, 106, 255, 0.7)); }
+.title-t_xxz::before, .title-t_xxz::after { content: "\16DF"; color: #b26bff; }
+.portrait.pb_xxz { --bc: #8a6aff; overflow: visible; box-shadow: 0 0 0 2px #0a0618, 0 0 0 3px #b26bff, 0 0 16px rgba(138, 106, 255, 0.7); }
+.portrait.pb_xxz::before { content: ""; position: absolute; inset: -6px; border: 1px dashed rgba(216, 200, 255, 0.7); border-radius: 50%; animation: prime-orbit 8s linear infinite; pointer-events: none; }
+.portrait.xs.pb_xxz::before { inset: -3px; }
+.fighter.frame-frame_xxz { border: 2px solid #8a6aff; box-shadow: 0 0 26px rgba(138, 106, 255, 0.45), inset 0 0 40px rgba(60, 20, 140, 0.25); animation: frame-xxz 2.4s ease-in-out infinite; }
+@keyframes frame-xxz { 50% { box-shadow: 0 0 34px rgba(178, 107, 255, 0.7), inset 0 0 50px rgba(90, 40, 180, 0.35); } }
+.frame-swatch.frame-frame_xxz { border-color: #8a6aff; box-shadow: 0 0 8px rgba(138, 106, 255, 0.6); }
+.skin-ws_xxz { --sk: #b26bff; }
+
+.afloat.sig { font-family: var(--font-pixel); font-weight: 700; font-size: clamp(1.1rem, 2.4vw, 1.7rem); animation-name: afloat-big; color: var(--sig, #fff); text-shadow: 0 0 12px var(--sig, #fff), 0 3px 0 #05020c; }
+
+/* ---------- Pepf Prime: chat, countdown, HP bar, damage numbers, finisher, page pulse ---------- */
+.chat-log li.prime-msg {
+    position: relative; margin: 2px 0; padding: 4px 8px; border-radius: 4px;
+    background: linear-gradient(90deg, rgba(64, 224, 208, 0.16), rgba(64, 224, 208, 0.02));
+    border-left: 2px solid #40e0d0; box-shadow: inset 0 0 12px rgba(64, 224, 208, 0.08);
+}
+.chat-log li.prime-msg b { position: static; }
+.chat-log li.prime-msg b::after, .chat-log li.prime-msg b::before { display: none; }
+.chat-log li.prime-msg span { color: #d8fffa; }
+
+#countdown.prime {
+    background: linear-gradient(180deg, #ffffff 15%, #b8fff6 45%, #40e0d0 70%, #0a8f86);
+    -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    text-shadow: none; filter: drop-shadow(0 0 18px rgba(64, 224, 208, 0.9)) drop-shadow(0 5px 0 #021c1c);
+}
+
+.fighter.frame-frame_pepf .hp-fill:not(.low) {
+    background: linear-gradient(90deg, #0a8f86, #40e0d0, #b8fff6, #40e0d0, #0a8f86) !important;
+    background-size: 200% 100% !important; animation: pepf-flow 3s linear infinite;
+    box-shadow: 0 0 12px rgba(64, 224, 208, 0.6);
+}
+
+.afloat.prime-dmg {
+    background: linear-gradient(180deg, #ffffff 20%, #7af0e0 60%, #40e0d0);
+    -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    text-shadow: none; filter: drop-shadow(0 0 6px rgba(64, 224, 208, 0.9)) drop-shadow(0 2px 0 #021c1c);
+}
+.afloat.crit.prime-dmg { font-size: clamp(1.4rem, 3vw, 2.2rem); filter: drop-shadow(0 0 10px #40e0d0) drop-shadow(0 0 2px #fff) drop-shadow(0 3px 0 #021c1c); }
+
+.pc-finisher .arena-canvas { transform-origin: var(--fx, 50%) 62%; animation: pc-finisher 1.2s cubic-bezier(.2, .8, .2, 1); }
+@keyframes pc-finisher {
+    0% { transform: scale(1); filter: none; }
+    18% { transform: scale(1.22); filter: saturate(1.6) contrast(1.15) drop-shadow(3px 0 0 rgba(255, 60, 138, 0.7)) drop-shadow(-3px 0 0 rgba(60, 240, 255, 0.7)); }
+    55% { transform: scale(1.16); filter: saturate(1.3) drop-shadow(1px 0 0 rgba(255, 60, 138, 0.4)) drop-shadow(-1px 0 0 rgba(60, 240, 255, 0.4)); }
+    100% { transform: scale(1); filter: none; }
+}
+
+.prime-page-pulse {
+    position: fixed; inset: 0; pointer-events: none; z-index: 900;
+    background: radial-gradient(ellipse at 50% 100%, rgba(64, 224, 208, 0.3), transparent 60%), radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(64, 224, 208, 0.35));
+    animation: prime-page-pulse 2.1s ease-out forwards;
+}
+.prime-page-pulse::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%;
+    background: linear-gradient(90deg, transparent, rgba(184, 255, 246, 0.25), transparent); transform: skewX(-20deg);
+    animation: prime-page-sweep 1.2s ease-in-out 0.1s forwards;
+}
+@keyframes prime-page-pulse { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes prime-page-sweep { to { left: 120%; } }
+@media (prefers-reduced-motion: reduce) { .pc-finisher .arena-canvas { animation: none; } .prime-page-pulse { display: none; } }
+
+/* Pepf Prime name, lettered: each letter waves and shimmers a beat after the one before it. */
+.nc-name_pepf.lettered { background: none; animation: none; color: transparent;
+    filter: drop-shadow(0 1px 0 #021c1c) drop-shadow(0 0 4px rgba(64, 224, 208, 0.65)); }
+.nc-name_pepf.lettered .pl {
+    display: inline-block;
+    background-image: linear-gradient(90deg, #40e0d0, #7af0e0, #ffffff, #b8fff6, #40e0d0);
+    background-size: 400% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    animation: pepf-flow 2.4s linear infinite, pepf-wave 1.6s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.18s), calc(var(--i) * -0.13s);
+}
+@keyframes pepf-wave {
+    0%, 100% { translate: 0 0; scale: 1; }
+    25% { translate: 0 -0.14em; scale: 1.08; }
+    50% { translate: 0 0; scale: 1; }
+    75% { translate: 0 0.06em; scale: 0.97; }
+}
+.chat-log li.prime-msg b.lettered { display: inline-block; }
+@media (prefers-reduced-motion: reduce) { .nc-name_pepf.lettered .pl { animation: pepf-flow 2.4s linear infinite; } }
+
+/* The arena frame of a fight with Pepf Prime in it: a flowing gradient rim and glowing corners. */
+.arena-stage.prime-stage {
+    border: 2px solid transparent;
+    background: linear-gradient(#05020f, #05020f) padding-box, conic-gradient(from var(--pa), #40e0d0, #ffffff, #0a8f86, #b8fff6, #7a6aff, #40e0d0) border-box;
+    box-shadow: 0 0 0 4px #031414, 0 0 30px rgba(64, 224, 208, 0.45), 0 0 80px rgba(64, 224, 208, 0.15), 0 20px 50px rgba(0, 0, 0, 0.6);
+    animation: pepf-spin 4s linear infinite;
+}

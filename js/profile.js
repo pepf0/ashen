@@ -32,7 +32,7 @@ export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
 
 /** Whether the player wears any piece of the admin set "Pepf Prime" (rows, podiums and profiles get extra flair). */
 export { isPrime } from "./prime.js";
-import { isPrime, holo } from "./prime.js";
+import { isPrime, holo, primeLetters } from "./prime.js";
 
 /** A title; title cosmetics get their own style class (e.g. the admin set). */
 export function titleEl(title) {
@@ -43,7 +43,9 @@ export function titleEl(title) {
 /** The name in its color, wrapped in its name border (if any). The border is a separate element so its
  * background can't hide gradient (text-clipped) name colors. */
 export function nameNode(name, appearance, cls = "") {
-    const text = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "") + (cls ? ` ${cls}` : ""), text: name });
+    const lettered = appearance?.nameColor === "name_pepf";
+    const text = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "") + (lettered ? " lettered" : "") + (cls ? ` ${cls}` : ""),
+        "aria-label": lettered ? name : undefined }, lettered ? primeLetters(name) : name);
     const border = appearance?.nameBorder;
     return border && border !== "nb_none" ? el("span", { class: `nb ${border}` }, text) : text;
 }

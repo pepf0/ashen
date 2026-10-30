@@ -14,6 +14,14 @@ const CY = GROUND - 30; // height the item clusters hover at
 const RANGED = { "generic.bow": "arrow", "pepf.guitar": "note" };
 const LASH = { "z7fox.whip": true };
 
+/** Friends' signature sets: a lighter aura in their pack color and their own victory effect. */
+const SIG = {
+    z7fox: { pal: ["#e0407a", "#ff9ac0", "#ff4e6a", "#ffffff"], word: "RED CARD!" },
+    ely7: { pal: ["#a8ff40", "#ffd166", "#fff2a0", "#ffffff"], word: "JACKPOT!" },
+    xxz: { pal: ["#8a6aff", "#b26bff", "#d8c8ff", "#ffffff"], word: "OVERLOAD!" }
+};
+const sigOf = appearance => appearance && Object.keys(SIG).find(k => Object.values(appearance).some(v => typeof v === "string" && v.endsWith(`_${k}`)));
+
 /** Pepf Prime palette (the admin set's aura, trails and cinematics). */
 const PRIME = ["#40e0d0", "#7af0e0", "#b8fff6", "#ffffff"];
 
@@ -87,11 +95,15 @@ export class Arena {
                 ranged: RANGED[weaponId] ?? null, lash: !!LASH[weaponId],
                 atk: -9, hit: -9, dodge: -9, cast: -9, castColor: "#fff", hop: -9, dead: -9, win: -9,
                 hp: 1, maxHp: 1, ghost: 1, shield: 0, stun: 0, invuln: 0, parry: false, windup: null, ult: 0, mods: [],
-                ashDone: false, prime: isPrime(info.appearance), primeIntro: false, primeNote: 0
+                ashDone: false, prime: isPrime(info.appearance), primeIntro: false, primeNote: 0,
+                sig: isPrime(info.appearance) ? null : SIG[sigOf(info.appearance)] ?? null
             };
         });
         // Pepf Prime entrance card (live fights and replays, not the menu demo).
         const star = this.f.find(f => f.prime);
+        this.primeSky = !!star;
+        root.classList.toggle("prime-stage", !!star && !silent);
+        this.meteors = [];
         if (star && !silent) {
             primeIntro(root, { name: star.info.name ?? "Pepf", kit: star.kit, title: star.info.appearance?.title }, star.side);
             this.sfx("primeIntro");
@@ -177,10 +189,17 @@ export class Arena {
         const out = [];
         const n = f.dyn.length;
         f.dyn.forEach((it, k) => {
+            if (f.prime) {
+                // Pepf Prime: a faster, precessing orbit, so the charms swing over and under like a gyroscope.
+                const a = t * 1.25 * f.dir + (k / Math.max(1, n)) * Math.PI * 2 + f.side, tilt = t * 0.6;
+                const y = Math.sin(a) * 9 * Math.cos(tilt) + Math.cos(a) * 7 * Math.sin(tilt);
+                out.push({ it, x: cx - f.dir * 8 + Math.cos(a) * 32, y: cy - 6 + y, size: 20 + Math.sin(a) * 4, a: Math.sin(t * 2.2 + k) * 0.25, depth: Math.sin(a) });
+                return;
+            }
             const a = t * 0.8 * f.dir + (k / Math.max(1, n)) * Math.PI * 2 + f.side;
             out.push({ it, x: cx - f.dir * 8 + Math.cos(a) * 30, y: cy - 6 + Math.sin(a) * 9, size: 20 + Math.sin(a) * 3, a: Math.sin(t * 1.5 + k) * 0.12, depth: Math.sin(a) });
         });
-        if (f.shirtItem) out.push({ it: f.shirtItem, x: cx - f.dir * 8, y: cy - 8 + Math.sin(t * 2 + 1) * 1, size: 32, a: 0, depth: 0 });
+        if (f.shirtItem) out.push({ it: f.shirtItem, x: cx - f.dir * 8, y: cy - 8 + Math.sin(t * 2 + 1) * (f.prime ? 2.5 : 1), size: 32, a: f.prime ? Math.sin(t * 1.7) * 0.07 : 0, depth: 0 });
         if (f.weaponItem) {
             const w = this.weaponPose(f, cx, cy, t);
             out.push({ it: f.weaponItem, x: w.x, y: w.y, size: 40, a: w.a, depth: 0.5, weapon: true });
@@ -284,6 +303,7 @@ export class Arena {
     }
 
     damage(ev, src, tgt) {
+        const num = (text, kind) => this.float(tgt, text, src?.prime ? `${kind} prime-dmg` : kind);
         const attack = ev.weaponAttack || ev.abilitySource === "lunge" || ev.abilitySource === "flurry";
         let delay = 0;
         if (attack && src) delay = this.attack(src, tgt, ev);
@@ -306,6 +326,12 @@ export class Arena {
                 return;
             }
             if (ev.missed) { this.float(tgt, "Miss", "dodge"); this.sfx("dodge"); return; }
+            if (ev.dodged && tgt?.prime) {
+                // Pepf Prime dodge: a blink of light, an echo left behind.
+                this.afterimage(tgt, "#40e0d0", 0.6);
+                this.ring(this.x(tgt), CY - 4, "#b8fff6", 30);
+                for (let k = 0; k < 16; k++) this.particle(this.x(tgt) + (this.rng() - 0.5) * 30, CY - 4 + (this.rng() - 0.5) * 26, (this.rng() - 0.5) * 40, -10 - this.rng() * 20, 0.5, PRIME[k % 4], 1, 0, true);
+            }
             if (ev.dodged) { tgt.dodge = this.now; this.float(tgt, "Dodge", "dodge"); this.afterimage(tgt); this.sfx("dodge"); return; }
             const dmg = Math.round(ev.damage * 10) / 10;
             if (ev.reflected) {
@@ -329,13 +355,13 @@ export class Arena {
                 this.debris(this.x(tgt));
                 this.flashHit(tgt, 5);
             } else if (ev.critMultiplier) {
-                this.float(tgt, `${dmg}!`, "crit");
+                num(`${dmg}!`, "crit");
                 this.sfx("crit");
                 this.hitStop(0.07);
                 this.sparks(this.x(tgt), this.headY(tgt) + 16, "#ff9f43", 18);
                 this.flashHit(tgt, 3);
             } else {
-                this.float(tgt, `${dmg}`, "hit");
+                num(`${dmg}`, "hit");
                 this.sfx("hit");
                 this.sparks(this.x(tgt), this.headY(tgt) + 18, src?.color ?? "#ffffff", 6);
                 this.flashHit(tgt, 0.8);
@@ -366,8 +392,8 @@ export class Arena {
         if (effectsLevel() > 0) this.shake = Math.max(this.shake, shake);
     }
 
-    afterimage(f) {
-        this.particles.push({ ghost: this.layout(f, this.now), life: 0.35, max: 0.35 });
+    afterimage(f, tint = null, life = 0.35) {
+        this.particles.push({ ghost: this.layout(f, this.now), life, max: life, tint, dir: f.dir });
     }
 
     // ---------------- effects ----------------
@@ -377,8 +403,9 @@ export class Arena {
         const node = document.createElement("div");
         node.className = `afloat ${kind}`;
         node.textContent = text;
+        if (kind === "sig" && f.sig) node.style.setProperty("--sig", f.sig.pal[0]);
         const x = (this.x(f) + (this.rng() - 0.5) * 22) / W * 100;
-        const lift = { prime: 30, ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
+        const lift = { "hit prime-dmg": 4, prime: 30, sig: 26, ability: 16, ult: 18, money: -30, heal: -18, invuln: -10 }[kind] ?? 2;
         const y = (this.headY(f) - lift) / H * 100;
         node.style.left = `${x}%`;
         node.style.top = `${y}%`;
@@ -424,13 +451,14 @@ export class Arena {
 
     bubble(f, color) { this.rings.push({ x: this.x(f), y: CY - 4, color, radius: 34, bubble: true, t0: this.now, dur: 0.35 }); }
 
-    bolt(x) {
+    bolt(x, color = "#fff7a8") {
         const pts = [];
         let bx = x + (this.rng() - 0.5) * 20;
         for (let y = 0; y <= GROUND - 20; y += 8) { pts.push([bx, y]); bx += (this.rng() - 0.5) * 12; }
         pts.push([x, GROUND - 20]);
-        this.bolts.push({ pts, t0: this.now, dur: 0.35, color: "#fff7a8" });
+        this.bolts.push({ pts, t0: this.now, dur: 0.35, color });
         this.skyFlash = 1;
+        this.skyRgb = color === "#fff7a8" ? null : "190, 170, 255";
         if (effectsLevel() > 0) this.shake = Math.max(this.shake, 4);
     }
 
@@ -458,6 +486,18 @@ export class Arena {
             if (winner === -1 || f.i !== winner) f.dead = this.now;
             else f.win = this.now + 0.4;
         });
+        if (winner >= 0 && this.f[winner].prime && !this.silent && effectsLevel() > 0) {
+            // Finisher: slow motion, the camera punches in on the fallen side with a chromatic split.
+            const loser = this.f[1 - winner];
+            this.root.style.setProperty("--fx", `${(this.x(loser) / W) * 100}%`);
+            this.root.classList.remove("pc-finisher");
+            void this.root.offsetWidth;
+            this.root.classList.add("pc-finisher");
+            setTimeout(() => this.root.classList.remove("pc-finisher"), 1300);
+            this.hitStop(0.5);
+            this.stars.push({ x: this.x(loser), y: CY - 4, t0: this.now, dur: 0.8, r: 50 });
+            this.sfx("cutin");
+        }
         if (winner >= 0) {
             const w = this.f[winner];
             this.later(0.6, () => this.victoryFx(w));
@@ -502,6 +542,41 @@ export class Arena {
             this.flashEl.classList.remove("on");
             void this.flashEl.offsetWidth;
             this.flashEl.classList.add("on");
+            return;
+        }
+        if (effect === "victory_z7fox") {
+            // Red Card: a cross of crimson light, a falling red card and magenta embers.
+            const pal = SIG.z7fox.pal;
+            this.float(f, SIG.z7fox.word, "sig");
+            this.ring(x, CY, "#ff4e6a", 60); this.ring(x, GROUND - 2, "#e0407a", 50, true);
+            for (let k = 0; k < 40; k++) {
+                const arm = k % 4, d = 10 + (k >> 2) * 6;
+                const [vx, vy] = [[1, 0], [-1, 0], [0, 1], [0, -1]][arm];
+                this.particle(x, CY - 6, vx * d * 2.2, vy * d * 1.6, 0.9, pal[k % 4], 1, 0, true);
+            }
+            this.projectiles.push({ kind: "card", x0: x + 30, y0: -12, x1: x - 6, y1: CY - 20, t0: this.now, dur: 0.7, dir: 1, color: "#ff2a3a" });
+            for (let k = 0; k < 30; k++) this.particle(x + (this.rng() - 0.5) * 110, GROUND, (this.rng() - 0.5) * 10, -30 - this.rng() * 40, 1.6, pal[k % 4], 1, 0, true);
+            this.sfx("crit");
+            return;
+        }
+        if (effect === "victory_ely7") {
+            // Jackpot: coins fountain out and lucky clovers rain down.
+            const pal = SIG.ely7.pal;
+            this.float(f, SIG.ely7.word, "sig");
+            for (let k = 0; k < 4; k++) this.later(k * 0.15, () => { this.coins(f); this.coins(f); this.sfx("coin"); });
+            for (let k = 0; k < 36; k++) this.particle(x + (this.rng() - 0.5) * 140, -this.rng() * 30, (this.rng() - 0.5) * 12, 30 + this.rng() * 30, 2.4, k % 3 ? "#a8ff40" : "#2e6a0a", 2, 0);
+            for (let k = 0; k < 24; k++) { const a = (k / 24) * Math.PI * 2; this.particle(x, CY, Math.cos(a) * 55, Math.sin(a) * 40, 0.8, pal[k % 4], 1, 0, true); }
+            this.ring(x, CY, "#ffd166", 56);
+            return;
+        }
+        if (effect === "victory_xxz") {
+            // Overload: violet lightning strikes around the winner and runes spiral up.
+            const pal = SIG.xxz.pal;
+            this.float(f, SIG.xxz.word, "sig");
+            this.bolt(x - 24, "#d8c8ff"); this.later(0.18, () => this.bolt(x + 22, "#b26bff")); this.later(0.36, () => this.bolt(x, "#ffffff"));
+            this.sfx("lightning");
+            for (let r = 0; r < 3; r++) this.later(r * 0.15, () => this.ring(x, GROUND - 2, pal[r], 40 + r * 18, true));
+            for (let k = 0; k < 40; k++) { const a = (k / 40) * Math.PI * 6; this.later(k * 0.02, () => this.particle(x + Math.cos(a) * 26, GROUND - k * 1.6, -Math.sin(a) * 20, -20, 1, pal[k % 4], 1, 0, true)); }
             return;
         }
         if (effect === "victory_meteor") {
@@ -576,12 +651,14 @@ export class Arena {
         ctx.drawImage(this.bg.canvas, 0, 0);
         this.bg.animate?.(ctx, t, dt, this);
         if (this.skyFlash > 0) {
-            ctx.fillStyle = `rgba(255, 250, 220, ${this.skyFlash * 0.45})`;
+            ctx.fillStyle = `rgba(${this.skyRgb ?? "255, 250, 220"}, ${this.skyFlash * 0.45})`;
             ctx.fillRect(0, 0, W, H);
             this.skyFlash = Math.max(0, this.skyFlash - dt * 3);
         }
 
+        if (this.primeSky && effectsLevel() > 0) this.drawAurora(ctx, t, dt);
         for (const f of this.f) this.drawUnder(ctx, f, t);
+        this.drawEchoes(ctx);
         for (const f of this.f) this.drawFighter(ctx, f, t);
         this.drawProjectiles(ctx, t);
         this.drawRings(ctx, t);
@@ -613,6 +690,7 @@ export class Arena {
         ctx.fill();
         if (f.dead >= 0) return;
         if (f.prime) this.drawPrime(ctx, f, t, x);
+        else if (f.sig) this.drawSig(ctx, f, t, x);
         // Kit rune circle: slowly turning ticks in the kit's color, brighter with ult charge.
         const glow = 0.25 + Math.min(1, f.ult) * 0.35 + (f.ult >= 1 ? Math.sin(t * 6) * 0.2 : 0);
         ctx.strokeStyle = f.color;
@@ -701,6 +779,16 @@ export class Arena {
             ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 4 + k);
             ctx.fillRect(px - 0.5, py - 0.5, k % 4 ? 1 : 2, 1);
         }
+        // Equalizer ring: bars dancing around the circle like a speaker, jumping on every hit.
+        f.beat = Math.max(0, (f.beat ?? 0) - 0.04);
+        for (let k = 0; k < 30; k++) {
+            const a = (k / 30) * Math.PI * 2;
+            const [px, py] = pt(a, R * 1.12);
+            const h = 1.5 + Math.abs(Math.sin(t * 5 + k * 0.9) * Math.sin(t * 2.1 + k * 0.4)) * (5 + f.beat * 10);
+            ctx.globalAlpha = 0.35 + 0.4 * (Math.sin(a) > 0 ? 1 : 0.5);
+            ctx.fillStyle = PRIME[k % 4];
+            ctx.fillRect(px - 0.5, py - h, 1, h);
+        }
         ctx.globalAlpha = 1;
         ctx.lineWidth = 1;
         ctx.restore();
@@ -723,6 +811,31 @@ export class Arena {
             if (near) { ctx.fillRect(Math.round(sx) - 1, Math.round(sy), 3, 1); ctx.fillRect(Math.round(sx), Math.round(sy) - 1, 1, 3); }
             if (rich && this.rng() < 0.5) this.particle(sx, sy, 0, 0, 0.4, PRIME[(k + 1) % 4], 1, 0, true);
         }
+        // Echoes: a turquoise afterimage peels off the cluster every half second.
+        if (rich && t > (f.primeEcho ?? 0)) { f.primeEcho = t + 0.5; this.afterimage(f, "#40e0d0", 0.45); }
+        // Electric arcs flicker from the cluster out to the orbiting stars.
+        if (rich && this.rng() < 0.12) {
+            const a = t * 1.6 + Math.floor(this.rng() * 3) * (Math.PI * 2 / 3);
+            const ex = x + Math.cos(a) * 34, ey = CY - 4 + oy + Math.sin(a) * 12;
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            ctx.strokeStyle = "rgba(184, 255, 246, 0.85)";
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x, CY - 4 + oy);
+            for (let s = 1; s < 5; s++) ctx.lineTo(lerp(x, ex, s / 5) + (this.rng() - 0.5) * 6, lerp(CY - 4 + oy, ey, s / 5) + (this.rng() - 0.5) * 6);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+            ctx.restore();
+        }
+        // Awakening: below 35% HP the aura flares with a heartbeat.
+        if (f.hp < 0.35 && t > (f.primeBeat ?? 0)) {
+            f.primeBeat = t + 0.85;
+            this.ring(x, CY - 4, "#ffffff", 44);
+            this.ring(x, GROUND, "#40e0d0", 50, true);
+            f.beat = 1.4;
+            for (let k = 0; k < (rich ? 14 : 5); k++) this.particle(x + (this.rng() - 0.5) * 40, GROUND - 2, (this.rng() - 0.5) * 8, -50 - this.rng() * 40, 0.8, PRIME[k % 4], 1, 0, true);
+        }
         // Notes drift up out of the cluster.
         if (t > f.primeNote) {
             f.primeNote = t + (rich ? 0.9 : 2) + this.rng() * 0.8;
@@ -732,6 +845,69 @@ export class Arena {
         // Motes rising through the light.
         if (this.rng() < (rich ? 0.45 : 0.1))
             this.particle(x + (this.rng() - 0.5) * 50, GROUND - 1, (this.rng() - 0.5) * 4, -12 - this.rng() * 14, 1.6, PRIME[Math.floor(this.rng() * 4)], 1, 0, true);
+    }
+
+    /** Pepf Prime sky: aurora curtains across the top of the arena and the occasional shooting star. */
+    drawAurora(ctx, t, dt) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const bands = [["64, 224, 208", 18, 0], ["122, 160, 255", 30, 1.7], ["184, 255, 246", 10, 3.1]];
+        for (const [rgb, base, ph] of bands) {
+            for (let x = 0; x < W; x += 2) {
+                const y = base + Math.sin(x * 0.018 + t * 0.45 + ph) * 7 + Math.sin(x * 0.051 - t * 0.8 + ph) * 3;
+                const a = (0.06 + 0.05 * Math.sin(x * 0.03 + t * 1.3 + ph)) * (0.6 + 0.4 * Math.sin(t * 0.7 + ph));
+                if (a <= 0) continue;
+                // Stepped falloff instead of a gradient per strip (cheap enough for every frame).
+                ctx.fillStyle = `rgba(${rgb}, ${a * 0.5})`; ctx.fillRect(x, y - 3, 2, 3);
+                ctx.fillStyle = `rgba(${rgb}, ${a})`; ctx.fillRect(x, y, 2, 6);
+                ctx.fillStyle = `rgba(${rgb}, ${a * 0.55})`; ctx.fillRect(x, y + 6, 2, 8);
+                ctx.fillStyle = `rgba(${rgb}, ${a * 0.25})`; ctx.fillRect(x, y + 14, 2, 10);
+            }
+        }
+        if (this.rng() < dt * 0.35) this.meteors.push({ x: 40 + this.rng() * (W - 80), y: -4, vx: -60 - this.rng() * 40, vy: 40 + this.rng() * 20, life: 0.7 });
+        this.meteors = this.meteors.filter(m => (m.life -= dt) > 0);
+        for (const m of this.meteors) {
+            m.x += m.vx * dt; m.y += m.vy * dt;
+            const g = ctx.createLinearGradient(m.x, m.y, m.x - m.vx * 0.18, m.y - m.vy * 0.18);
+            g.addColorStop(0, `rgba(255, 255, 255, ${m.life})`);
+            g.addColorStop(1, "rgba(64, 224, 208, 0)");
+            ctx.strokeStyle = g;
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x - m.vx * 0.18, m.y - m.vy * 0.18); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    /** Tinted echoes (Pepf Prime): drift back and up, fading in then out, behind the real items. */
+    drawEchoes(ctx) {
+        for (const p of this.particles) {
+            if (!p.ghost || !p.tint) continue;
+            const k = 1 - p.life / p.max;
+            for (const g of p.ghost)
+                this.drawItem(ctx, { ...g, x: g.x - p.dir * (4 + k * 14), y: g.y - k * 4 }, this.now,
+                    { alpha: Math.sin(k * Math.PI) * 0.45, f: g.weapon ? this.f.find(f => f.weaponItem === g.it) : null, tint: p.tint });
+        }
+    }
+
+    /** Signature aura: a glowing ring in the friend's color and motes rising from it. */
+    drawSig(ctx, f, t, x) {
+        const [c0, c1] = f.sig.pal;
+        const pulse = 0.5 + Math.sin(t * 2.4) * 0.5;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const pool = ctx.createRadialGradient(x, GROUND, 1, x, GROUND, 36);
+        pool.addColorStop(0, c0 + "55");
+        pool.addColorStop(1, c0 + "00");
+        ctx.fillStyle = pool;
+        ctx.translate(x, GROUND); ctx.scale(1, 0.22); ctx.translate(-x, -GROUND);
+        ctx.fillRect(x - 36, GROUND - 36, 72, 72);
+        ctx.restore();
+        ctx.strokeStyle = c1;
+        ctx.globalAlpha = 0.45 + pulse * 0.35;
+        ctx.beginPath(); ctx.ellipse(x, GROUND, 28 + pulse * 2, 5 + pulse * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+        if (this.rng() < (effectsLevel() > 0 ? 0.25 : 0.06))
+            this.particle(x + (this.rng() - 0.5) * 44, GROUND - 1, 0, -14 - this.rng() * 10, 1.3, f.sig.pal[Math.floor(this.rng() * 4)], 1, 0, true);
     }
 
     /** Ribbon of light behind a Pepf Prime weapon (additive, fades along its length). */
@@ -760,6 +936,8 @@ export class Arena {
     /** A Pepf Prime hit: a shockwave, a star flash and glowing shards (bigger on crits). */
     primeImpact(tgt, big) {
         if (!tgt) return;
+        const me = this.f[1 - tgt.i];
+        if (me) me.beat = Math.min(1.6, (me.beat ?? 0) + (big ? 1 : 0.5));
         const x = this.x(tgt), y = this.headY(tgt) + 16;
         this.ring(x, y, big ? "#ffffff" : "#7af0e0", big ? 34 : 20);
         if (big) { this.ring(x, GROUND - 2, "#40e0d0", 40, true); this.shake = Math.max(this.shake, 3); }
@@ -841,7 +1019,7 @@ export class Arena {
     }
 
     /** One floating item: soft glow in its pack color, a pop when its effect fires, white on hits. */
-    drawItem(ctx, p, t, { alpha = 1, flash = false, f }) {
+    drawItem(ctx, p, t, { alpha = 1, flash = false, f, tint = null }) {
         const it = p.it;
         const img = p.weapon && f?.skin ? (skinnedCanvas(it.id, f.skin) ?? it.img) : it.img;
         if (!img || (img instanceof HTMLImageElement && (!img.complete || !img.naturalWidth))) return;
@@ -853,6 +1031,15 @@ export class Arena {
         ctx.translate(p.x, p.y);
         ctx.rotate(p.a ?? 0);
         if (p.weapon && f && f.dir < 0) ctx.scale(-1, 1);
+        if (tint) {
+            // Echo: a flat silhouette in one color (Pepf Prime afterimages).
+            ctx.globalCompositeOperation = "lighter";
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(tintOf(img, tint), -size / 2, -size / 2, size, size);
+            ctx.imageSmoothingEnabled = false;
+            ctx.restore();
+            return;
+        }
         // Pack-colored aura behind the item.
         const aura = PACK_GLOW[data.items[it.id]?.pack] ?? "#e8e4ff";
         ctx.globalAlpha = alpha * (0.16 + Math.sin(t * 3 + p.size) * 0.05);
@@ -978,6 +1165,16 @@ export class Arena {
                 continue;
             }
             const x = lerp(p.x0, p.x1, k), y = lerp(p.y0, p.y1, k) - Math.sin(k * Math.PI) * (p.kind === "note" ? 10 : 4);
+            if (p.kind === "card") {
+                ctx.save();
+                ctx.translate(Math.round(x), Math.round(y));
+                ctx.rotate(Math.sin(k * 9) * 0.4);
+                ctx.fillStyle = "#05020c"; ctx.fillRect(-5, -7, 10, 14);
+                ctx.fillStyle = p.color; ctx.fillRect(-4, -6, 8, 12);
+                ctx.fillStyle = "#ff8a9a"; ctx.fillRect(-4, -6, 8, 1);
+                ctx.restore();
+                continue;
+            }
             if (p.kind === "meteor") {
                 ctx.fillStyle = "#ffd166"; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 5, 5);
                 ctx.fillStyle = "#ff5a1a"; ctx.fillRect(Math.round(x) - 3, Math.round(y) - 1, 7, 3);
@@ -1039,6 +1236,7 @@ export class Arena {
             if (p.life <= 0) continue;
             keep.push(p);
             if (p.ghost) {
+                if (p.tint) continue; // drawn behind the clusters by drawEchoes
                 for (const g of p.ghost) this.drawItem(ctx, g, this.now, { alpha: (p.life / p.max) * 0.35, f: g.weapon ? this.f.find(f => f.weaponItem === g.it) : null });
                 continue;
             }

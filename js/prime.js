@@ -4,6 +4,11 @@ import { el } from "./data.js";
 import { portraitUrl } from "./sprites.js";
 import { effectsLevel } from "./fx.js";
 
+/** The Pepf Prime name color: every letter is its own span so it can wave and shimmer out of phase. */
+export function primeLetters(name) {
+    return [...name].map((c, i) => el("span", { class: "pl", style: `--i:${i}`, text: c }));
+}
+
 /** Wearing any piece of the set. */
 export const isPrime = appearance => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith("_pepf"));
 

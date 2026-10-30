@@ -360,7 +360,26 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     ultimate's name when they use R, and an "ENCORE" title card when they
     win, plus light shafts, a turning magic circle, glowing weapon trails and
     lens-flare impacts. Their profile banner and podium portrait tilt with a
-    holographic foil sheen under the mouse.
+    holographic foil sheen under the mouse. On top of that: aurora curtains
+    and shooting stars over the arena, a glowing rim around the arena, an
+    equalizer ring that jumps on every hit, charms on a gyroscope orbit,
+    turquoise echoes trailing the items, electric arcs, a blink when dodging,
+    an "awakening" heartbeat below 35% HP, turquoise damage numbers, a
+    slow-motion finisher zoom, a turquoise countdown and HP bar, chat messages
+    in Pepf colors, and a name whose letters wave one after another.
+  - **Signature sets** (only for that player's account, hidden from everyone
+    else; listed by username under `unlock.users` in cosmetics.json): each
+    has a name color, name border, title, portrait border, fighter frame,
+    weapon skin, victory effect and a glowing aura in fights.
+    - **Z7FOX** (crimson/magenta, crosses): Crimson Fox, Fox Cross,
+      "The Otherworldly", Crimson Halo, Magenta Rush, Fox Magenta and the
+      Red Card victory.
+    - **Ely7** (lime/gold, clovers): Fortune, Clover Crown,
+      "Fortune's Favorite", Four Leaf, Celestial Luck, Lucky Clover and the
+      Jackpot victory.
+    - **xXZweiradXx** (arcane violet, runes): Arcane Might, Runebound,
+      "The Mighty", Noel's Sigil, Arcane Surge, Arcane Violet and the
+      Overload victory.
 - Click any player name to see their profile.
 
 ## Fights on screen

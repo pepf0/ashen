@@ -14,7 +14,14 @@ public class CosmeticUnlock
     public string? Achievement { get; set; }
     /// <summary>Only accounts listed in ASHEN_ADMINS have it.</summary>
     public bool Admin { get; set; }
+    /// <summary>Signature sets: only these usernames have it (case-insensitive).</summary>
+    public List<string> Users { get; set; } = new();
+    /// <summary>Admin and signature cosmetics are hidden from everyone who can't have them.</summary>
+    public bool Exclusive => Admin || Users.Count > 0;
 }
+
+/// <summary>Who is asking, for admin-only and signature cosmetics.</summary>
+public record CosmeticOwner(bool Admin, string Username);
 
 /// <summary>Purely visual reward (name color, name border, portrait border, fighter frame, victory effect,
 /// generic weapon skin or title). No gameplay effect.</summary>
@@ -144,8 +151,13 @@ public static class Progression
         return checks.Where(kv => kv.Value).Select(kv => kv.Key);
     }
 
-    /// <summary>Admin-only cosmetics (unlock.admin) are never unlocked by levels or achievements.</summary>
-    public static bool Unlocked(Cosmetic c, int level, ISet<string> achievements, bool admin = false) =>
-        c.Unlock.Admin ? admin
+    /// <summary>Admin-only (unlock.admin) and signature (unlock.users) cosmetics are never unlocked by levels or achievements.</summary>
+    public static bool Unlocked(Cosmetic c, int level, ISet<string> achievements, CosmeticOwner? owner = null) =>
+        c.Unlock.Exclusive ? Owns(c, owner)
             : (c.Unlock.Level is int l && level >= l) || (c.Unlock.Achievement is string a && achievements.Contains(a));
+
+    /// <summary>Whether an exclusive cosmetic belongs to this account.</summary>
+    public static bool Owns(Cosmetic c, CosmeticOwner? owner) =>
+        owner is not null && ((c.Unlock.Admin && owner.Admin)
+            || c.Unlock.Users.Any(u => string.Equals(u, owner.Username, StringComparison.OrdinalIgnoreCase)));
 }

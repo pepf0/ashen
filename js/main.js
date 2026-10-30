@@ -190,7 +190,7 @@ app.socket
         setTab("menu");
     });
 
-initChat(text => app.socket.send("chat", { text }));
+initChat(text => app.socket.send("chat", { text }), id => app.lobby?.members?.find(m => m.id === id)?.appearance);
 renderKeybindSettings(document.getElementById("keybindSettings"));
 onKeybindsChanged(() => { if (app.lobby && !app.lobby.inMatch) app.lobbyView.render(app.lobby); });
 

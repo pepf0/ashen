@@ -1,11 +1,15 @@
 // Lobby + match chat. The same messages are rendered into every [data-chat] panel.
 import { el } from "./data.js";
+import { isPrime, primeLetters } from "./prime.js";
 
 let messages = [];
 let sendFn = () => false;
+let appearanceOf = () => null;
 
-export function initChat(send) {
+/** lookup: userId -> appearance, so Pepf Prime messages get their own style. */
+export function initChat(send, lookup) {
     sendFn = send;
+    if (lookup) appearanceOf = lookup;
     for (const panel of document.querySelectorAll("[data-chat]")) {
         const log = el("ul", { class: "chat-log" });
         const input = el("input", { type: "text", maxlength: "200", placeholder: "Say something" });
@@ -34,7 +38,9 @@ function render() {
         const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 30;
         log.replaceChildren(...messages.map(m => m.userId === 0
             ? el("li", { class: "system", text: m.text })
-            : el("li", {}, el("b", { text: m.name }), " ", m.text)));
+            : isPrime(appearanceOf(m.userId))
+                ? el("li", { class: "prime-msg" }, el("b", { class: "nc-name_pepf lettered" }, primeLetters(m.name)), " ", el("span", { text: m.text }))
+                : el("li", {}, el("b", { text: m.name }), " ", m.text)));
         if (atBottom) log.scrollTop = log.scrollHeight;
     }
 }
