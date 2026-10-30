@@ -355,6 +355,12 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     match sidebar and standings, light rays and a turquoise podium, a
     deep-sea profile banner, and a "has arrived" announcement with a chime
     when they join a lobby. The menu's demo duel sometimes shows the set off.
+    In fights the set also brings cinematics: a letterboxed entrance card
+    ("enters the arena"), a fighting-game cut-in with the portrait and the
+    ultimate's name when they use R, and an "ENCORE" title card when they
+    win, plus light shafts, a turning magic circle, glowing weapon trails and
+    lens-flare impacts. Their profile banner and podium portrait tilt with a
+    holographic foil sheen under the mouse.
 - Click any player name to see their profile.
 
 ## Fights on screen

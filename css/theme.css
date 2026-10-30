@@ -1263,3 +1263,172 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
     .member-list li.prime::after, .player-list li.prime::after, .profile-head.prime::before, .profile-head.prime::after,
     .fighter.frame-frame_pepf::before, .fighter.frame-frame_pepf::after { animation: none; }
 }
+
+/* ==========================================================================
+   Pepf Prime cinematics (js/prime.js): entrance card, ultimate cut-in, victory card
+   ========================================================================== */
+.prime-cine { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; font-family: var(--font-pixel); }
+.pc-bar { position: absolute; left: 0; right: 0; height: 11%; background: #000; z-index: 3; }
+.pc-bar.top { top: 0; transform: translateY(-100%); animation: pc-bar-top 2.5s cubic-bezier(.2, .8, .2, 1) forwards; }
+.pc-bar.bottom { bottom: 0; transform: translateY(100%); animation: pc-bar-bottom 2.5s cubic-bezier(.2, .8, .2, 1) forwards; }
+.pc-bar::after { content: ""; position: absolute; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, #40e0d0, #fff, #40e0d0, transparent); box-shadow: 0 0 8px #40e0d0; }
+.pc-bar.top::after { bottom: 0; }
+.pc-bar.bottom::after { top: 0; }
+@keyframes pc-bar-top { 0% { transform: translateY(-100%); } 12%, 85% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+@keyframes pc-bar-bottom { 0% { transform: translateY(100%); } 12%, 85% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+
+.pc-veil { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 55%, rgba(4, 40, 40, 0.35), rgba(0, 0, 0, 0.6)); opacity: 0; animation: pc-fade 2.5s ease forwards; }
+@keyframes pc-fade { 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+.pc-streak {
+    position: absolute; top: 50%; left: -60%; width: 60%; height: 3px; margin-top: -1px; z-index: 2;
+    background: linear-gradient(90deg, transparent, rgba(64, 224, 208, 0.6), #fff);
+    box-shadow: 0 0 18px #40e0d0, 0 0 40px rgba(64, 224, 208, 0.6);
+    animation: pc-streak 0.55s cubic-bezier(.6, 0, .2, 1) 0.15s forwards;
+}
+@keyframes pc-streak { to { left: 110%; } }
+
+.pc-shards { position: absolute; left: 50%; top: 50%; width: 0; height: 0; z-index: 2; }
+.pc-shards i {
+    position: absolute; left: 0; top: 0; width: 2px; height: 26px; margin-left: -1px;
+    background: linear-gradient(180deg, #fff, #40e0d0 40%, transparent);
+    box-shadow: 0 0 6px #40e0d0;
+    transform: rotate(var(--a)) translateY(0) scaleY(0.2); opacity: 0;
+    animation: pc-shard 0.9s cubic-bezier(.1, .7, .2, 1) calc(0.55s + var(--d)) forwards;
+}
+@keyframes pc-shard { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scaleY(0.2); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--l) * 4)) scaleY(1); } }
+
+.pc-card {
+    position: absolute; top: 50%; left: 50%; z-index: 4;
+    display: flex; align-items: center; gap: 4%;
+    width: 78%; padding: 1.6% 4%;
+    transform: translate(-50%, -50%) skewX(-12deg); opacity: 0;
+    background:
+        linear-gradient(90deg, transparent, rgba(4, 36, 38, 0.92) 12%, rgba(6, 22, 40, 0.92) 88%, transparent),
+        repeating-linear-gradient(90deg, rgba(64, 224, 208, 0.06) 0 2px, transparent 2px 6px);
+    border-top: 2px solid rgba(184, 255, 246, 0.8); border-bottom: 2px solid rgba(64, 224, 208, 0.8);
+    box-shadow: 0 0 40px rgba(64, 224, 208, 0.35);
+    animation: pc-card 2.5s cubic-bezier(.2, .9, .1, 1) 0.3s forwards;
+}
+.side-1 .pc-card { animation-name: pc-card-r; }
+@keyframes pc-card { 0% { opacity: 0; transform: translate(-130%, -50%) skewX(-12deg); } 15% { opacity: 1; transform: translate(-50%, -50%) skewX(-12deg); } 75% { opacity: 1; transform: translate(-46%, -50%) skewX(-12deg); } 100% { opacity: 0; transform: translate(60%, -50%) skewX(-12deg); } }
+@keyframes pc-card-r { 0% { opacity: 0; transform: translate(30%, -50%) skewX(12deg); } 15% { opacity: 1; transform: translate(-50%, -50%) skewX(12deg); } 75% { opacity: 1; transform: translate(-54%, -50%) skewX(12deg); } 100% { opacity: 0; transform: translate(-160%, -50%) skewX(12deg); } }
+.pc-card > * { transform: skewX(12deg); }
+.side-1 .pc-card > * { transform: skewX(-12deg); }
+.pc-portrait {
+    flex: none; width: 15%; aspect-ratio: 1; display: grid; place-items: end center; overflow: hidden;
+    border: 2px solid transparent; border-radius: 6px;
+    background: radial-gradient(circle at 50% 75%, rgba(64, 224, 208, 0.55), transparent 65%) padding-box, #04161c padding-box,
+        conic-gradient(from var(--pa), #40e0d0, #ffffff, #0a8f86, #b8fff6, #40e0d0) border-box;
+    animation: pepf-spin 2s linear infinite;
+    box-shadow: 0 0 22px rgba(64, 224, 208, 0.7);
+}
+.pc-portrait img { width: 90%; image-rendering: pixelated; }
+.pc-text { min-width: 0; }
+.pc-sub { font-size: clamp(0.6rem, 1.4vw, 1rem); letter-spacing: 0.4em; color: #b8fff6; text-shadow: 0 0 8px #40e0d0; text-transform: uppercase; }
+.pc-name {
+    position: relative; font-size: clamp(2rem, 7vw, 5.2rem); line-height: 1; font-weight: 700; letter-spacing: 0.04em;
+    background: linear-gradient(90deg, #0a8f86, #40e0d0, #b8fff6, #ffffff, #7af0e0, #40e0d0, #0a8f86);
+    background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    animation: pepf-flow 2s linear infinite;
+    filter: drop-shadow(0 0 12px rgba(64, 224, 208, 0.8)) drop-shadow(0 4px 0 #021c1c);
+}
+/* Chromatic split that snaps into place. */
+.pc-name::before, .pc-name::after {
+    content: attr(data-text); position: absolute; inset: 0; -webkit-text-fill-color: currentColor; mix-blend-mode: screen; opacity: 0.8;
+    animation: pc-split 0.6s steps(6) 0.45s both;
+}
+.pc-name::before { color: #ff3c8a; }
+.pc-name::after { color: #3cf0ff; animation-direction: reverse; }
+@keyframes pc-split { 0% { transform: translate(-8px, 0); opacity: 0.9; } 30% { transform: translate(5px, -2px); } 60% { transform: translate(-3px, 2px); } 100% { transform: translate(0, 0); opacity: 0; } }
+.pc-tag { font-size: clamp(0.55rem, 1.1vw, 0.85rem); letter-spacing: 0.3em; color: rgba(184, 255, 246, 0.75); text-transform: uppercase; margin-top: 2%; }
+
+/* Ultimate cut-in */
+.pc-dim { position: absolute; inset: 0; background: rgba(0, 4, 8, 0.65); animation: pc-dim 1.35s ease forwards; }
+@keyframes pc-dim { 0% { opacity: 0; } 12%, 75% { opacity: 1; } 100% { opacity: 0; } }
+.pc-band {
+    position: absolute; left: -10%; right: -10%; top: 28%; height: 44%;
+    display: flex; align-items: center; gap: 3%; padding: 0 16%;
+    background: linear-gradient(90deg, #031818, #0a5a56 30%, #40e0d0 50%, #0a5a56 70%, #031818);
+    border-top: 3px solid #fff; border-bottom: 3px solid #b8fff6;
+    box-shadow: 0 0 40px rgba(64, 224, 208, 0.7);
+    transform: skewY(-6deg) translateX(-120%);
+    animation: pc-band 1.35s cubic-bezier(.2, .9, .1, 1) forwards;
+    overflow: hidden;
+}
+.side-1 .pc-band { flex-direction: row-reverse; transform: skewY(6deg) translateX(120%); animation-name: pc-band-r; }
+@keyframes pc-band { 0% { transform: skewY(-6deg) translateX(-120%); } 18% { transform: skewY(-6deg) translateX(0); } 78% { transform: skewY(-6deg) translateX(3%); } 100% { transform: skewY(-6deg) translateX(130%); } }
+@keyframes pc-band-r { 0% { transform: skewY(6deg) translateX(120%); } 18% { transform: skewY(6deg) translateX(0); } 78% { transform: skewY(6deg) translateX(-3%); } 100% { transform: skewY(6deg) translateX(-130%); } }
+.pc-speed {
+    position: absolute; inset: 0; opacity: 0.45;
+    background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255, 255, 255, 0.55) 18px 20px, transparent 20px 46px, rgba(255, 255, 255, 0.25) 46px 47px);
+    animation: pc-speed 0.25s linear infinite;
+}
+.side-1 .pc-speed { animation-direction: reverse; }
+@keyframes pc-speed { to { background-position: -94px 0; } }
+.pc-cut-portrait { position: relative; height: 140%; align-self: flex-end; image-rendering: pixelated; filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 30px #40e0d0); animation: pc-zoom 1.35s ease-out forwards; }
+.side-1 .pc-cut-portrait { transform: scaleX(-1); animation-name: pc-zoom-r; }
+@keyframes pc-zoom { from { scale: 1.25; } to { scale: 1; } }
+@keyframes pc-zoom-r { from { scale: 1.25; } to { scale: 1; } }
+.pc-cut-text { position: relative; }
+.side-1 .pc-cut-text { text-align: right; }
+.pc-cut-name { font-size: clamp(0.7rem, 1.6vw, 1.1rem); letter-spacing: 0.4em; color: #021c1c; text-transform: uppercase; font-weight: 700; }
+.pc-cut-ability {
+    position: relative; font-size: clamp(2.2rem, 8vw, 6rem); line-height: 1; font-weight: 700; font-style: italic; text-transform: uppercase;
+    color: #fff; -webkit-text-stroke: 2px #021c1c;
+    text-shadow: 4px 4px 0 #021c1c, 0 0 24px rgba(255, 255, 255, 0.9);
+    animation: pc-slam 1.35s cubic-bezier(.2, 1.4, .3, 1) forwards;
+}
+@keyframes pc-slam { 0% { transform: scale(2.4); opacity: 0; } 14% { transform: scale(1); opacity: 1; } 80% { transform: scale(1.04); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; } }
+.pc-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: pc-flash 1.35s ease forwards; mix-blend-mode: screen; }
+@keyframes pc-flash { 0%, 14% { opacity: 0; } 17% { opacity: 0.85; } 30%, 100% { opacity: 0; } }
+
+/* Victory card */
+.pc-rays {
+    position: absolute; left: 50%; top: 50%; width: 180%; aspect-ratio: 1; translate: -50% -50%;
+    background: repeating-conic-gradient(from 0deg, rgba(64, 224, 208, 0.22) 0 6deg, transparent 6deg 15deg);
+    -webkit-mask: radial-gradient(circle, #000 5%, transparent 55%); mask: radial-gradient(circle, #000 5%, transparent 55%);
+    opacity: 0; animation: pc-rays 3.1s ease forwards;
+}
+@keyframes pc-rays { 0% { opacity: 0; rotate: 0deg; scale: 0.4; } 15% { opacity: 1; scale: 1; } 80% { opacity: 1; } 100% { opacity: 0; rotate: 40deg; } }
+.pc-vic { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; text-align: center; z-index: 4; animation: pc-fade 3.1s ease forwards; }
+.pc-vic-word { display: flex; justify-content: center; gap: 0.05em; font-size: clamp(2.6rem, 10vw, 7.5rem); line-height: 1; font-weight: 700; }
+.pc-vic-word span {
+    display: inline-block;
+    background: linear-gradient(180deg, #ffffff 10%, #b8fff6 45%, #40e0d0 60%, #0a8f86 90%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 14px rgba(64, 224, 208, 0.9)) drop-shadow(0 5px 0 #021c1c);
+    transform: translateY(-140%) scale(1.6); opacity: 0;
+    animation: pc-letter 0.5s cubic-bezier(.2, 1.5, .4, 1) calc(0.25s + var(--k) * 0.07s) forwards, pc-bob 1.2s ease-in-out calc(0.9s + var(--k) * 0.1s) infinite;
+}
+@keyframes pc-letter { to { transform: none; opacity: 1; } }
+@keyframes pc-bob { 50% { translate: 0 -6%; } }
+.pc-vic-sub { margin-top: 1%; font-size: clamp(0.65rem, 1.5vw, 1.05rem); letter-spacing: 0.45em; color: #d8fffa; text-shadow: 0 0 10px #40e0d0; text-transform: uppercase; opacity: 0; animation: pc-sub 0.6s ease 0.8s forwards; }
+@keyframes pc-sub { from { opacity: 0; letter-spacing: 1.2em; } to { opacity: 1; letter-spacing: 0.45em; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .prime-cine .pc-shards, .pc-speed, .pc-flash, .pc-rays { display: none; }
+}
+
+/* Holographic foil (js/prime.js holo): tilt toward the pointer, a sheen that follows it. */
+.holo { position: relative; transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s ease-out; transform-style: preserve-3d; }
+.holo-foil {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3;
+    background:
+        radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.35), transparent 40%),
+        linear-gradient(115deg, transparent 20%, rgba(64, 224, 208, 0.25) 35%, rgba(255, 120, 220, 0.18) 45%, rgba(120, 200, 255, 0.22) 55%, rgba(184, 255, 246, 0.25) 65%, transparent 80%);
+    background-size: 100% 100%, 250% 250%;
+    background-position: 0 0, var(--mx, 50%) var(--my, 50%);
+    mix-blend-mode: color-dodge;
+    opacity: 0.25;
+    transition: opacity 0.3s;
+    animation: holo-idle 6s ease-in-out infinite;
+}
+.holo.holo-on .holo-foil { opacity: 0.85; animation: none; }
+@keyframes holo-idle { 0%, 100% { background-position: 0 0, 0% 0%; } 50% { background-position: 0 0, 100% 100%; } }
+.member-list li.holo { transform: none; }
+@media (prefers-reduced-motion: reduce) { .holo { transform: none; } .holo-foil { animation: none; } }
+.pc-victory .pc-veil { animation-duration: 3.1s; }
+/* The podium bob uses translate so it doesn't fight the holo tilt (transform). */
+.podium-spot .portrait.holo { animation: idle-bob-t 1s steps(2) infinite, pepf-spin 2.6s linear infinite; }
+@keyframes idle-bob-t { 50% { translate: 0 -2px; } }

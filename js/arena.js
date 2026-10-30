@@ -4,6 +4,7 @@ import { KIT_COLORS, image } from "./sprites.js";
 import { data } from "./data.js";
 import { effectsLevel, sfx as playSfx } from "./fx.js";
 import { SKINS, skinApplies, skinnedCanvas } from "./skins.js";
+import { isPrime, primeIntro, primeCutIn, primeVictory } from "./prime.js";
 
 export const W = 320, H = 144, GROUND = 118;
 const RES = 3; // canvas pixels per arena pixel: backgrounds stay chunky, item art stays crisp
@@ -13,8 +14,7 @@ const CY = GROUND - 30; // height the item clusters hover at
 const RANGED = { "generic.bow": "arrow", "pepf.guitar": "note" };
 const LASH = { "z7fox.whip": true };
 
-/** Wearing any piece of the admin set "Pepf Prime" gives the item cluster its aura in fights. */
-const isPrime = appearance => !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith("_pepf"));
+/** Pepf Prime palette (the admin set's aura, trails and cinematics). */
 const PRIME = ["#40e0d0", "#7af0e0", "#b8fff6", "#ffffff"];
 
 const PACK_GLOW = { pepf: "#40e0d0", z7fox: "#e0407a", ely7: "#a8ff40", xxzweiradxx: "#8a6aff", generic: "#e8e4ff" };
@@ -62,6 +62,7 @@ export class Arena {
         this.particles = [];
         this.projectiles = [];
         this.rings = [];
+        this.stars = [];
         this.bolts = [];
         this.timers = [];
         this.shake = 0;
@@ -89,6 +90,12 @@ export class Arena {
                 ashDone: false, prime: isPrime(info.appearance), primeIntro: false, primeNote: 0
             };
         });
+        // Pepf Prime entrance card (live fights and replays, not the menu demo).
+        const star = this.f.find(f => f.prime);
+        if (star && !silent) {
+            primeIntro(root, { name: star.info.name ?? "Pepf", kit: star.kit, title: star.info.appearance?.title }, star.side);
+            this.sfx("primeIntro");
+        }
         this.start = performance.now();
         this.last = this.start;
         this.running = true;
@@ -259,7 +266,13 @@ export class Arena {
                 if (a?.ultimate) this.hitStop(0.12);
                 src.cast = this.now;
                 src.castColor = MOD_COLORS[ev.ability] ?? src.color;
-                if (a?.ultimate) this.ultFx(src, src.color);
+                if (a?.ultimate) this.ultFx(src, src.prime ? "#40e0d0" : src.color);
+                if (a?.ultimate && src.prime && !this.silent) {
+                    primeCutIn(this.root, { name: src.info.name ?? "Pepf", kit: src.kit }, a.name, src.side);
+                    this.hitStop(0.4);
+                    this.sfx("cutin");
+                    this.primeNova(src);
+                }
                 else this.ring(this.x(src), GROUND - 2, src.castColor, 22, true);
                 if (ev.ability === "shout") this.ring(this.x(src) + src.dir * 10, this.headY(src) + 10, "#ffffff", 40);
                 if (ev.ability === "hex" || ev.ability === "mark") { const t = this.f[1 - src.i]; this.ring(this.x(t), this.headY(t) + 8, src.castColor, 16); }
@@ -327,6 +340,7 @@ export class Arena {
                 this.sparks(this.x(tgt), this.headY(tgt) + 18, src?.color ?? "#ffffff", 6);
                 this.flashHit(tgt, 0.8);
             }
+            if (src?.prime && !ev.reflected) this.primeImpact(tgt, !!ev.critMultiplier || ev.abilitySource === "headshot");
             if (ev.bulwark > 0) { this.sfx("block"); this.bubble(tgt, "#ffdc78"); this.float(tgt, `-${Math.round(ev.bulwark)} bulwark`, "invuln"); }
             if (ev.absorbed > 0) { this.sfx("block"); this.bubble(tgt, "#cfe8ff"); this.float(tgt, `-${Math.round(ev.absorbed)} shield`, "invuln"); }
         };
@@ -373,10 +387,10 @@ export class Arena {
         setTimeout(() => node.remove(), 1200);
     }
 
-    particle(x, y, vx, vy, life, color, size = 1, g = 30) {
+    particle(x, y, vx, vy, life, color, size = 1, g = 30, glow = false) {
         const cap = effectsLevel() > 0 ? 420 : 120;
         if (this.particles.length >= cap) this.particles.shift();
-        this.particles.push({ x, y, vx, vy, life, max: life, color, size, g });
+        this.particles.push({ x, y, vx, vy, life, max: life, color, size, g, glow });
     }
 
     sparks(x, y, color, n) {
@@ -466,7 +480,8 @@ export class Arena {
             // Encore: three chord rings, a tidal wave across the whole arena, a fountain of notes from both
             // edges, a firework crown and a turquoise flash.
             this.sfx("encore");
-            this.float(f, "ENCORE!", "prime");
+            if (this.silent) this.float(f, "ENCORE!", "prime");
+            else primeVictory(this.root, { name: f.info.name ?? "Pepf", title: f.info.appearance?.title });
             for (let r = 0; r < 3; r++) this.later(r * 0.18, () => { this.ring(x, CY, PRIME[r], 40 + r * 25); this.ring(x, GROUND - 2, PRIME[r + 1], 50 + r * 20, true); });
             for (let k = 0; k < 24; k++) this.later(k * 0.05, () => {
                 const fromLeft = k % 2 === 0, ex = fromLeft ? 4 : W - 4;
@@ -570,6 +585,7 @@ export class Arena {
         for (const f of this.f) this.drawFighter(ctx, f, t);
         this.drawProjectiles(ctx, t);
         this.drawRings(ctx, t);
+        this.drawStars(ctx, t);
         this.drawBolts(ctx, t);
         this.drawParticles(ctx, dt);
         for (const f of this.f) this.drawOver(ctx, f, t);
@@ -620,64 +636,172 @@ export class Arena {
         }
     }
 
-    /** Pepf Prime aura: a light column, a rolling tide on the ground, orbiting stars and drifting notes. */
+    /** Pepf Prime aura: swaying light shafts, a turning magic circle, a rolling tide, orbiting stars and notes. */
     drawPrime(ctx, f, t, x) {
         const rich = effectsLevel() > 0;
+        const oy = this.offset(f).y;
         if (!f.primeIntro) {
             f.primeIntro = true;
             this.ring(x, CY - 4, "#40e0d0", 46);
             this.ring(x, GROUND, "#b8fff6", 44, true);
-            for (let k = 0; k < (rich ? 30 : 10); k++) {
-                const a = (k / 30) * Math.PI * 2;
-                this.particle(x + Math.cos(a) * 6, CY - 4 + Math.sin(a) * 6, Math.cos(a) * 45, Math.sin(a) * 30 - 10, 0.9, PRIME[k % 4], 1, 0);
+            for (let k = 0; k < (rich ? 36 : 12); k++) {
+                const a = (k / 36) * Math.PI * 2;
+                this.particle(x + Math.cos(a) * 6, CY - 4 + Math.sin(a) * 6, Math.cos(a) * 50, Math.sin(a) * 34 - 10, 1, PRIME[k % 4], 1, 0, true);
             }
         }
-        const oy = this.offset(f).y;
-        // Light column behind the cluster.
         const pulse = 0.5 + Math.sin(t * 2.2) * 0.5;
-        const col = ctx.createLinearGradient(0, 0, 0, GROUND);
-        col.addColorStop(0, "rgba(64, 224, 208, 0)");
-        col.addColorStop(1, `rgba(64, 224, 208, ${0.05 + pulse * 0.04})`);
-        ctx.fillStyle = col;
-        // Stacked strips fade the column out to the sides.
-        for (const [w, a] of [[46, 0.35], [36, 0.55], [26, 0.8], [16, 1]]) {
-            ctx.globalAlpha = a;
-            ctx.fillRect(x - w / 2, 0, w, GROUND);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        // Light shafts from above, swaying and fanning out toward the ground.
+        for (let k = 0; k < 3; k++) {
+            const sway = Math.sin(t * 0.7 + k * 2.1) * 10;
+            const top = x + sway + (k - 1) * 8, w0 = 4 + k * 2, w1 = 20 + k * 8;
+            const g = ctx.createLinearGradient(0, 0, 0, GROUND);
+            g.addColorStop(0, "rgba(64, 224, 208, 0)");
+            g.addColorStop(0.55, `rgba(64, 224, 208, ${0.05 + pulse * 0.03})`);
+            g.addColorStop(1, `rgba(184, 255, 246, ${0.1 + pulse * 0.06})`);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(top - w0 / 2, 0);
+            ctx.lineTo(top + w0 / 2, 0);
+            ctx.lineTo(x + (k - 1) * 12 + w1 / 2, GROUND);
+            ctx.lineTo(x + (k - 1) * 12 - w1 / 2, GROUND);
+            ctx.closePath();
+            ctx.fill();
+        }
+        // Glow pool on the floor.
+        const pool = ctx.createRadialGradient(x, GROUND, 2, x, GROUND, 46);
+        pool.addColorStop(0, `rgba(64, 224, 208, ${0.3 + pulse * 0.15})`);
+        pool.addColorStop(1, "rgba(64, 224, 208, 0)");
+        ctx.fillStyle = pool;
+        ctx.save();
+        ctx.translate(x, GROUND);
+        ctx.scale(1, 0.22);
+        ctx.translate(-x, -GROUND);
+        ctx.fillRect(x - 46, GROUND - 46, 92, 92);
+        ctx.restore();
+        // Magic circle on the ground: two counter-turning rings, a star and rune ticks, seen in perspective.
+        const R = 36, ry = 0.2;
+        const pt = (a, r) => [x + Math.cos(a) * r, GROUND + Math.sin(a) * r * ry];
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = `rgba(122, 240, 224, ${0.55 + pulse * 0.3})`;
+        ctx.beginPath(); ctx.ellipse(x, GROUND, R, R * ry, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = `rgba(184, 255, 246, ${0.35 + pulse * 0.2})`;
+        ctx.beginPath(); ctx.ellipse(x, GROUND, R * 0.72, R * 0.72 * ry, 0, 0, Math.PI * 2); ctx.stroke();
+        const spin = t * 0.5;
+        ctx.strokeStyle = `rgba(64, 224, 208, ${0.4 + pulse * 0.25})`;
+        // Hexagram: two triangles.
+        ctx.beginPath();
+        for (let k = 0; k <= 3; k++) { const [px, py] = pt(spin + (k * 2 * Math.PI) / 3, R * 0.72); if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+        for (let k = 0; k <= 3; k++) { const [px, py] = pt(spin + Math.PI / 3 + (k * 2 * Math.PI) / 3, R * 0.72); if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+        ctx.stroke();
+        ctx.fillStyle = "#b8fff6";
+        for (let k = 0; k < 16; k++) {
+            const [px, py] = pt(-t * 0.8 + (k / 16) * Math.PI * 2, R * 0.86);
+            ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 4 + k);
+            ctx.fillRect(px - 0.5, py - 0.5, k % 4 ? 1 : 2, 1);
         }
         ctx.globalAlpha = 1;
-        ctx.fillStyle = `rgba(184, 255, 246, ${0.04 + pulse * 0.05})`;
-        ctx.fillRect(x - 4, 0, 8, GROUND);
-        // Rolling tide: two pixel waves along the ground, turquoise into white.
-        for (let dx = -40; dx <= 40; dx++) {
-            const fade = 1 - Math.abs(dx) / 41;
-            const y1 = GROUND + 2 + Math.sin(dx * 0.25 + t * 3) * 1.5;
-            const y2 = GROUND + 4 + Math.sin(dx * 0.18 - t * 2.4) * 1.2;
+        ctx.lineWidth = 1;
+        ctx.restore();
+        // Rolling tide along the ground.
+        for (let dx = -44; dx <= 44; dx++) {
+            const fade = 1 - Math.abs(dx) / 45;
+            const y1 = GROUND + 3 + Math.sin(dx * 0.25 + t * 3) * 1.5;
             ctx.globalAlpha = fade * 0.9;
             ctx.fillStyle = PRIME[(Math.floor(dx / 3 + t * 6) % 4 + 4) % 4];
             ctx.fillRect(x + dx, Math.round(y1), 1, 1);
-            ctx.globalAlpha = fade * 0.45;
-            ctx.fillStyle = "#40e0d0";
-            ctx.fillRect(x + dx, Math.round(y2), 1, 1);
         }
         ctx.globalAlpha = 1;
-        // Three stars orbiting the cluster (behind it on the far side, in front on the near side via size).
+        // Three stars orbiting the cluster with glowing wakes.
         for (let k = 0; k < 3; k++) {
             const a = t * 1.6 + (k / 3) * Math.PI * 2;
-            const sx = Math.round(x + Math.cos(a) * 34), sy = Math.round(CY - 4 + oy + Math.sin(a) * 12);
-            const big = Math.sin(a) > 0;
+            const sx = x + Math.cos(a) * 34, sy = CY - 4 + oy + Math.sin(a) * 12;
+            const near = Math.sin(a) > 0;
             ctx.fillStyle = k === 0 ? "#ffffff" : PRIME[k];
-            ctx.fillRect(sx, sy, 1, 1);
-            if (big) { ctx.fillRect(sx - 1, sy, 3, 1); ctx.fillRect(sx, sy - 1, 1, 3); }
-            if (rich && this.rng() < 0.4) this.particle(sx, sy, 0, 0, 0.35, PRIME[(k + 1) % 4], 1, 0);
+            ctx.fillRect(Math.round(sx), Math.round(sy), 1, 1);
+            if (near) { ctx.fillRect(Math.round(sx) - 1, Math.round(sy), 3, 1); ctx.fillRect(Math.round(sx), Math.round(sy) - 1, 1, 3); }
+            if (rich && this.rng() < 0.5) this.particle(sx, sy, 0, 0, 0.4, PRIME[(k + 1) % 4], 1, 0, true);
         }
-        // Now and then a note drifts up out of the cluster.
+        // Notes drift up out of the cluster.
         if (t > f.primeNote) {
             f.primeNote = t + (rich ? 0.9 : 2) + this.rng() * 0.8;
             const nx = x + (this.rng() - 0.5) * 30;
             this.projectiles.push({ kind: "note", x0: nx, y0: CY + oy, x1: nx + (this.rng() - 0.5) * 30, y1: CY - 50, t0: t, dur: 1.4, dir: 1, color: PRIME[Math.floor(this.rng() * 4)] });
         }
-        if (rich && this.rng() < 0.25)
-            this.particle(x + (this.rng() - 0.5) * 50, GROUND - 1, 0, -14 - this.rng() * 10, 1.2, PRIME[Math.floor(this.rng() * 4)], 1, 0);
+        // Motes rising through the light.
+        if (this.rng() < (rich ? 0.45 : 0.1))
+            this.particle(x + (this.rng() - 0.5) * 50, GROUND - 1, (this.rng() - 0.5) * 4, -12 - this.rng() * 14, 1.6, PRIME[Math.floor(this.rng() * 4)], 1, 0, true);
+    }
+
+    /** Ribbon of light behind a Pepf Prime weapon (additive, fades along its length). */
+    drawPrimeTrail(ctx, f, w, t) {
+        f.trail ??= [];
+        f.trail.push({ x: w.x, y: w.y, t });
+        while (f.trail.length && t - f.trail[0].t > 0.22) f.trail.shift();
+        if (f.trail.length < 3) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        for (let i = 1; i < f.trail.length; i++) {
+            const a = f.trail[i - 1], b = f.trail[i], k = i / f.trail.length;
+            const speed = Math.hypot(b.x - a.x, b.y - a.y);
+            if (speed < 0.3) continue;
+            ctx.strokeStyle = `rgba(64, 224, 208, ${0.35 * k})`;
+            ctx.lineWidth = 4 * k;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.6 * k})`;
+            ctx.lineWidth = 1.2 * k;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    /** A Pepf Prime hit: a shockwave, a star flash and glowing shards (bigger on crits). */
+    primeImpact(tgt, big) {
+        if (!tgt) return;
+        const x = this.x(tgt), y = this.headY(tgt) + 16;
+        this.ring(x, y, big ? "#ffffff" : "#7af0e0", big ? 34 : 20);
+        if (big) { this.ring(x, GROUND - 2, "#40e0d0", 40, true); this.shake = Math.max(this.shake, 3); }
+        this.stars.push({ x, y, t0: this.now, dur: big ? 0.35 : 0.2, r: big ? 14 : 8 });
+        const n = effectsLevel() > 0 ? (big ? 18 : 8) : 4;
+        for (let k = 0; k < n; k++) {
+            const a = this.rng() * Math.PI * 2, sp = 30 + this.rng() * (big ? 90 : 50);
+            this.particle(x, y, Math.cos(a) * sp, Math.sin(a) * sp - 10, 0.3 + this.rng() * 0.3, PRIME[k % 4], 1, 80, true);
+        }
+    }
+
+    /** Ultimate nova: a dome of light bursting out of the Prime cluster. */
+    primeNova(f) {
+        const x = this.x(f);
+        for (let r = 0; r < 4; r++) this.later(r * 0.08, () => this.ring(x, CY - 4, PRIME[r], 50 + r * 30));
+        this.stars.push({ x, y: CY - 4, t0: this.now, dur: 0.6, r: 40 });
+        for (let k = 0; k < (effectsLevel() > 0 ? 60 : 20); k++) {
+            const a = (k / 60) * Math.PI * 2;
+            this.particle(x, CY - 4, Math.cos(a) * 90, Math.sin(a) * 50, 0.9, PRIME[k % 4], 1, 0, true);
+        }
+        this.shake = Math.max(this.shake, 5);
+    }
+
+    /** Four-pointed lens flares (additive), used by Prime hits and the nova. */
+    drawStars(ctx, t) {
+        this.stars = this.stars.filter(s => t - s.t0 < s.dur);
+        if (!this.stars.length) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const s of this.stars) {
+            const k = (t - s.t0) / s.dur, r = s.r * (0.4 + k * 0.8), a = 1 - k;
+            const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
+            g.addColorStop(0, `rgba(255, 255, 255, ${0.9 * a})`);
+            g.addColorStop(0.3, `rgba(122, 240, 224, ${0.5 * a})`);
+            g.addColorStop(1, "rgba(64, 224, 208, 0)");
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * a})`;
+            ctx.fillRect(s.x - r * 1.6, s.y - 0.4, r * 3.2, 0.8);
+            ctx.fillRect(s.x - 0.4, s.y - r * 1.1, 0.8, r * 2.2);
+        }
+        ctx.restore();
     }
 
     /** A small floating pixel crown over the HP bar of a Pepf Prime cluster. */
@@ -709,6 +833,7 @@ export class Arena {
                 this.drawItem(ctx, { ...w, x: back.x, y: back.y, a: back.a }, t, { alpha: 0.18 * (4 - k) / 3, f });
             }
         }
+        if (w && f.prime) this.drawPrimeTrail(ctx, f, w, t);
         for (const p of placed) this.drawItem(ctx, p, t, { alpha: smoke ? 0.5 : f.invuln > 0 ? 0.8 + Math.sin(t * 20) * 0.2 : 1, flash, f });
         if (w && f.skin && SKINS[f.skin] && this.rng() < 0.25)
             this.particle(w.x + (this.rng() - 0.5) * 14, w.y + (this.rng() - 0.5) * 14, 0, -10, 0.6, SKINS[f.skin].glow, 1, 0);
@@ -922,6 +1047,18 @@ export class Arena {
             p.y += p.vy * dt;
             ctx.globalAlpha = Math.min(1, (p.life / p.max) * 1.6);
             ctx.fillStyle = p.color;
+            if (p.glow) {
+                // Additive halo: reads as bloom on the dark arenas.
+                ctx.globalCompositeOperation = "lighter";
+                ctx.globalAlpha *= 0.16;
+                ctx.beginPath();
+                ctx.arc(p.x + p.size / 2, p.y + p.size / 2, p.size * 1.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = Math.min(1, (p.life / p.max) * 1.6);
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                ctx.globalCompositeOperation = "source-over";
+                continue;
+            }
             ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
         }
         ctx.globalAlpha = 1;

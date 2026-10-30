@@ -1,6 +1,7 @@
 // End of match: podium, standings and a bit of confetti.
 import { el, itemCard, augmentCard } from "./data.js";
 import { nameEl, portraitEl, isPrime } from "./profile.js";
+import { holo } from "./prime.js";
 import { sfx } from "./fx.js";
 
 const PACK_COLORS = ["#40e0d0", "#e0407a", "#a8ff40", "#6040e0", "#c0c0ff"];
@@ -22,6 +23,8 @@ export function renderGameOver(msg, app) {
             el("div", { class: "podium-build" }, s.build.slice(0, 3).map(b => itemCard(b.id, { level: b.level, skin: s.appearance?.weaponSkin }))),
             el("div", { class: "podium-block" }, el("span", { text: `${s.placement}` })));
     }));
+
+    document.querySelectorAll("#podium .podium-spot.prime .portrait").forEach(p => holo(p, 16));
 
     const tbody = document.querySelector("#standingsTable tbody");
     tbody.replaceChildren(...standings.map(s => el("tr", { class: (s.id === app.user.id ? "me" : "") + (isPrime(s.appearance) ? " prime" : "") },

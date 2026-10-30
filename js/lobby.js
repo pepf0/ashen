@@ -2,6 +2,7 @@
 import { el, data, kitCard } from "./data.js";
 import { nameEl, portraitEl, isPrime } from "./profile.js";
 import { sfx } from "./fx.js";
+import { holo } from "./prime.js";
 import { toast } from "./ui.js";
 
 const FIELDS = [
@@ -94,6 +95,7 @@ export function createLobbyView(app) {
                     isHost && m.id !== app.user.id
                         ? el("button", { class: "btn btn-small btn-ghost", text: "Kick", onclick: () => app.socket.send("kick", { userId: m.id }) })
                         : null)));
+            document.querySelectorAll("#memberList li.prime").forEach(li => holo(li, 0));
             const start = document.getElementById("startMatch");
             start.hidden = !isHost;
             start.disabled = lobby.members.filter(m => m.connected).length < 2;

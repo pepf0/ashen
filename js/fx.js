@@ -152,6 +152,20 @@ const SOUNDS = {
         [1047, 1319, 1568].forEach(f => tone({ type: "triangle", f0: f, dur: 0.7, vol: 0.06, delay: 0.45 }));
         noise({ dur: 0.6, vol: 0.06, freq: 6000, f1: 9000, q: 1, delay: 0.42 });
     },
+    primeIntro: () => {
+        tone({ type: "sine", f0: 70, f1: 40, dur: 0.9, vol: 0.4 });
+        noise({ dur: 0.7, vol: 0.12, freq: 400, f1: 5000, q: 0.7 });
+        [523, 784, 1047, 1568].forEach((f, k) => tone({ type: "triangle", f0: f, dur: 0.8 - k * 0.1, vol: 0.06, delay: 0.55 + k * 0.05 }));
+        tone({ type: "square", f0: 262, dur: 0.35, vol: 0.06, delay: 0.55 });
+        noise({ dur: 0.9, vol: 0.05, freq: 7000, f1: 10000, q: 1, delay: 0.6 });
+    },
+    cutin: () => {
+        noise({ dur: 0.25, vol: 0.25, freq: 600, f1: 5000, q: 0.8 });
+        tone({ type: "sawtooth", f0: 200, f1: 900, dur: 0.25, vol: 0.1 });
+        noise({ dur: 0.4, vol: 0.4, freq: 900, f1: 120, type: "lowpass", delay: 0.28 });
+        tone({ type: "sine", f0: 120, f1: 40, dur: 0.5, vol: 0.4, delay: 0.28 });
+        [784, 1175, 1568].forEach((f, k) => tone({ type: "triangle", f0: f, dur: 0.5, vol: 0.05, delay: 0.3 + k * 0.03 }));
+    },
     whoosh: () => noise({ dur: 0.25, vol: 0.12, freq: 400, f1: 2400, q: 0.8 })
 };
 

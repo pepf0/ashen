@@ -31,9 +31,8 @@ export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
 }
 
 /** Whether the player wears any piece of the admin set "Pepf Prime" (rows, podiums and profiles get extra flair). */
-export function isPrime(appearance) {
-    return !!appearance && Object.values(appearance).some(v => typeof v === "string" && v.endsWith("_pepf"));
-}
+export { isPrime } from "./prime.js";
+import { isPrime, holo } from "./prime.js";
 
 /** A title; title cosmetics get their own style class (e.g. the admin set). */
 export function titleEl(title) {
@@ -97,6 +96,7 @@ export async function openProfile(userId) {
             el("ul", { class: "match-list compact" }, p.recentMatches.map(m => el("li", {},
                 el("span", { class: "grow", text: m.winners ? `${m.winners} won` : "Match" }),
                 el("span", { class: "muted small", text: `${m.players} players · ${m.rounds} rounds · ${new Date(m.endedAt).toLocaleDateString()}` })))));
+        holo(body.querySelector(".profile-head.prime"), 5);
         await openDialog(p.name, body, [{ label: "Close", value: true }]);
     } catch (err) {
         toast(err.message);
