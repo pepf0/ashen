@@ -133,6 +133,8 @@ public sealed class Fight
         public int AllInHits { get; set; }
         public double Shield { get; set; }
         public double ShieldUntil { get; set; }
+        public double BulwarkUntil { get; set; } = -1;
+        public double BulwarkBlock { get; set; }
         public double BulwarkReflect { get; set; }
         public double? HeadshotAt { get; set; }
         public List<double> FlurryAttacks { get; } = new();
@@ -345,7 +347,8 @@ public sealed class Fight
             cds = f.SkillCooldowns.Select(c => Math.Round(Math.Max(0, c), 2)),
             windup = f.HeadshotAt is double h ? Math.Round(h - Time, 2) : (double?)null,
             mods = f.Mods.GroupBy(m => m.Source).Select(g => new { id = g.Key, left = Math.Round(g.Max(m => m.ExpiresAt) - Time, 1), debuff = g.First().Debuff }),
-            parry = f.ParryUntil >= Time
+            parry = f.ParryUntil >= Time,
+            bulwark = f.BulwarkUntil >= Time ? Math.Round(f.BulwarkUntil - Time, 2) : 0
         })
     };
 
@@ -509,7 +512,6 @@ public sealed class Fight
         if (f.InvulnerableLeft > 0)
         {
             f.InvulnerableLeft = Math.Max(0, f.InvulnerableLeft - Combat.SPT);
-            if (f.InvulnerableLeft <= 0) f.BulwarkReflect = 0;
         }
         for (int i = 0; i < 3; i++) f.SkillCooldowns[i] = Math.Max(0, f.SkillCooldowns[i] - Combat.SPT);
         f.Mods.RemoveAll(m => m.ExpiresAt <= Time + tiny);
@@ -632,7 +634,7 @@ public sealed class Fight
     }
 
     /// <summary>
-    /// Applies damage from <paramref name="attacker"/> to <paramref name="defender"/>: invulnerability (Bulwark reflects),
+    /// Applies damage from <paramref name="attacker"/> to <paramref name="defender"/>: invulnerability, Bulwark (blocks part and reflects part),
     /// Parry, damage multipliers, damage reduction, overtime, Shield, lifesteal and ultimate charge.
     /// Returns whether the hit landed (for on-hit triggers).
     /// </summary>
@@ -642,7 +644,6 @@ public sealed class Fight
         {
             ev.Blocked = true;
             Emit(ev);
-            if (defender.BulwarkReflect > 0) Reflect(defender, attacker, raw * defender.BulwarkReflect, "bulwark");
             return false;
         }
         if (defender.ParryUntil >= Time)
@@ -660,6 +661,14 @@ public sealed class Fight
         if (kind != HitKind.Ability) damage *= OvertimeMultiplier;
         damage = Math.Max(0, damage);
 
+        // Bulwark blocks part of every hit and throws it back (Headshot is blocked but not thrown back).
+        double blocked = defender.BulwarkUntil >= Time ? damage * defender.BulwarkBlock : 0;
+        if (blocked > 0)
+        {
+            ev.Bulwark = Math.Round(blocked, 2);
+            damage -= blocked;
+        }
+
         if (defender.Shield > 0)
         {
             double absorbed = Math.Min(defender.Shield, damage);
@@ -668,15 +677,33 @@ public sealed class Fight
             ev.Absorbed = Math.Round(absorbed, 2);
         }
         Deal(attacker, defender, damage, ev);
+        if (blocked > 0 && defender.BulwarkReflect > 0 && defender.Health > 0 && ev.AbilitySource != "headshot")
+            Reflect(defender, attacker, blocked * defender.BulwarkReflect, "bulwark");
         if (kind == HitKind.Weapon && defender.Aug.Get("thorns") is > 0 and var thorns && damage > 0 && defender.Health > 0)
             Reflect(defender, attacker, damage * thorns, "thorns");
         return true;
     }
 
+    /// <summary>Reflected damage is real damage to the attacker: their invulnerability blocks it, their damage
+    /// reduction reduces it and their shield absorbs it (it can't be dodged, parried or reflected again).</summary>
     private void Reflect(Fighter from, Fighter to, double amount, string ability)
     {
         var ev = new DamageEvent { Source = from.Index, Target = to.Index, Reflected = true, AbilitySource = ability };
-        Deal(from, to, Math.Max(0, amount), ev);
+        if (to.Invulnerable)
+        {
+            ev.Blocked = true;
+            Emit(ev);
+            return;
+        }
+        double damage = Math.Max(0, amount) * (1 - DamageReduction(to));
+        if (to.Shield > 0)
+        {
+            double absorbed = Math.Min(to.Shield, damage);
+            to.Shield -= absorbed;
+            damage -= absorbed;
+            ev.Absorbed = Math.Round(absorbed, 2);
+        }
+        Deal(from, to, damage, ev);
     }
 
     private void Deal(Fighter attacker, Fighter defender, double damage, DamageEvent ev, bool chargeUlt = true)
@@ -960,8 +987,9 @@ public sealed class Fight
                 f.MissNextAttacks = 0;
                 break;
             case "bulwark":
-                f.InvulnerableLeft = Math.Max(f.InvulnerableLeft, duration);
-                f.BulwarkReflect = a.Reflect ?? 1;
+                f.BulwarkUntil = Time + duration;
+                f.BulwarkBlock = a.Block ?? 0.5;
+                f.BulwarkReflect = a.Reflect ?? 0.5;
                 break;
             // Trickster
             case "smoke":

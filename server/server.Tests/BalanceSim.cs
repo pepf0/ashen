@@ -133,6 +133,37 @@ public class BalanceSim
     }
 
     [Fact]
+    public void H_KitMatrix()
+    {
+        if (Off) return;
+        // Counter circle: Trickster > Berserker > Sniper > Guardian > Duelist > Gambler > Trickster.
+        var kits = new[] { "trickster", "berserker", "sniper", "guardian", "duelist", "gambler" };
+        var weapons = new[] { "generic.sword", "generic.hammer", "generic.bow", "generic.frying_pan", "pepf.guitar", "z7fox.whip" };
+        var win = new double[kits.Length, kits.Length];
+        int n = 40;
+        for (int i = 0; i < kits.Length; i++)
+        for (int j = i + 1; j < kits.Length; j++)
+        for (int w = 0; w < weapons.Length; w++)
+        for (int s = 0; s < n; s++)
+        {
+            Loadout Mk(string k) => L(300, k, 3, weapons[w], "generic.band_shirt", "generic.knight", "generic.horseshoe");
+            bool swap = s % 2 == 1; int seed = s * 17 + i * 7 + j * 3 + w * 1009;
+            int r = swap ? Fight(Mk(kits[j]), Mk(kits[i]), seed) : Fight(Mk(kits[i]), Mk(kits[j]), seed);
+            double a = r == -1 ? .5 : (r == 0) != swap ? 1 : 0;
+            win[i, j] += a; win[j, i] += 1 - a;
+        }
+        int games = weapons.Length * n;
+        o.WriteLine("=== Kit vs kit (row win %, same build L3 across 6 weapons) ===");
+        o.WriteLine("  " + "".PadRight(10) + string.Join("", kits.Select(k => k[..5].PadLeft(7))) + "    ALL");
+        for (int i = 0; i < kits.Length; i++)
+        {
+            double all = Enumerable.Range(0, kits.Length).Where(j => j != i).Sum(j => win[i, j]) / (games * (kits.Length - 1));
+            o.WriteLine("  " + kits[i].PadRight(10) + string.Join("", kits.Select((_, j) => i == j ? "      -" : $"{win[i, j] / games * 100,6:F0}%")) + $"{all * 100,6:F0}%");
+        }
+        o.WriteLine("  circle: " + string.Join("  ", kits.Select((k, i) => $"{k[..4]}>{kits[(i + 1) % kits.Length][..4]} {win[i, (i + 1) % kits.Length] / games * 100:F0}%")));
+    }
+
+    [Fact]
     public void D_Packs()
     {
         if (Off) return;

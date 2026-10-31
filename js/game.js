@@ -2,7 +2,7 @@
 import { el, item, itemCard, statPretty, kitCard, augmentCard, data, abilityPretty, abilityTooltip, attachTooltip } from "./data.js";
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
-import { nameEl, portraitEl } from "./profile.js";
+import { nameEl, portraitEl, isPrime } from "./profile.js";
 import { sfx } from "./fx.js";
 
 const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
@@ -21,6 +21,9 @@ export function createGameView(app) {
     let timerEnd = 0;
     let rerender = () => {};
     // For "juice": what changed since the last render (new roll, bought slot, level up, money).
+    // When each slot of the current roll was bought: the shop re-renders right after a purchase, so the
+    // "just bought" animation resumes where it was instead of being cut off.
+    const boughtAt = new Map();
     let lastRoll = "", lastBought = new Set(), lastLevels = new Map(), shownMoney = null, moneyAnim = 0;
     const mySkin = () => state?.players?.find(p => p.id === app.user?.id)?.appearance?.weaponSkin;
 
@@ -160,6 +163,19 @@ export function createGameView(app) {
         return [...new Set(reasons)];
     }
 
+    /** "+12% Dodge"-style lines for how buying shop slot i would change your stats (green better, red worse). */
+    function statDiff(you, i) {
+        const pv = you.shopPreview?.[i];
+        if (!pv || !you.stats) return null;
+        const pct = k => ["crit_chance", "damage_reduction", "dodge_chance"].includes(k);
+        const lines = Object.keys(pv).filter(k => Math.abs((pv[k] ?? 0) - (you.stats[k] ?? 0)) > 1e-6).map(k => {
+            const d = pv[k] - (you.stats[k] ?? 0), good = k === "cooldown" ? d < 0 || !you.weapon : d > 0;
+            const amount = pct(k) ? `${Math.round(d * 1000) / 10}%` : k === "cooldown" ? `${Math.round(d * 100) / 100}s` : k === "crit_damage" ? `${Math.round(d * 100) / 100}x` : `${Math.round(d * 10) / 10}`;
+            return el("div", { class: good ? "good" : "bad" }, el("b", { text: `${d > 0 ? "+" : ""}${amount}` }), ` ${statPretty(k, 0)[0]}`);
+        });
+        return lines.length ? el("div", { class: "stat-diff" }, lines) : el("div", { class: "stat-diff" }, el("div", { class: "muted", text: "No stat change" }));
+    }
+
     function renderShop(you) {
         const grid = document.getElementById("shopGrid");
         const open = state.phase === "shop" && !you.eliminated;
@@ -169,6 +185,14 @@ export function createGameView(app) {
         const bought = new Set(you.shop.items.map((x, i) => x.bought ? i : -1).filter(i => i >= 0));
         const justBought = newRoll ? new Set() : new Set([...bought].filter(i => !lastBought.has(i)));
         if (justBought.size) sfx("buy");
+        const now = performance.now();
+        if (newRoll) boughtAt.clear();
+        for (const i of justBought) boughtAt.set(i, now);
+        // Pepf Prime: legendary reveal on buys, a slot-machine spin on rerolls.
+        const prime = isPrime(state.players.find(p => p.id === app.user?.id)?.appearance);
+        grid.classList.toggle("prime-shop", prime);
+        if (prime && justBought.size) sfx("encore");
+        if (prime && newRoll && lastRoll) sfx("reroll");
         lastRoll = rollKey;
         lastBought = bought;
         grid.replaceChildren(...you.shop.items.map((slot, i) => {
@@ -180,10 +204,12 @@ export function createGameView(app) {
             const label = slot.bought ? "Bought" : maxed ? "Max level" : mine ? `Lv ${mine.level + 1}` : `Buy`;
             const syn = slot.bought ? [] : synergies(you, it);
             return el("div", { class: "shop-item" + (slot.bought ? " bought" : "") + (it.pack !== "generic" ? ` special pack-${it.pack}` : "") + (syn.length ? " synergy" : "")
-                + (newRoll ? " deal" : "") + (justBought.has(i) ? " just-bought" : ""), style: `--i:${i}`, dataset: { pack: it.pack } },
+                + (newRoll ? " deal" : "") + (now - (boughtAt.get(i) ?? -1e9) < 1100 ? " just-bought" : ""),
+                style: `--i:${i}; --bd:${-Math.round(now - (boughtAt.get(i) ?? now))}ms`, dataset: { pack: it.pack } },
                 syn.length ? el("span", { class: "synergy-tag", title: syn.join(", "), text: syn[0] + (syn.length > 1 ? ` +${syn.length - 1}` : "") }) : null,
                 itemCard(it.id, { level: mine && !slot.bought ? mine.level + 1 : 1, size: "large", skin: mySkin() }),
                 el("div", { class: "shop-name", text: it.name }),
+                slot.bought ? null : statDiff(you, i),
                 el("div", { class: "shop-type muted small", text: it.pack !== "generic" ? `Special ${it.type}` : it.type }),
                 i < 6 ? el("span", { class: "kb-hint slot-hint", text: keyLabelOf(`buy${i + 1}`) }) : null,
                 el("button", { class: "btn btn-buy", disabled: !canBuy, onclick: () => buy(i) },
@@ -315,7 +341,7 @@ export function createGameView(app) {
 
     function renderSide() {
         document.getElementById("gPlayers").replaceChildren(...state.players.map(p =>
-            el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") },
+            el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") + (isPrime(p.appearance) ? " prime" : "") },
                 portraitEl(p.kit, p.appearance, "xs"),
                 el("span", { class: "grow" }, nameEl(p.name, p.appearance, p.id, { showTitle: false }), p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null,
                     p.mastery ? el("div", { class: "mastery", text: p.mastery }) : null),

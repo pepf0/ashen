@@ -1,6 +1,7 @@
 // End of match: podium, standings and a bit of confetti.
 import { el, itemCard, augmentCard } from "./data.js";
-import { nameEl, portraitEl } from "./profile.js";
+import { nameEl, portraitEl, isPrime } from "./profile.js";
+import { holo } from "./prime.js";
 import { sfx } from "./fx.js";
 
 const PACK_COLORS = ["#40e0d0", "#e0407a", "#a8ff40", "#6040e0", "#c0c0ff"];
@@ -14,7 +15,8 @@ export function renderGameOver(msg, app) {
     document.getElementById("podium").replaceChildren(...order.map((s, i) => {
         const place = ["second", "first", "third"][i];
         if (!s) return el("div", { class: `podium-spot ${place} empty` });
-        return el("div", { class: `podium-spot ${place}`, style: `animation-delay: ${[0.5, 1.1, 0.2][i]}s` },
+        return el("div", { class: `podium-spot ${place}` + (isPrime(s.appearance) ? " prime" : ""), style: `animation-delay: ${[0.5, 1.1, 0.2][i]}s` },
+            isPrime(s.appearance) ? el("div", { class: "prime-rays", "aria-hidden": "true" }) : null,
             place === "first" ? el("div", { class: "podium-crown", "aria-hidden": "true" }) : null,
             portraitEl(s.kit, s.appearance, "lg"),
             el("div", { class: "podium-name" }, nameEl(s.name, s.appearance, s.id), s.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null),
@@ -22,10 +24,22 @@ export function renderGameOver(msg, app) {
             el("div", { class: "podium-block" }, el("span", { text: `${s.placement}` })));
     }));
 
+    document.querySelectorAll("#podium .podium-spot.prime .portrait").forEach(p => holo(p, 16));
+
+    // Awards: one card per category, revealed one after another.
+    document.getElementById("awards").replaceChildren(...(msg.awards ?? []).map((a, k) =>
+        el("div", { class: `award award-${a.id}` + (isPrime(a.appearance) ? " prime" : ""), style: `--k:${k}` },
+            el("div", { class: "award-name", text: a.name }),
+            portraitEl(a.kit, a.appearance, "sm"),
+            el("div", { class: "award-player" }, nameEl(a.player, a.appearance, a.playerId, { showTitle: false })),
+            el("div", { class: "award-value", text: a.value }),
+            el("div", { class: "award-desc muted small", text: a.description }))));
+
     const tbody = document.querySelector("#standingsTable tbody");
-    tbody.replaceChildren(...standings.map(s => el("tr", { class: s.id === app.user.id ? "me" : "" },
+    tbody.replaceChildren(...standings.map(s => el("tr", { class: (s.id === app.user.id ? "me" : "") + (isPrime(s.appearance) ? " prime" : "") },
         el("td", { text: `${s.placement}` }),
-        el("td", {}, el("span", { class: "row nowrap" }, portraitEl(s.kit, s.appearance, "xs"), nameEl(s.name, s.appearance, s.id))),
+        el("td", {}, el("span", { class: "row nowrap" }, portraitEl(s.kit, s.appearance, "xs"), nameEl(s.name, s.appearance, s.id)),
+            s.nemesis ? el("div", { class: "nemesis", title: `${s.nemesis.name} beat ${s.name} ${s.nemesis.times} times` }, "Nemesis: ", el("b", { text: s.nemesis.name }), ` ×${s.nemesis.times}`) : null),
         el("td", {}, el("div", { class: "mini-build" }, s.build.map(b => itemCard(b.id, { level: b.level, size: "small" }))),
             el("div", { class: "mini-build" }, (s.augments ?? []).map(id => augmentCard(id, { small: true })))),
         el("td", { text: `${s.wins} / ${s.losses}` }),
@@ -33,7 +47,9 @@ export function renderGameOver(msg, app) {
         el("td", { class: "small", text: s.titles.join(", ") || "–" }))));
 
     const winner = standings.find(s => s.placement === 1);
-    document.querySelector(".gameover-title").textContent = winner ? `${winner.name} wins!` : "Match over";
+    const title = document.querySelector(".gameover-title");
+    title.textContent = winner ? `${winner.name} wins!` : "Match over";
+    title.classList.toggle("prime", !!winner && isPrime(winner.appearance));
     confetti(document.getElementById("confetti"));
     setTimeout(() => sfx(winner?.id === app.user.id ? "victory" : "announce"), 1200);
 }

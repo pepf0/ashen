@@ -16,6 +16,22 @@ public class DataTests
     }
 
     [Fact]
+    public void SignatureSetsBelongOnlyToTheirOwners()
+    {
+        var empty = new HashSet<string>();
+        var fox = GameData.Cosmetics.Single(c => c.Id == "name_z7fox");
+        Assert.True(Progression.Unlocked(fox, 1, empty, new CosmeticOwner(false, "Z7FOX")));
+        Assert.False(Progression.Unlocked(fox, 99, empty, new CosmeticOwner(false, "ely7")));
+        Assert.False(Progression.Unlocked(fox, 99, empty, new CosmeticOwner(true, "pepf")));
+        Assert.False(Progression.Unlocked(fox, 99, empty));
+        var prime = GameData.Cosmetics.Single(c => c.Id == "name_pepf");
+        Assert.True(Progression.Unlocked(prime, 1, empty, new CosmeticOwner(true, "pepf")));
+        Assert.False(Progression.Unlocked(prime, 99, empty, new CosmeticOwner(false, "z7fox")));
+        foreach (var key in new[] { "z7fox", "ely7", "xxz", "raul", "domix" })
+            Assert.Equal(7, GameData.Cosmetics.Count(c => c.Id.EndsWith("_" + key) && c.Unlock.Users.Count > 0));
+    }
+
+    [Fact]
     public void TriggersParse()
     {
         Assert.Equal(TriggerKind.Hit, GameData.Effects["pepf.guitar.stacking_damage_buff"].Trigger);

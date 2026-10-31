@@ -4,6 +4,7 @@ import { api, getToken, setToken, GameSocket } from "./net.js";
 import { showView, currentView, toast, announce, openDialog, closeDialog } from "./ui.js";
 import { renderCompendium } from "./compendium.js";
 import { initChat, addChat, clearChat } from "./chat.js";
+import { renderRecap, clearRecap } from "./recap.js";
 import { createLobbyView } from "./lobby.js";
 import { createGameView } from "./game.js";
 import { createCombatView } from "./combat.js";
@@ -13,7 +14,7 @@ import { openProfile, renderLocker, nameEl, loadAchievements } from "./profile.j
 import { createFriends } from "./friends.js";
 import { createAdmin } from "./admin.js";
 import { createTroll } from "./troll.js";
-import { startEmbers, sfx, effectsLevel, setEffectsLevel, getVolume, setVolume } from "./fx.js";
+import { startEmbers, sfx, effectsLevel, setEffectsLevel, getVolume, setVolume, getMusicVolume, setMusicVolume } from "./fx.js";
 import { preloadSkins } from "./skins.js";
 import { startDemo } from "./demo.js";
 
@@ -152,7 +153,7 @@ app.socket
             if (app.mode !== "gameover") setMode("menu");
             return;
         }
-        if (app.lobby?.code !== lobby.code) clearChat();
+        if (app.lobby?.code !== lobby.code) { clearChat(); clearRecap(); }
         app.lobby = lobby;
         app.friends.render();
         app.lobbyView.render(lobby);
@@ -178,6 +179,7 @@ app.socket
     })
     .on("fightTick", msg => app.combat.tick(msg))
     .on("fightEnd", msg => app.combat.end(msg))
+    .on("roundRecap", msg => renderRecap(msg, app.user?.id))
     .on("progress", msg => showProgress(msg.progress))
     .on("friends", msg => { toast(msg.message, "info"); app.friends.refresh(); })
     .on("invite", msg => app.friends.invite(msg))
@@ -190,7 +192,7 @@ app.socket
         setTab("menu");
     });
 
-initChat(text => app.socket.send("chat", { text }));
+initChat(text => app.socket.send("chat", { text }), id => app.lobby?.members?.find(m => m.id === id)?.appearance);
 renderKeybindSettings(document.getElementById("keybindSettings"));
 onKeybindsChanged(() => { if (app.lobby && !app.lobby.inMatch) app.lobbyView.render(app.lobby); });
 
@@ -202,7 +204,7 @@ async function showProgress(p) {
     const ach = await loadAchievements();
     const cosmetic = id => id.replace(/^(name|frame|victory|nb|pb|ws|t)_/, "").replace(/_/g, " ");
     const pct = p.nextLevelXp ? Math.min(100, (p.levelXp / p.nextLevelXp) * 100) : 100;
-    panel.replaceChildren(
+    panel.replaceChildren(...[
         el("div", { class: "row spread" }, el("b", { text: `+${p.xpGained} XP` }),
             el("span", { text: p.levelsGained > 0 ? `Level up! Level ${p.level}` : `Level ${p.level}` })),
         el("div", { class: "xp-bar" }, el("div", { class: "xp-fill grow-in", style: `width:${pct}%` }),
@@ -210,7 +212,8 @@ async function showProgress(p) {
         p.newAchievements.length ? el("div", { class: "new-unlocks" }, el("span", { class: "muted small", text: "Achievements: " }),
             ...p.newAchievements.map(id => el("span", { class: "unlock-chip", text: ach.list.find(a => a.id === id)?.name ?? id }))) : null,
         p.newCosmetics.length ? el("div", { class: "new-unlocks" }, el("span", { class: "muted small", text: "New cosmetics: " }),
-            ...p.newCosmetics.map(id => el("span", { class: "unlock-chip cosmetic", text: cosmetic(id) }))) : null);
+            ...p.newCosmetics.map(id => el("span", { class: "unlock-chip cosmetic", text: cosmetic(id) }))) : null
+    ].filter(Boolean));
     panel.hidden = false;
     if (p.levelsGained > 0) setTimeout(() => sfx("levelup"), 800);
 }
@@ -319,6 +322,9 @@ fxVolume.value = String(getVolume());
 fxLevel.addEventListener("change", () => setEffectsLevel(Number(fxLevel.value)));
 fxVolume.addEventListener("input", () => setVolume(Number(fxVolume.value)));
 fxVolume.addEventListener("change", () => sfx("coin"));
+const musicVolume = document.getElementById("musicVolume");
+musicVolume.value = String(getMusicVolume());
+musicVolume.addEventListener("input", () => setMusicVolume(Number(musicVolume.value)));
 
 // Soft click on every button: tiny, but it makes the UI feel alive.
 document.addEventListener("click", e => { if (e.target.closest(".btn, .tab, .ab, .kit-card.clickable, .locker-option")) sfx("click", 0.03); });

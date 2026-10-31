@@ -40,8 +40,8 @@
         "description": "+{add*100}% damage reduction for {duration}s (can go past the item cap, up to 75%)" },
       { "id": "cleanse", "key": "e", "name": "Cleanse", "cooldown": 12, "usable_while_stunned": true,
         "description": "Removes stuns and enemy debuffs. Usable while stunned" },
-      { "id": "bulwark", "key": "r", "name": "Bulwark", "ultimate": true, "duration": 1.5, "reflect": 0.5,
-        "description": "Invulnerable for {duration}s, reflecting {reflect*100}% of blocked damage" }
+      { "id": "bulwark", "key": "r", "name": "Bulwark", "ultimate": true, "duration": 2, "block": 0.5, "reflect": 1,
+        "description": "For {duration}s, blocks {block*100}% of incoming damage and throws the blocked damage back (Headshot is blocked but not thrown back)" }
     ]
   },
   {

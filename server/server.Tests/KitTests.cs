@@ -151,4 +151,28 @@ public class KitTests
         double rate = (double)dodged / attacks;
         Assert.InRange(rate, 0.38, Combat.AbilityMaxDodgeChance + 0.03);
     }
+
+    [Fact]
+    public void BulwarkHalvesDamageAndReflectsHalf()
+    {
+        // Bulwark is not invulnerability: the hit still lands for half, and the blocked half comes back.
+        var attacker = TestHelpers.Build("generic.bow");
+        attacker.MaxHealth = 1000;
+        var guardian = WithKit("guardian", null, hp: 200);
+        var fight = Start(attacker, guardian);
+        var events = new List<CombatEvent>();
+        for (int i = 0; i < 20 * 60 && !fight.Finished; i++)
+        {
+            fight.Queue(1, 3); // Bulwark as soon as it's charged
+            fight.Step();
+            events.AddRange(fight.TakeNewEvents());
+        }
+        var hit = events.OfType<DamageEvent>().FirstOrDefault(e => e.Bulwark > 0 && e.Source == 0 && e.WeaponAttack);
+        Assert.NotNull(hit);
+        Assert.False(hit!.Blocked);
+        Assert.Equal(hit.Bulwark, hit.Damage + hit.Absorbed, 2);
+        var reflect = events.OfType<DamageEvent>().First(e => e.Reflected && e.AbilitySource == "bulwark");
+        Assert.Equal(hit.Bulwark, reflect.Damage, 1);
+    }
+
 }

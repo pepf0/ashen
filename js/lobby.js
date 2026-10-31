@@ -1,6 +1,8 @@
 // Waiting room: members, host settings, start/leave/kick.
 import { el, data, kitCard } from "./data.js";
-import { nameEl, portraitEl } from "./profile.js";
+import { nameEl, portraitEl, isPrime } from "./profile.js";
+import { sfx } from "./fx.js";
+import { holo, sigKey } from "./prime.js";
 import { toast } from "./ui.js";
 
 const FIELDS = [
@@ -58,14 +60,41 @@ export function createLobbyView(app) {
         app.socket.send("addBot", { difficulty: document.getElementById("botDifficulty").value }));
     document.getElementById("leaveLobby").addEventListener("click", () => app.socket.send("leave"));
 
+    // Members already seen in this lobby, so "The Creator has arrived" only shows when they actually arrive.
+    let seen = null, seenCode = null, bowUntil = 0;
+    function announceArrivals(lobby) {
+        if (seenCode !== lobby.code) { seen = new Set(); seenCode = lobby.code; }
+        for (const m of lobby.members) {
+            if (seen.has(m.id)) continue;
+            seen.add(m.id);
+            if (!isPrime(m.appearance)) continue;
+            const t = el("div", { class: "toast prime-arrival" },
+                el("span", { class: "prime-arrival-star", text: "\u2726" }),
+                el("span", {}, nameEl(m.name, m.appearance, 0, { showTitle: false }), m.id === app.user.id ? " has entered the lobby" : " has arrived"),
+                el("span", { class: "prime-arrival-star", text: "\u2726" }));
+            document.getElementById("toasts").append(t);
+            setTimeout(() => t.classList.add("out"), 4200);
+            setTimeout(() => t.remove(), 4700);
+            sfx("encore");
+            bowUntil = Date.now() + 2400;
+            const pulse = el("div", { class: "prime-page-pulse", "aria-hidden": "true" });
+            document.body.append(pulse);
+            setTimeout(() => pulse.remove(), 2200);
+        }
+    }
+
     return {
         render(lobby) {
+            announceArrivals(lobby);
             const isHost = lobby.hostId === app.user.id;
             document.getElementById("lobbyCode").textContent = lobby.code;
             document.getElementById("playerCount").textContent = `${lobby.members.length}/8`;
-            document.getElementById("memberList").replaceChildren(...lobby.members.map(m =>
-                el("li", { class: (m.connected ? "" : "offline") + (m.id === app.user.id ? " me" : "") },
-                    portraitEl(m.kit, m.appearance, "sm"),
+            // Pepf Prime sits on the throne: first, on a big card with a turning portrait.
+            const members = [...lobby.members].sort((a, b) => isPrime(b.appearance) - isPrime(a.appearance));
+            document.getElementById("memberList").replaceChildren(...members.map(m =>
+                el("li", { class: (m.connected ? "" : "offline") + (m.id === app.user.id ? " me" : "") + (isPrime(m.appearance) ? " prime throne" : "")
+                    + (sigKey(m.appearance) && !isPrime(m.appearance) ? ` sig-row sig-${sigKey(m.appearance)}` + (Date.now() < bowUntil ? " bowing" : "") : "") },
+                    isPrime(m.appearance) ? el("span", { class: "throne-stage" }, portraitEl(m.kit, m.appearance, "md")) : portraitEl(m.kit, m.appearance, "sm"),
                     el("span", { class: "grow" }, nameEl(m.name, m.appearance, m.id), m.mastery ? el("span", { class: "mastery", text: ` ${m.mastery}` }) : null),
                     m.bot ? el("span", { class: "tag bot", text: `Bot · ${m.bot}` }) : null,
                     el("span", { class: "tag", text: data.kits[m.kit]?.name ?? m.kit }),
@@ -73,6 +102,7 @@ export function createLobbyView(app) {
                     isHost && m.id !== app.user.id
                         ? el("button", { class: "btn btn-small btn-ghost", text: "Kick", onclick: () => app.socket.send("kick", { userId: m.id }) })
                         : null)));
+            document.querySelectorAll("#memberList li.prime").forEach(li => holo(li, 0));
             const start = document.getElementById("startMatch");
             start.hidden = !isHost;
             start.disabled = lobby.members.filter(m => m.connected).length < 2;

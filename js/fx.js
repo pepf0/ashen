@@ -16,6 +16,9 @@ export function setEffectsLevel(v) { level = v; store.set("ashen.effects", Strin
 export function getVolume() { return volume; }
 export function setVolume(v) { volume = v; store.set("ashen.volume", String(v)); if (master) master.gain.value = v * 0.5; }
 export function onFxChange(f) { listeners.add(f); }
+let musicVolume = Number(store.get("ashen.music", "0.35"));
+export function getMusicVolume() { return musicVolume; }
+export function setMusicVolume(v) { musicVolume = v; store.set("ashen.music", String(v)); if (musicBus) musicBus.gain.value = v * 0.4; }
 
 // ======================= ember background =======================
 
@@ -67,7 +70,7 @@ export function startEmbers() {
 
 // ======================= sound =======================
 
-let audio = null, master = null, noiseBuffer = null;
+let audio = null, master = null, noiseBuffer = null, musicBus = null;
 const lastPlayed = new Map();
 
 function ac() {
@@ -79,6 +82,9 @@ function ac() {
     master.gain.value = volume * 0.5;
     const comp = audio.createDynamicsCompressor();
     master.connect(comp).connect(audio.destination);
+    musicBus = audio.createGain();
+    musicBus.gain.value = musicVolume * 0.4;
+    musicBus.connect(comp);
     noiseBuffer = audio.createBuffer(1, audio.sampleRate * 0.5, audio.sampleRate);
     const d = noiseBuffer.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -147,6 +153,42 @@ const SOUNDS = {
     defeat: () => [392, 349, 311, 262].forEach((f, k) => tone({ type: "triangle", f0: f, f1: f * 0.97, dur: k === 3 ? 0.6 : 0.18, vol: 0.13, delay: k * 0.18 })),
     crumble: () => noise({ dur: 0.9, vol: 0.25, freq: 900, f1: 120, type: "lowpass" }),
     announce: () => [784, 988, 1175].forEach((f, k) => tone({ type: "triangle", f0: f, dur: 0.14, vol: 0.09, delay: k * 0.08 })),
+    encore: () => {
+        [523, 659, 784, 1047, 1319, 1568].forEach((f, k) => tone({ type: "square", f0: f, dur: k === 5 ? 0.5 : 0.1, vol: 0.08, delay: k * 0.07 }));
+        [1047, 1319, 1568].forEach(f => tone({ type: "triangle", f0: f, dur: 0.7, vol: 0.06, delay: 0.45 }));
+        noise({ dur: 0.6, vol: 0.06, freq: 6000, f1: 9000, q: 1, delay: 0.42 });
+    },
+    primeIntro: () => {
+        tone({ type: "sine", f0: 70, f1: 40, dur: 0.9, vol: 0.4 });
+        noise({ dur: 0.7, vol: 0.12, freq: 400, f1: 5000, q: 0.7 });
+        [523, 784, 1047, 1568].forEach((f, k) => tone({ type: "triangle", f0: f, dur: 0.8 - k * 0.1, vol: 0.06, delay: 0.55 + k * 0.05 }));
+        tone({ type: "square", f0: 262, dur: 0.35, vol: 0.06, delay: 0.55 });
+        noise({ dur: 0.9, vol: 0.05, freq: 7000, f1: 10000, q: 1, delay: 0.6 });
+    },
+    cutin: () => {
+        noise({ dur: 0.25, vol: 0.25, freq: 600, f1: 5000, q: 0.8 });
+        tone({ type: "sawtooth", f0: 200, f1: 900, dur: 0.25, vol: 0.1 });
+        noise({ dur: 0.4, vol: 0.4, freq: 900, f1: 120, type: "lowpass", delay: 0.28 });
+        tone({ type: "sine", f0: 120, f1: 40, dur: 0.5, vol: 0.4, delay: 0.28 });
+        [784, 1175, 1568].forEach((f, k) => tone({ type: "triangle", f0: f, dur: 0.5, vol: 0.05, delay: 0.3 + k * 0.03 }));
+    },
+    riff: () => {
+        // Distorted power chord: root + fifth + octave, stabbed twice.
+        for (const [d, len] of [[0, 0.12], [0.14, 0.28]]) [110, 165, 220].forEach(f => tone({ type: "sawtooth", f0: f, f1: f * 0.98, dur: len, vol: 0.07, delay: d }));
+        noise({ dur: 0.35, vol: 0.06, freq: 1800, q: 0.6 });
+    },
+    choir: () => {
+        // A heavenly "aah": a soft major-seventh chord of detuned sines with vibrato that swells and fades.
+        if (!audio) return;
+        const t = audio.currentTime;
+        for (const f of [523.25, 659.25, 783.99, 987.77, 1046.5]) for (const det of [-3, 3]) {
+            const o = audio.createOscillator(), g = audio.createGain(), lfo = audio.createOscillator(), lg = audio.createGain();
+            o.type = "sine"; o.frequency.value = f; o.detune.value = det;
+            lfo.frequency.value = 5.5; lg.gain.value = 6; lfo.connect(lg).connect(o.detune);
+            g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.022, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
+            o.connect(g).connect(master); o.start(t); lfo.start(t); o.stop(t + 2.7); lfo.stop(t + 2.7);
+        }
+    },
     whoosh: () => noise({ dur: 0.25, vol: 0.12, freq: 400, f1: 2400, q: 0.8 })
 };
 
@@ -158,4 +200,86 @@ export function sfx(name, minGap = 0.045) {
     if (now - (lastPlayed.get(name) ?? -1) < minGap) return;
     lastPlayed.set(name, now);
     try { SOUNDS[name](); } catch { /* ignore audio errors */ }
+}
+
+// ======================= music =======================
+// Procedural chiptune loops: a chord progression drives a bass line, an arpeggio and simple drums.
+// The scheduler queues notes a little ahead on the audio clock so timing stays tight.
+
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+const MINOR = [0, 3, 7], MAJOR = [0, 4, 7];
+const TRACKS = {
+    // Menu: slow and moody (Am F C G), soft pads and a gentle arpeggio.
+    menu: { bpm: 84, prog: [[57, MINOR], [53, MAJOR], [48, MAJOR], [55, MAJOR]], pad: 0.03, arp: [0, 1, 2, 1, 0, 2, 1, 2], arpVol: 0.018, arpEvery: 2, bass: [0], bassVol: 0.05, drums: null },
+    // Shop: bouncy and bright (C Am F G).
+    shop: { bpm: 112, prog: [[48, MAJOR], [57, MINOR], [53, MAJOR], [55, MAJOR]], pad: 0.012, arp: [0, 1, 2, 3, 2, 1, 0, 1], arpVol: 0.02, arpEvery: 1, bass: [0, 8, 10], bassVol: 0.07,
+        drums: { kick: "x.......x.......", snare: "........", hat: "..x...x...x...x." } },
+    // Fight: driving minor (Em C D B), pumping bass and a full beat.
+    fight: { bpm: 150, prog: [[52, MINOR], [48, MAJOR], [50, MAJOR], [47, MAJOR]], pad: 0.01, arp: [0, 2, 1, 2, 3, 2, 1, 2], arpVol: 0.022, arpEvery: 1, bass: [0, 2, 4, 6, 8, 10, 12, 14], bassVol: 0.075, bassType: "sawtooth",
+        drums: { kick: "x...x...x...x...", snare: "....x.......x...", hat: "x.x.x.x.x.x.x.x." } }
+};
+let track = null, nextStep = 0, step = 0, timer = 0;
+
+function musicTone(type, f, t, dur, vol) {
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(musicBus);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+}
+
+function musicNoise(t, dur, vol, freq, type = "highpass") {
+    const src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+    src.buffer = noiseBuffer;
+    f.type = type;
+    f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(musicBus);
+    src.start(t);
+    src.stop(t + dur + 0.05);
+}
+
+function scheduleStep(tr, s, t) {
+    const sixteenth = 60 / tr.bpm / 4;
+    const bar = Math.floor(s / 16) % tr.prog.length, pos = s % 16;
+    const [root, chord] = tr.prog[bar];
+    const tones = [...chord, 12].map(i => root + i);
+    if (pos === 0 && tr.pad) for (const n of tones.slice(0, 3)) musicTone("triangle", midi(n + 12), t, sixteenth * 16, tr.pad);
+    if (tr.bass.includes(pos)) musicTone(tr.bassType ?? "triangle", midi(root - 12 + (pos === 10 && tr.bass.length === 3 ? 7 : 0)), t, sixteenth * 1.8, tr.bassVol);
+    if (pos % tr.arpEvery === 0) {
+        const n = tones[tr.arp[(pos / tr.arpEvery) % tr.arp.length] % tones.length] + 24;
+        musicTone("square", midi(n), t, sixteenth * 0.9, tr.arpVol);
+    }
+    const d = tr.drums;
+    if (d) {
+        if (d.kick[pos] === "x") { musicTone("sine", 120, t, 0.12, 0.12); }
+        if (d.snare[pos] === "x") musicNoise(t, 0.12, 0.06, 1200, "bandpass");
+        if (d.hat[pos] === "x") musicNoise(t, 0.03, 0.025, 7000);
+    }
+}
+
+function pump() {
+    if (!track || !audio || audio.state !== "running" || musicVolume <= 0) return;
+    const tr = TRACKS[track], sixteenth = 60 / tr.bpm / 4;
+    if (nextStep < audio.currentTime) nextStep = audio.currentTime + 0.05;
+    while (nextStep < audio.currentTime + 0.2) {
+        scheduleStep(tr, step, nextStep);
+        nextStep += sixteenth;
+        step++;
+    }
+}
+
+/** Switches the background music ("menu", "shop", "fight", or null for silence). */
+export function setMusic(name) {
+    if (name === track) return;
+    track = TRACKS[name] ? name : null;
+    step = 0;
+    if (!ac()) return;
+    nextStep = audio.currentTime + 0.1;
+    if (!timer) timer = setInterval(pump, 50);
 }

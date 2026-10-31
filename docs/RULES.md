@@ -186,7 +186,7 @@ reset every fight. Stunned players can't use abilities (except Cleanse).
 |---|---|---|---|---|
 | Duelist | Parry (7 s): blocks the next hit within 0.6 s, reflects 50 % | Lunge (7 s): instant extra weapon attack | Feint (12 s): enemy's next weapon attack misses | Flurry: 5 extra weapon attacks over 1.5 s |
 | Berserker | Rage (10 s): +60 % damage dealt, +15 % taken, 4 s | Bloodlust (12 s): heal 40 % of damage dealt, 5 s | Shout (8 s): stun 0.5 s | Rampage: weapon cooldown ×0.5 + stun immune 6 s, breaks stuns |
-| Guardian | Shield (12 s): absorb 9 % max HP, 4 s | Brace (12 s): +20 % damage reduction (past the item cap), 3 s | Cleanse (12 s): remove stun + enemy debuffs, works while stunned | Bulwark: invulnerable 1.5 s, reflects 50 % of blocked damage |
+| Guardian | Shield (12 s): absorb 9 % max HP, 4 s | Brace (12 s): +20 % damage reduction (past the item cap), 3 s | Cleanse (12 s): remove stun + enemy debuffs, works while stunned | Bulwark: 2 s, blocks 50 % of incoming damage and throws the blocked part back at the attacker (not invulnerable; Headshot is blocked but not thrown back) |
 | Trickster | Smoke (8 s): +30 % dodge, 3 s | Hex (11 s): enemy weapon cooldown ×1.6, 4 s | Blink (5 s): next weapon attack crits | Mirror: copy the enemy's active upsides for 6 s (copied stacks capped at ×1.5) |
 | Gambler | Coin Flip (3.5 s): next hit ×3 or ×0.75 | Double Down (10 s): +50 % crit chance, 5 s | Jackpot (12 s): 25 % stun 1.5 s, else +3 $ | All In: next 4 hits each 65 % to deal ×3.5, else miss |
 | Sniper | Aim (8 s): next hit +125 % | Mark (12 s): enemy takes +20 % damage, 5 s | Retreat (12 s): +30 % dodge, 2 s | Headshot: 2 s wind-up, then 40 % of the enemy's current HP |
@@ -347,10 +347,97 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
   - **Victory effects** played in the arena when you win a fight (Confetti,
     Fireworks, Lightning, Meteor, Soul Harvest, Ash Storm, …).
   - **Admin set "Pepf Prime"** (only for `ASHEN_ADMINS`, hidden from everyone
-    else): Pepf Prime name color, Tidecrown name border, "Creator of Ashen"
+    else): Pepf Prime name color, Tidecrown name border, "The Creator"
     title, Pepf Aura portrait border, Pepf Tide fighter frame, Pepf Teal weapon
-    skin and the Encore victory effect.
+    skin and the Encore victory effect. Wearing any piece also gives the
+    player a turquoise aura in fights (light column, rolling tide, orbiting
+    stars, drifting notes and a pixel crown), highlighted rows in the lobby,
+    match sidebar and standings, light rays and a turquoise podium, a
+    deep-sea profile banner, and a "has arrived" announcement with a chime
+    when they join a lobby. The menu's demo duel sometimes shows the set off.
+    In fights the set also brings cinematics: a letterboxed entrance card
+    ("enters the arena"), a fighting-game cut-in with the portrait and the
+    ultimate's name when they use R, and an "ENCORE" title card when they
+    win, plus light shafts, a turning magic circle, glowing weapon trails and
+    lens-flare impacts. Their profile banner and podium portrait tilt with a
+    holographic foil sheen under the mouse. On top of that: aurora curtains
+    and shooting stars over the arena, a glowing rim around the arena, an
+    equalizer ring that jumps on every hit, charms on a gyroscope orbit,
+    turquoise echoes trailing the items, electric arcs, a blink when dodging,
+    an "awakening" heartbeat below 35% HP, turquoise damage numbers, a
+    slow-motion finisher zoom, a turquoise countdown and HP bar, chat messages
+    in Pepf colors, and a name whose letters wave one after another.
+    Pepf Prime fights also take place in the **Tidal Throne** (a sunken palace
+    under a giant moon with jellyfish, waves and caustics; visual only, the
+    drawn arena's rule still applies). Pepf's dragon floats beside the items
+    and breathes turquoise fire on crits and ultimates, hit streaks show a
+    combo counter (COMBO, GREAT, AMAZING, LEGENDARY, GODLIKE), and the final
+    blow of a won fight is replayed in slow motion before the finisher. The
+    opponent gets a "You are facing Pepf" warning and their items shiver.
+    Outside fights: a custom crowned pixel portrait, a crown level badge, a
+    throne card at the top of the lobby with a turning portrait, and a
+    legendary reveal on purchases and slot-machine spins on rerolls.
+  - **Signature sets** (only for that player's account, hidden from everyone
+    else; listed by username under `unlock.users` in cosmetics.json): each
+    has a name color, name border, title, portrait border, fighter frame,
+    weapon skin, victory effect and a glowing aura in fights.
+    - **Z7FOX** (crimson/magenta, crosses): Crimson Fox, Fox Cross,
+      "The Otherworldly", Crimson Halo, Magenta Rush, Fox Magenta and the
+      Red Card victory.
+    - **Ely7** (lime/gold, clovers): Fortune, Clover Crown,
+      "Fortune's Favorite", Four Leaf, Celestial Luck, Lucky Clover and the
+      Jackpot victory.
+    - **xXZweiradXx** (arcane violet, runes): Arcane Might, Runebound,
+      "The Mighty", Noel's Sigil, Arcane Surge, Arcane Violet and the
+      Overload victory.
+  - **DOMIX** (only for `domix`; electric blue and amber, a DJ): Bassline
+    name color that pulses to 126 bpm, Equalizer name border with dancing
+    bars, "On the Decks", Headphones portrait border, Strobe frame, Neon Vinyl
+    weapon skin, the Drop the Bass victory (shockwaves and strobes on the
+    beat) and a DJ club arena with lasers, an LED floor and a crowd.
+  - **Raul's cosmetics** (only for `canyoubeat`; cosmetics only, no aura),
+    Evangelion-inspired in unit violet, neon green and barrier orange: Unit
+    Violet name color and weapon skin, Hex Field name border, "The Third
+    Pilot", Entry Plug portrait border, Berserk Mode frame and the
+    Synchro 400% victory (octagonal barrier rings and cross-shaped pillars).
+  - Pepf Prime weapon effects: glowing slash crescents on every melee swing,
+    and on crits chain lightning through the target's items, a storm of
+    music notes with a power-chord riff and a shockwave along the ground. The
+    weapon's aura grows with its level (glow, orbiting runes at L3, a crown of
+    turquoise flames at L5).
 - Click any player name to see their profile.
+
+## Match feel
+
+- **Every player:** ultimates show a banner in the kit's color, crits flash a
+  lens flare in the kit's color, and fights won without a victory cosmetic
+  end with a VICTORY stamp and a kit-colored burst.
+- **Friend signature sets** (Z7FOX, ely7, xXZweiradXx, DOMIX, Raul) also bring a
+  lighter entrance card, an ultimate cut-in and their own arena backdrop
+  (visual only; the arena rule still applies): Z7FOX's floodlit stadium,
+  ely7's casino, xXZweiradXx's arcane tower, DOMIX's DJ club and Raul's
+  geofront.
+- **Pepf Prime stays on top:** the full cinematics (letterbox, glitch name,
+  kill cam, dragon) are Pepf's alone; friends in a signature set bow when
+  Pepf enters a lobby or fight; a golden halo, gold motes, golden rays and a
+  choir on ENCORE; and every won fight ends in one of three finishers
+  (tidal wave, dragon nova, giant guitar smash).
+
+- **Shop stat preview:** hovering a shop item shows exactly how buying it
+  would change your stats (green = better, red = worse).
+- **Round recap:** after each combat phase the match sidebar lists every
+  fight of the round with the winner's HP left and fight length, plus tags
+  for Flawless (no damage taken), Clutch (won with 10% HP or less) and the
+  round's biggest single hit.
+- **Awards:** the end screen hands out MVP (most fights won), Heavy Hitter
+  (biggest single hit), Destroyer (most damage dealt), Iron Wall (most damage
+  taken), Crit Machine (most crits) and Lifeline (most healing).
+- **Nemesis:** the standings show who beat each player most often (at least
+  twice; fights against ghosts don't count).
+- **Music:** procedural chiptune loops for menus, the shop and fights, with
+  its own volume slider under Settings → Effects & sound.
+- **Portraits:** every kit has a detailed 24×24 bust portrait holding its
+  signature gear (rapier, axe, shield, card, dice, rifle).
 
 ## Fights on screen
 

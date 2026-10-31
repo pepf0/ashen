@@ -24,11 +24,15 @@ export async function loadAchievements() {
 export function nameEl(name, appearance, userId, { showTitle = true } = {}) {
     const node = nameNode(name, appearance);
     const wrap = el("span", { class: "name-wrap" + (userId > 0 ? " clickable" : ""), onclick: userId > 0 ? e => { e.stopPropagation(); openProfile(userId); } : undefined },
-        appearance?.level ? el("span", { class: "level-badge-sm", text: `${appearance.level}` }) : null,
+        appearance?.level ? el("span", { class: "level-badge-sm" + (isPrime(appearance) ? " crown" : ""), text: `${appearance.level}` }) : null,
         node,
         showTitle && appearance?.title ? titleEl(appearance.title) : null);
     return wrap;
 }
+
+/** Whether the player wears any piece of the admin set "Pepf Prime" (rows, podiums and profiles get extra flair). */
+export { isPrime } from "./prime.js";
+import { isPrime, holo, primeLetters } from "./prime.js";
 
 /** A title; title cosmetics get their own style class (e.g. the admin set). */
 export function titleEl(title) {
@@ -39,7 +43,9 @@ export function titleEl(title) {
 /** The name in its color, wrapped in its name border (if any). The border is a separate element so its
  * background can't hide gradient (text-clipped) name colors. */
 export function nameNode(name, appearance, cls = "") {
-    const text = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "") + (cls ? ` ${cls}` : ""), text: name });
+    const lettered = appearance?.nameColor === "name_pepf";
+    const text = el("span", { class: "player-name" + (appearance?.nameColor ? ` nc-${appearance.nameColor}` : "") + (lettered ? " lettered" : "") + (cls ? ` ${cls}` : ""),
+        "aria-label": lettered ? name : undefined }, lettered ? primeLetters(name) : name);
     const border = appearance?.nameBorder;
     return border && border !== "nb_none" ? el("span", { class: `nb ${border}` }, text) : text;
 }
@@ -47,8 +53,10 @@ export function nameNode(name, appearance, cls = "") {
 /** Pixel portrait of the player's kit inside their portrait border cosmetic. size: "sm" | "md" | "lg". */
 export function portraitEl(kit, appearance, size = "sm") {
     const border = appearance?.border && appearance.border !== "pb_none" ? appearance.border : "pb_default";
+    // Pepf Prime has their own character instead of the kit's.
+    const who = isPrime(appearance) ? "pepf" : kit ?? "none";
     return el("span", { class: `portrait ${size} ${border}`, dataset: { kit: kit ?? "none" } },
-        el("img", { src: portraitUrl(kit ?? "none", 4), alt: "", draggable: "false" }));
+        el("img", { src: portraitUrl(who, 4), alt: "", draggable: "false" }));
 }
 
 function bar(into, needed) {
@@ -62,12 +70,12 @@ export async function openProfile(userId) {
         const [p, ach] = await Promise.all([api(`profile/${userId}`), loadAchievements()]);
         const unlocked = new Map(p.achievements.map(a => [a.id, a.at]));
         const body = el("div", { class: "profile" },
-            el("div", { class: "profile-head" },
+            el("div", { class: "profile-head" + (isPrime(p.appearance) ? " prime" : "") },
                 portraitEl(p.kits?.[0]?.kit ?? "none", p.appearance, "lg"),
-                el("div", { class: "profile-level", text: `${p.level}` }),
+                el("div", { class: "profile-level" + (isPrime(p.appearance) ? " crown" : ""), text: `${p.level}` }),
                 el("div", { class: "grow" },
                     el("div", { class: "profile-name" }, nameNode(p.name, p.appearance)),
-                    el("div", { class: "muted small" }, `@${p.username}`, p.appearance?.title ? ` · ${p.appearance.title}` : "", p.mastery ? ` · ${p.mastery}` : ""),
+                    el("div", { class: "muted small" }, `@${p.username}`, p.appearance?.title ? [" · ", titleEl(p.appearance.title)] : "", p.mastery ? ` · ${p.mastery}` : ""),
                     bar(p.levelXp, p.nextLevelXp))),
             el("div", { class: "profile-stats" }, [
                 ["Games", p.stats.games], ["Wins", p.stats.wins], ["Win rate", `${Math.round(p.stats.winRate * 100)}%`],
@@ -92,6 +100,7 @@ export async function openProfile(userId) {
             el("ul", { class: "match-list compact" }, p.recentMatches.map(m => el("li", {},
                 el("span", { class: "grow", text: m.winners ? `${m.winners} won` : "Match" }),
                 el("span", { class: "muted small", text: `${m.players} players · ${m.rounds} rounds · ${new Date(m.endedAt).toLocaleDateString()}` })))));
+        holo(body.querySelector(".profile-head.prime"), 5);
         await openDialog(p.name, body, [{ label: "Close", value: true }]);
     } catch (err) {
         toast(err.message);

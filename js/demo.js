@@ -22,6 +22,8 @@ export function startDemo(root) {
                 ...[...new Set([pick(dynamics), pick(dynamics), pick(dynamics)])].map((id, k) => ({ id, slot: `dynamic${k}` }))],
             appearance: { weaponSkin: pick(SKINS), victory: pick(["victory_fireworks", "victory_confetti", "victory_souls", "victory_ashstorm", "victory_meteor"]) }
         }));
+        // Every few rounds one side shows off the admin set "Pepf Prime".
+        if (round % 4 === 3) fighters[round % 2].appearance = { weaponSkin: "ws_pepf", victory: "victory_pepf", frame: "frame_pepf" };
         arena = new Arena(root, { fighters, arenaId: ARENAS[round++ % ARENAS.length], seed: Date.now() & 0xffff, silent: true });
         const hp = [1, 1], t = { now: 0 }, next = [0.6, 1.1];
         const kitAbilities = fighters.map(f => data.kits[f.kit]?.abilities ?? []);

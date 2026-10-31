@@ -3,6 +3,7 @@ import { data, el, item, itemCard, abilityById, abilityTooltip, attachTooltip, a
 import { formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl, portraitEl } from "./profile.js";
+import { isPrime } from "./prime.js";
 import { simControls } from "./game.js";
 import { Arena } from "./arena.js";
 import { sfx } from "./fx.js";
@@ -119,7 +120,7 @@ export function createCombatView(app) {
         fight.panel = i => fight.panels[fight.sideOf(i)];
         fight.arena = new Arena(document.getElementById("arenaStage"), {
             fighters: msg.fighters.map(f => ({ name: f.name, kit: f.kit, appearance: f.appearance, items: f.items })),
-            left, arenaId: msg.arena?.id, seed: typeof msg.fightId === "number" ? msg.fightId : 7
+            left, arenaId: msg.arena?.id, seed: typeof msg.fightId === "number" ? msg.fightId : 7, viewer: msg.you ?? null
         });
         document.getElementById("arenaName").textContent = msg.arena?.name ?? "The Ashen Wastes";
         fight.lastCount = null;
@@ -205,6 +206,7 @@ export function createCombatView(app) {
                 cd.hidden = false;
                 cd.textContent = text;
                 cd.classList.toggle("go", left <= 0);
+                cd.classList.toggle("prime", fight.fighters.some(f => isPrime(f.appearance)));
                 cd.classList.remove("pop");
                 void cd.offsetWidth;
                 cd.classList.add("pop");
@@ -259,10 +261,11 @@ export function createCombatView(app) {
             p.root.classList.toggle("stunned", s.stun > 0);
             p.root.classList.toggle("invulnerable", s.invuln > 0);
             p.root.classList.toggle("sudden", !!snap.suddenDeath);
-            const statusKey = `${s.stun.toFixed(1)}|${s.invuln.toFixed(1)}|${s.parry}|${s.windup == null ? "" : Math.max(0, s.windup).toFixed(1)}`;
+            const statusKey = `${s.stun.toFixed(1)}|${s.invuln.toFixed(1)}|${(s.bulwark ?? 0).toFixed(1)}|${s.parry}|${s.windup == null ? "" : Math.max(0, s.windup).toFixed(1)}`;
             if (p.statusKey !== statusKey) p.status.replaceChildren(...[
                 s.stun > 0 ? el("span", { class: "badge stun", text: `Stunned ${s.stun.toFixed(1)}s` }) : null,
                 s.invuln > 0 ? el("span", { class: "badge invuln", text: `Invulnerable ${s.invuln.toFixed(1)}s` }) : null,
+                s.bulwark > 0 ? el("span", { class: "badge invuln", text: `Bulwark ${s.bulwark.toFixed(1)}s` }) : null,
                 s.parry ? el("span", { class: "badge invuln", text: "Parry ready" }) : null,
                 s.windup != null ? el("span", { class: "badge stun", text: `Headshot in ${Math.max(0, s.windup).toFixed(1)}s` }) : null
             ].filter(Boolean));
@@ -317,7 +320,7 @@ export function createCombatView(app) {
         if (!fight || msg.fightId !== fight.id) return;
         fight.ended = true;
         const r = msg.result;
-        fight.arena?.finish(r.winner);
+        const extra = fight.arena?.finish(r.winner) ?? 0;
         if (fight.you == null) {
             const title = document.getElementById("cOvertime");
             title.textContent = r.winner === -1 ? "Draw" : `${r.fighters[r.winner].name} wins`;
@@ -328,7 +331,7 @@ export function createCombatView(app) {
         const won = r.winner === you, draw = r.winner === -1;
         const title = document.getElementById("resultTitle");
         title.textContent = draw ? "Draw" : won ? "Victory" : "Defeat";
-        setTimeout(() => sfx(won ? "victory" : "defeat"), 500);
+        setTimeout(() => sfx(won ? "victory" : "defeat"), 500 + extra * 1000);
         title.className = draw ? "draw" : won ? "win" : "lose";
         const opp = 1 - you;
         const rows = [
@@ -341,7 +344,7 @@ export function createCombatView(app) {
         if (won && r.damageTaken[you] <= 0) rows.push(["Flawless victory", "Yes"]);
         document.getElementById("resultStats").replaceChildren(...rows.map(([k, v]) =>
             el("li", {}, el("span", { class: "muted", text: k }), el("b", { text: String(v) }))));
-        setTimeout(() => { if (fight?.ended && fight.you != null) document.getElementById("resultScreen").hidden = false; }, 2100);
+        setTimeout(() => { if (fight?.ended && fight.you != null) document.getElementById("resultScreen").hidden = false; }, 2100 + extra * 1000);
         updateWait(app.game.state);
     }
 
