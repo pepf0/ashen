@@ -161,11 +161,20 @@ public partial class Database
     /// <summary>Achievement names, the kit mastery title and unlocked title cosmetics.</summary>
     private List<string> AvailableTitles(long userId, int level, ISet<string> achievements, CosmeticOwner? owner)
     {
+        if (owner?.Admin == true) return AllTitles().ToList();
         var titles = GameData.Achievements.Where(a => achievements.Contains(a.Id)).Select(a => a.Name).ToList();
         titles.AddRange(GameData.Cosmetics.Where(c => c.Kind == "title" && Progression.Unlocked(c, level, achievements, owner)).Select(c => c.Name));
         if (MasteryTitle(userId) is { } mastery) titles.Insert(0, mastery);
         return titles;
     }
+
+    /// <summary>Every title in the game, for admins (testing): achievements, title cosmetics (signature sets included)
+    /// and every kit mastery title.</summary>
+    public static IEnumerable<string> AllTitles() =>
+        GameData.Achievements.Select(a => a.Name)
+            .Concat(GameData.Cosmetics.Where(c => c.Kind == "title").Select(c => c.Name))
+            .Concat(GameData.Kits.Values.SelectMany(k => MasteryRanks.Select(r => $"{k.Name} {r.Rank}")))
+            .Distinct();
 
     /// <summary>Locker: every cosmetic with its unlock state, available titles and what's equipped.</summary>
     public object GetLocker(long userId)

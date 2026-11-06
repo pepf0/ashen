@@ -346,6 +346,9 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     weapons (Sword, Hammer, Frying Pan, Bow) in the shop, your build and fights.
   - **Victory effects** played in the arena when you win a fight (Confetti,
     Fireworks, Lightning, Meteor, Soul Harvest, Ash Storm, …).
+  - **Admins** (`ASHEN_ADMINS`) can equip every title in the game for testing:
+    all achievement titles, every title cosmetic (signature sets included) and
+    every kit mastery title.
   - **Admin set "Pepf Prime"** (only for `ASHEN_ADMINS`, hidden from everyone
     else): Pepf Prime name color, Tidecrown name border, "The Creator"
     title, Pepf Aura portrait border, Pepf Tide fighter frame, Pepf Teal weapon

@@ -32,6 +32,18 @@ public class DataTests
     }
 
     [Fact]
+    public void AdminsGetEveryTitle()
+    {
+        var all = Database.AllTitles().ToList();
+        Assert.Contains("The Creator", all);
+        Assert.Contains("The Otherworldly", all);
+        Assert.Contains("On the Decks", all);
+        Assert.Contains(GameData.Achievements[0].Name, all);
+        Assert.Contains($"{GameData.Kits.Values.First().Name} Master", all);
+        Assert.Equal(all.Count, all.Distinct().Count());
+    }
+
+    [Fact]
     public void TriggersParse()
     {
         Assert.Equal(TriggerKind.Hit, GameData.Effects["pepf.guitar.stacking_damage_buff"].Trigger);
