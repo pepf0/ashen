@@ -1698,8 +1698,12 @@ public partial class Lobby
                     titles = o.Titles,
                     bounty = o.Bounty,
                     appearance = o.Appearance,
-                    mastery = MemberOf(o.Id)?.Mastery
+                    mastery = MemberOf(o.Id)?.Mastery,
+                    lives = Math.Max(0, o.Lives),
+                    wins = o.Wins,
+                    losses = o.Losses
                 }),
+                startingLives,
                 events = GameData.Events.Where(e => activeEvents.Contains(e.Id)).Select(e => new
                 {
                     id = e.Id,

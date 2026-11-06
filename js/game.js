@@ -3,6 +3,7 @@ import { el, item, itemCard, statPretty, kitCard, augmentCard, data, abilityPret
 import { openDialog, resolveDialog, formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl, portraitEl, isPrime } from "./profile.js";
+import { nameplate, hearts } from "./nameplate.js";
 import { sfx } from "./fx.js";
 
 const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
@@ -344,10 +345,22 @@ export function createGameView(app) {
             el("li", { class: (p.alive ? "" : "dead ") + (p.connected ? "" : "offline") + (isPrime(p.appearance) ? " prime" : "") },
                 portraitEl(p.kit, p.appearance, "xs"),
                 el("span", { class: "grow" }, nameEl(p.name, p.appearance, p.id, { showTitle: false }), p.id === app.user.id ? el("span", { class: "muted", text: " (you)" }) : null,
+                    el("div", { class: "side-hearts" }, hearts(p.lives, state.startingLives)),
                     p.mastery ? el("div", { class: "mastery", text: p.mastery }) : null),
                 p.bounty > 0 ? el("span", { class: "tag bounty", title: "Beat them to collect it", text: `Bounty ${p.bounty}$` }) : null,
                 !p.alive ? el("span", { class: "tag dead", text: "Out" })
                     : state.phase === "shop" ? el("span", { class: "tag" + (p.ready ? " ready" : ""), text: p.ready ? "Ready" : "Shopping" }) : null)));
+        // Player banner: everyone's nameplate with lives, alive first (most lives first), the eliminated at the end.
+        const order = [...state.players].sort((a, b) => (b.alive - a.alive) || (b.lives - a.lives));
+        const banner = document.getElementById("playerBanner");
+        const key = order.map(p => `${p.id}:${p.lives}:${p.alive}:${p.appearance?.level}:${p.appearance?.nameColor}:${p.appearance?.title}`).join("|");
+        if (banner.dataset.key !== key) {
+            banner.dataset.key = key;
+            banner.replaceChildren(...order.map(p => nameplate(p.name, p.appearance, {
+                kit: p.kit, lives: p.lives, maxLives: state.startingLives, you: p.id === app.user.id, out: !p.alive, compact: true,
+                sub: `${p.wins ?? 0}W · ${p.losses ?? 0}L` + (p.bounty > 0 ? ` · Bounty ${p.bounty}$` : "")
+            })));
+        }
         document.getElementById("gEvents").replaceChildren(...state.events.map(e =>
             el("li", { class: (e.claimedBy ? "claimed" : "") + (e.special ? " special" : "") },
                 el("div", { class: "row spread" }, el("b", { text: e.name }), el("span", { class: "small muted", text: e.reward })),

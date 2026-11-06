@@ -1863,3 +1863,86 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 .skin-ws_domix { --sk: #ffb000; }
 .sig-domix { --s0: #2f7bff; --s1: #ffb000; --s2: #fff4d0; --sd: #040a1e; }
 @media (prefers-reduced-motion: reduce) { .fighter.frame-frame_domix, .nc-name_domix, .nb_domix::after, .portrait.pb_domix::after { animation: none; } }
+
+/* ==========================================================================
+   Nameplates (js/nameplate.js): match banner, fighter heads. Styled by set, else by level tier.
+   ========================================================================== */
+.player-banner { display: grid; grid-template-columns: repeat(auto-fill, minmax(208px, 1fr)); gap: 8px; padding: 2px 2px 10px; margin: 0 0 12px; }
+.player-banner .nameplate { min-width: 0; }
+.player-banner:empty { display: none; }
+.nameplate {
+    --p0: #6a6488; --p1: #3a3454; --pt: #e8e4ff; --pg: transparent;
+    position: relative; isolation: isolate; overflow: hidden; flex: 0 0 auto; min-width: 230px;
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 10px; border-radius: 6px;
+    border: 2px solid var(--p0);
+    background: linear-gradient(100deg, color-mix(in srgb, var(--p0) 34%, #0b0618) 0%, color-mix(in srgb, var(--p1) 40%, #0b0618) 55%, #0b0618 100%);
+    box-shadow: 0 0 16px var(--pg), inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 3px 0 #05020c;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+}
+.nameplate::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, var(--p0), var(--p1)); }
+.nameplate.compact { min-width: 210px; padding: 6px 14px 6px 8px; gap: 8px; }
+.nameplate.you { outline: 2px solid rgba(255, 122, 61, 0.7); outline-offset: -5px; }
+.nameplate.out { filter: grayscale(0.85) brightness(0.6); }
+.np-shine { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.1) 48%, transparent 60%); background-size: 250% 100%; animation: np-shine 5s ease-in-out infinite; }
+@keyframes np-shine { 0%, 60% { background-position: 150% 0; } 100% { background-position: -100% 0; } }
+.np-body { min-width: 0; flex: 1; }
+.np-line { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.np-line .nb, .np-line .player-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.np-title { font-family: var(--font-pixel); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--pt); opacity: 0.85; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+.np-sub { font-size: 0.7rem; color: var(--text-dim, #a7a3c8); margin-top: 1px; }
+/* Level crest: a shield in the tier colors. */
+.np-crest { display: inline-grid; place-items: center; width: 22px; height: 24px; flex: none;
+    background: linear-gradient(180deg, var(--p0), var(--p1)); clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%);
+    filter: drop-shadow(0 0 4px var(--pg)); }
+.np-crest b { font-family: var(--font-pixel); font-size: 0.7rem; color: #0b0618; margin-top: -3px; }
+/* Hearts (lives). */
+.np-hearts { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 70px; justify-content: flex-end; }
+.np-hearts i { width: 10px; height: 9px; display: inline-block;
+    clip-path: polygon(10% 0, 40% 0, 50% 20%, 60% 0, 90% 0, 100% 15%, 100% 45%, 50% 100%, 0 45%, 0 15%);
+    background: linear-gradient(180deg, #ff8a9a, #e0405a 60%, #8a1a2e); }
+.np-hearts i.full { animation: np-heart 1.6s ease-in-out infinite; animation-delay: calc(var(--h) * 0.12s); }
+.np-hearts i.lost { background: #2a2140; box-shadow: inset 0 0 0 1px #4a4070; }
+@keyframes np-heart { 0%, 70%, 100% { transform: scale(1); } 80% { transform: scale(1.25); } }
+.side-hearts .np-hearts { max-width: none; justify-content: flex-start; margin-top: 2px; }
+.side-hearts .np-hearts i { width: 8px; height: 7px; }
+.player-list li.dead .side-hearts { display: none; }
+
+/* Level tiers. */
+.np-tier-bronze { --p0: #c8864a; --p1: #6a3e1e; --pt: #f0c49a; }
+.np-tier-silver { --p0: #d8dce8; --p1: #6a7088; --pt: #eef0f8; --pg: rgba(216, 220, 232, 0.25); }
+.np-tier-gold { --p0: #ffd166; --p1: #9c6a14; --pt: #fff2c0; --pg: rgba(255, 209, 102, 0.35); }
+.np-tier-platinum { --p0: #9fe8ff; --p1: #3a7a9a; --pt: #e0f8ff; --pg: rgba(159, 232, 255, 0.4); }
+.np-tier-diamond { --p0: #b48aff; --p1: #4a2a9a; --pt: #e8dcff; --pg: rgba(180, 138, 255, 0.5); }
+.np-tier-diamond .np-shine { animation-duration: 3s; }
+.np-tier-mythic { --p0: #ff6a3d; --p1: #a8200a; --pt: #ffd8a8; --pg: rgba(255, 106, 61, 0.55); border-color: transparent;
+    background: linear-gradient(100deg, #3a0c06, #1a0610 60%, #0b0618) padding-box, conic-gradient(from var(--pa), #ff6a3d, #ffd166, #e070ff, #ff6a3d) border-box; animation: pepf-spin 4s linear infinite; }
+.np-tier-mythic .np-crest { background: linear-gradient(180deg, #ffd166, #ff6a3d); }
+
+/* Signature sets. */
+.np-set-z7fox { --p0: #e0407a; --p1: #6a0a2e; --pt: #ff9ac0; --pg: rgba(224, 64, 122, 0.45); }
+.np-set-ely7 { --p0: #a8ff40; --p1: #9c7a24; --pt: #fff2a0; --pg: rgba(168, 255, 64, 0.35); }
+.np-set-xxz { --p0: #8a6aff; --p1: #2a0f6a; --pt: #d8c8ff; --pg: rgba(138, 106, 255, 0.5); }
+.np-set-raul { --p0: #7cff3a; --p1: #4a1f8a; --pt: #ffb347; --pg: rgba(124, 255, 58, 0.35); }
+.np-set-raul::after { content: ""; position: absolute; right: 12px; top: 0; width: 26px; height: 100%; z-index: -1; opacity: 0.35; background: repeating-linear-gradient(-45deg, #ff7a1a 0 4px, transparent 4px 8px); }
+.np-set-domix { --p0: #2f7bff; --p1: #b87a00; --pt: #ffb000; --pg: rgba(47, 123, 255, 0.5); animation: np-domix 0.476s ease-out infinite; }
+@keyframes np-domix { 0% { box-shadow: 0 0 22px rgba(255, 176, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08); } 100% { box-shadow: 0 0 10px rgba(47, 123, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08); } }
+.np-set-pepf { --p0: #40e0d0; --p1: #0a8f86; --pt: #ffd166; --pg: rgba(64, 224, 208, 0.55); border-color: transparent;
+    background: radial-gradient(circle at 12% 50%, rgba(64, 224, 208, 0.35), transparent 40%) padding-box, linear-gradient(100deg, #06302e, #04161c 60%, #0b0618) padding-box,
+        conic-gradient(from var(--pa), #40e0d0, #ffffff, #ffd166, #0a8f86, #b8fff6, #ffd166, #40e0d0) border-box;
+    animation: pepf-spin 3s linear infinite; }
+.np-set-pepf .np-crest { background: linear-gradient(180deg, #ffd166, #40e0d0); }
+.np-set-pepf .np-shine { background-image: linear-gradient(105deg, transparent 35%, rgba(184, 255, 246, 0.22) 48%, transparent 60%); animation-duration: 3s; }
+
+/* Fighter panel head as a nameplate. */
+.fighter-head.nameplate-head { position: relative; isolation: isolate; overflow: hidden; padding: 8px 10px; margin: -4px -4px 8px; border-radius: 6px;
+    border: 1px solid var(--p0); background: linear-gradient(100deg, color-mix(in srgb, var(--p0) 26%, transparent), color-mix(in srgb, var(--p1) 22%, transparent) 60%, transparent);
+    box-shadow: inset 4px 0 0 var(--p0), 0 0 14px var(--pg); }
+.fighter-head.np-tier-mythic, .fighter-head.np-set-pepf { animation: none; background: linear-gradient(100deg, color-mix(in srgb, var(--p0) 30%, transparent), color-mix(in srgb, var(--p1) 22%, transparent) 60%, transparent); border-color: var(--p0); }
+.fighter-head .np-hearts { margin-left: 4px; }
+.np-tier-tag { font-family: var(--font-pixel); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; color: #0b0618; background: linear-gradient(90deg, var(--p0), var(--pt)); }
+@media (prefers-reduced-motion: reduce) { .np-shine, .np-hearts i.full, .np-set-domix, .np-set-pepf, .np-tier-mythic { animation: none; } }
+/* Compact plates (match banner): hearts sit in the bottom-right corner so the name gets the full width. */
+.nameplate.compact .np-hearts { position: absolute; right: 16px; bottom: 7px; max-width: none; }
+.nameplate.compact .np-hearts i { width: 9px; height: 8px; }
+.nameplate.compact .np-line .nb, .nameplate.compact .np-line > .player-name { max-width: 140px; }
+.nameplate.compact .np-title { max-width: 150px; }

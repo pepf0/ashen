@@ -4,6 +4,7 @@ import { formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl, portraitEl } from "./profile.js";
 import { isPrime } from "./prime.js";
+import { plateClass, hearts, tierName } from "./nameplate.js";
 import { simControls } from "./game.js";
 import { Arena } from "./arena.js";
 import { sfx } from "./fx.js";
@@ -66,13 +67,18 @@ export function createCombatView(app) {
         const kit = info.kit ? data.kits[info.kit] : null;
         const abilities = kit ? kit.abilities.map((a, i) => abilityButton(a, i, isYou && fight?.you != null)) : [];
 
+        // Nameplate head: styled by set or level tier, with the player's lives from the match state.
+        const sp = app.game?.state?.players?.find(p => p.id === info.playerId);
         root.replaceChildren(
-            el("div", { class: "fighter-head" },
+            el("div", { class: `fighter-head nameplate-head ${plateClass(info.appearance)}` },
+                el("span", { class: "np-shine", "aria-hidden": "true" }),
                 portraitEl(info.kit, info.appearance, "md"),
                 el("h3", {}, nameEl(info.name, info.appearance, info.playerId ?? 0),
                     isYou ? el("span", { class: "tag", text: "You" }) : null,
                     info.ghost ? el("span", { class: "tag", text: "Ghost" }) : null,
-                    kit ? el("span", { class: "tag", text: kit.name }) : null),
+                    kit ? el("span", { class: "tag", text: kit.name }) : null,
+                    info.appearance?.level && plateClass(info.appearance).startsWith("np-tier-") ? el("span", { class: "np-tier-tag", text: tierName(info.appearance.level) }) : null,
+                    sp && !info.ghost ? hearts(sp.lives, app.game.state.startingLives) : null),
                 el("div", { class: "hp-bar" }, hpGhost, hpFill, hpShield, hpText)),
             
             status,

@@ -442,6 +442,18 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
 - **Portraits:** every kit has a detailed 24×24 bust portrait holding its
   signature gear (rapier, axe, shield, card, dice, rifle).
 
+## Nameplates & lives
+
+- During a match a **player banner** above the shop shows everyone's
+  nameplate: portrait, level crest, name, title, wins/losses, bounty and
+  **lives as hearts** (hollow hearts are lives lost). The players list and
+  the fighter panels in fights show the hearts too.
+- A nameplate's style comes from the player's signature set (Pepf Prime and
+  each friend set have their own), otherwise from their level tier: Bronze
+  (1–9), Silver (10–19), Gold (20–29), Platinum (30–39), Diamond (40–49) and
+  Mythic (50+, animated border).
+- Sharing the game link shows a preview banner (`img/og-banner.png`).
+
 ## Fights on screen
 
 - Fights play out in an animated pixel arena matching the rolled arena (Lava
