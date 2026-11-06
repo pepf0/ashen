@@ -22,7 +22,7 @@ public class DataTests
         var fox = GameData.Cosmetics.Single(c => c.Id == "name_z7fox");
         Assert.True(Progression.Unlocked(fox, 1, empty, new CosmeticOwner(false, "Z7FOX")));
         Assert.False(Progression.Unlocked(fox, 99, empty, new CosmeticOwner(false, "ely7")));
-        Assert.False(Progression.Unlocked(fox, 99, empty, new CosmeticOwner(true, "pepf")));
+        Assert.True(Progression.Unlocked(fox, 1, empty, new CosmeticOwner(true, "pepf"))); // admins have everything
         Assert.False(Progression.Unlocked(fox, 99, empty));
         var prime = GameData.Cosmetics.Single(c => c.Id == "name_pepf");
         Assert.True(Progression.Unlocked(prime, 1, empty, new CosmeticOwner(true, "pepf")));

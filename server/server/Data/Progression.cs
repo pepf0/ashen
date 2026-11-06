@@ -160,8 +160,10 @@ public static class Progression
     }
 
     /// <summary>Admin-only (unlock.admin) and signature (unlock.users) cosmetics are never unlocked by levels or achievements.</summary>
+    /// Admins have every cosmetic, signature sets included (for testing).
     public static bool Unlocked(Cosmetic c, int level, ISet<string> achievements, CosmeticOwner? owner = null) =>
-        c.Unlock.Exclusive ? Owns(c, owner)
+        owner?.Admin == true ? true
+        : c.Unlock.Exclusive ? Owns(c, owner)
             : (c.Unlock.Level is int l && level >= l) || (c.Unlock.Achievement is string a && achievements.Contains(a));
 
     /// <summary>Whether an exclusive cosmetic belongs to this account.</summary>

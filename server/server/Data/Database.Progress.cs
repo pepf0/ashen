@@ -192,8 +192,8 @@ public partial class Database
             nextLevelXp = needed,
             equipped = ReadEquipped(conn, userId),
             titles = AvailableTitles(userId, level, achievements, owner).Distinct(),
-            // Admin-only and signature cosmetics are hidden from everyone else.
-            cosmetics = GameData.Cosmetics.Where(c => !c.Unlock.Exclusive || Progression.Owns(c, owner)).Select(c => new
+            // Admin-only and signature cosmetics are hidden from everyone else; admins see everything.
+            cosmetics = GameData.Cosmetics.Where(c => owner?.Admin == true || !c.Unlock.Exclusive || Progression.Owns(c, owner)).Select(c => new
             {
                 c.Id, c.Kind, c.Name, c.Unlock,
                 unlocked = Progression.Unlocked(c, level, achievements, owner)
