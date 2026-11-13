@@ -396,7 +396,8 @@ public partial class Lobby
             weaponlessTakers.Clear();
             activeEvents.Clear();
             foreach (var ev in GameData.Events)
-                if (ev.Chance is not { } chance || rng.NextDouble() < chance) activeEvents.Add(ev.Id);
+                if ((ev.Chance is not { } chance || rng.NextDouble() < chance) && !(Settings.Blitz && ev.Trigger == EventTrigger.WeaponlessStart))
+                    activeEvents.Add(ev.Id);
             lobbySpecials.Clear();
             pendingAnnouncements.Clear();
             lastGameOver = null;
@@ -404,8 +405,8 @@ public partial class Lobby
             matchStartedAt = DateTime.UtcNow;
             mutators.Clear();
             replays.Clear();
-            if (!Simulation || SimMutators) mutators.AddRange(Mutator.All.OrderBy(_ => rng.Next()).Take(Mutator.PerMatch));
-            int lives = Settings.Lives + (Mut("long_haul") ? 2 : 0) - (Mut("hardcore") ? 2 : 0);
+            if ((!Simulation || SimMutators) && !Settings.Blitz) mutators.AddRange(Mutator.All.OrderBy(_ => rng.Next()).Take(Mutator.PerMatch));
+            int lives = Settings.Blitz ? Math.Min(Settings.Lives, BlitzLives) : Settings.Lives + (Mut("long_haul") ? 2 : 0) - (Mut("hardcore") ? 2 : 0);
             if (Mut("hardcore")) lives = Math.Max(Math.Min(2, Settings.Lives), lives);
             foreach (var m in Members.Where(m => !m.Observer))
             {
@@ -440,7 +441,8 @@ public partial class Lobby
                 players = players.Select(p => new { id = p.Id, name = p.Name, kit = p.Kit })
             });
             AddSystemChat("The match has started. Good luck!");
-            AddSystemChat("Mutators this match: " + string.Join(", ", mutators.Select(m => $"{m.Name} ({m.Description})")));
+            if (Settings.Blitz) AddSystemChat("BLITZ MODE! No shop: you get free loot every round. Fights hit harder. Last one standing wins!");
+            else AddSystemChat("Mutators this match: " + string.Join(", ", mutators.Select(m => $"{m.Name} ({m.Description})")));
             State = LobbyState.Shop;
             _ = Task.Run(RunMatchAsync);
             return null;
@@ -489,7 +491,7 @@ public partial class Lobby
                 lock (sync)
                 {
                     State = LobbyState.Results;
-                    phaseEndsAt = DateTime.UtcNow.AddSeconds(SimSeconds(ResultsSeconds));
+                    phaseEndsAt = DateTime.UtcNow.AddSeconds(SimSeconds(Settings.Blitz ? 3 : ResultsSeconds));
                     Broadcast(RoundRecap());
                     BroadcastState();
                 }
@@ -541,9 +543,9 @@ public partial class Lobby
     private FightRules Rules => new()
     {
         Modifier = modifier?.Id,
-        DamageMult = Mut("double_trouble") && round % 3 == 0 ? 2 : 1,
-        OvertimeStart = Mut("quick_death") ? 20 : Combat.OvertimeStart,
-        SuddenDeathStart = Mut("quick_death") ? 40 : Combat.SuddenDeathStart
+        DamageMult = (Mut("double_trouble") && round % 3 == 0 ? 2 : 1) * (Settings.Blitz ? BlitzDamage : 1),
+        OvertimeStart = Settings.Blitz ? 12 : Mut("quick_death") ? 20 : Combat.OvertimeStart,
+        SuddenDeathStart = Settings.Blitz ? 22 : Mut("quick_death") ? 40 : Combat.SuddenDeathStart
     };
 
     private ShopRollOptions RollOptions(Player p) => new()
@@ -593,7 +595,7 @@ public partial class Lobby
     {
         round++;
         State = LobbyState.Shop;
-        phaseEndsAt = DateTime.UtcNow.AddSeconds(Simulation ? SimSeconds(SimShopSeconds) : Settings.ShopSeconds);
+        phaseEndsAt = DateTime.UtcNow.AddSeconds(Simulation ? SimSeconds(SimShopSeconds) : Settings.Blitz ? BlitzLootSeconds : Settings.ShopSeconds);
         fights.Clear();
         RollModifier();
         log?.Write("round", new { round, modifier = modifier?.Id, alive = AlivePlayers().Count() });
@@ -644,9 +646,38 @@ public partial class Lobby
                 log?.Write("pity_offer", new { round, player = p.Id, items = p.Shop.Pity });
         }
         AnnounceRoundEvents();
+        if (Settings.Blitz) BlitzLoot();
         BotsTakeShop();
         FlushAnnouncements();
         BroadcastState();
+    }
+
+    // ---------- Blitz ----------
+    public const double BlitzDamage = 1.6, BlitzLootSeconds = 7;
+    public const int BlitzLives = 3, BlitzBonusMoney = 40;
+
+    /// <summary>Blitz loot drop: every human player's shop is spent automatically (like a hard bot would),
+    /// and what they got is remembered for the reveal animation.</summary>
+    private void BlitzLoot()
+    {
+        foreach (var p in AlivePlayers().Where(p => p.Id > 0))
+        {
+            var before = p.AllItems().ToDictionary(i => i.Id, i => i.Level);
+            int hpBefore = p.HpUpgrades;
+            p.Money += BlitzBonusMoney;
+            var me = new Connection(null!, new User(p.Id, p.Name, p.Name));
+            try
+            {
+                BotShop(p, me, BotDifficulty.Hard);
+                while (p.Money >= HpUpgradeCost(p) + 10 && p.HpUpgrades < hpBefore + 2) if (BuyHp(me) is not null) break;
+            }
+            catch (Exception e) { Console.Error.WriteLine($"[lobby {Code}] blitz loot for {p.Name} failed: {e.Message}"); }
+            p.BlitzLoot = p.AllItems()
+                .Where(i => !before.TryGetValue(i.Id, out var lvl) || lvl < i.Level)
+                .Select(i => new ItemView(i.Id, i.Level, before.ContainsKey(i.Id) ? "up" : "new")).ToList();
+            p.BlitzHp = p.HpUpgrades - hpBefore;
+            p.Ready = false;
+        }
     }
 
     private void LogRoll(Player p, int reroll) => log?.Write("roll", new
@@ -1679,6 +1710,8 @@ public partial class Lobby
                     dynamics = p.Dynamics.Select((d, i) => d is null ? null : new ItemView(d.Id, d.Level, $"dynamic{i}")),
                     shop = new { items = p.Shop.Items, pity = p.Shop.Pity, rerollsLeft = p.Shop.RerollsLeft, locked = p.Shop.Locked },
                     stats = Combat.PreviewStats(p.ToLoadout(), Rules),
+                    blitzLoot = Settings.Blitz ? p.BlitzLoot : null,
+                    blitzHp = p.BlitzHp,
                     // Stats if each shop item were bought (null when it couldn't go in without a swap).
                     shopPreview = p.Shop.Items.Select(i => i.Bought ? null : PreviewWith(p, i.ItemId)),
                     titles = p.Titles,

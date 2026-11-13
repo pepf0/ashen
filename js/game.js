@@ -4,6 +4,7 @@ import { openDialog, resolveDialog, formatTime } from "./ui.js";
 import { label as keyLabelOf, actionFor, onKeybindsChanged, SKILL_ACTIONS } from "./keybinds.js";
 import { nameEl, portraitEl, isPrime } from "./profile.js";
 import { nameplate, hearts } from "./nameplate.js";
+import { renderBlitz } from "./blitz.js";
 import { sfx } from "./fx.js";
 
 const SHOP_ACTIONS = ["reroll", "ready", "hp", "buy1", "buy2", "buy3", "buy4", "buy5", "buy6"];
@@ -407,6 +408,7 @@ export function createGameView(app) {
             renderModifier();
             renderMutators();
             renderFights(you);
+            renderBlitz(state, app);
             if (!you) return;
             renderAugments(you);
             renderMystery(you);

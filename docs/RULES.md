@@ -31,6 +31,21 @@ lobby host.
 - After a match, everybody returns to the same lobby so the host can start a
   rematch.
 
+## Blitz mode
+
+A fast mode for quick games (also as a one-click "⚡ Play Blitz vs 5 bots" in
+the menu, or the "Blitz mode" lobby setting):
+
+- **No shop.** Every round each player gets a **loot drop**: the game spends
+  their money for them the way a hard bot would (+40$ bonus per round, up to
+  two HP upgrades), and the new items, level-ups and HP are revealed as cards
+  that flip over. Augments are picked automatically.
+- The loot screen lasts 7 s, or until everyone presses **FIGHT!** (Space).
+- 3 lives (or fewer if the lobby's setting is lower), no mutators, no Empty
+  Hands event.
+- Fights hit 1.6× harder, overtime starts at 12 s and sudden death at 22 s;
+  the results pause is 3 s.
+
 ## Match flow
 
 A match is a loop of **Shop → Combat → Results** until one player is left.

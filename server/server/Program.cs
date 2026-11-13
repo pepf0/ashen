@@ -405,7 +405,8 @@ public static class GameSocket
                 error = lobbies.Join(conn, created);
                 if (error is null)
                     error = created.StartSolo(conn, msg.GetProperty("bots").GetInt32(),
-                        Enum.TryParse<BotDifficulty>(msg.GetProperty("difficulty").GetString(), true, out var d) ? d : BotDifficulty.Normal);
+                        Enum.TryParse<BotDifficulty>(msg.GetProperty("difficulty").GetString(), true, out var d) ? d : BotDifficulty.Normal,
+                        msg.TryGetProperty("blitz", out var bz) && bz.ValueKind == JsonValueKind.True);
                 break;
             }
             case "simStart":

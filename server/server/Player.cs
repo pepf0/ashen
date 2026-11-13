@@ -13,6 +13,9 @@ public class Player
     public OwnedItem?[] Dynamics { get; set; } = new OwnedItem?[DynamicSlots];
     public double MaxHealth { get; set; } = 1000;
     public int HpUpgrades { get; set; }
+    /// <summary>Blitz: what this round's automatic loot drop gave (for the reveal), and how many HP upgrades.</summary>
+    public List<ItemView> BlitzLoot { get; set; } = new();
+    public int BlitzHp { get; set; }
     public int Money { get; set; } = 100;
     public int Lives { get; set; } = 5;
     public HashSet<string> ObtainedSpecials { get; } = new();

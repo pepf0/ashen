@@ -1946,3 +1946,57 @@ body[data-observer="1"] .game-top .stat-pill:nth-child(5) { display: none; }
 .nameplate.compact .np-hearts i { width: 9px; height: 8px; }
 .nameplate.compact .np-line .nb, .nameplate.compact .np-line > .player-name { max-width: 140px; }
 .nameplate.compact .np-title { max-width: 150px; }
+
+/* ==========================================================================
+   Blitz mode: loot drop reveal (js/blitz.js)
+   ========================================================================== */
+.blitz-panel { border-color: #ffd166 !important; background: radial-gradient(circle at 20% 0%, rgba(255, 209, 102, 0.18), transparent 60%), linear-gradient(180deg, #2a1c08, #120c24) !important; box-shadow: 0 0 30px rgba(255, 209, 102, 0.2); }
+.blitz-panel h2 { color: #ffd166; text-shadow: 0 0 12px #ff9a3d; }
+.blitz-go { width: 100%; font-size: 1.15rem; padding: 12px; animation: blitz-pulse 1.2s ease-in-out infinite; }
+@keyframes blitz-pulse { 50% { box-shadow: 0 0 26px rgba(255, 179, 71, 0.9); filter: brightness(1.12); } }
+body.blitz-match #shopPanel, body.blitz-match .mystery-panel, body.blitz-match #augmentPanel { display: none !important; }
+
+.blitz-loot { position: fixed; inset: 0; z-index: 800; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 45%, rgba(60, 30, 90, 0.92), rgba(5, 2, 15, 0.97) 70%); animation: bl-in 0.35s ease-out; }
+.blitz-loot[hidden] { display: none; }
+@keyframes bl-in { from { opacity: 0; } }
+.bl-rays { position: absolute; left: 50%; top: 50%; width: 1800px; height: 1800px; translate: -50% -50%; pointer-events: none;
+    background: repeating-conic-gradient(from 0deg, rgba(255, 209, 102, 0.07) 0 8deg, transparent 8deg 20deg); animation: bl-spin 30s linear infinite;
+    -webkit-mask: radial-gradient(circle, #000 10%, transparent 55%); mask: radial-gradient(circle, #000 10%, transparent 55%); }
+@keyframes bl-spin { to { rotate: 360deg; } }
+.bl-head { position: relative; text-align: center; }
+.bl-round { font-family: var(--font-pixel); letter-spacing: 0.5em; color: #ffd8a8; font-size: 1.1rem; }
+.bl-title { font-family: var(--font-pixel); font-weight: 700; font-size: clamp(3rem, 9vw, 6.5rem); line-height: 1;
+    background: linear-gradient(180deg, #fff2c0, #ffb347 45%, #ff5a1a 80%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 24px rgba(255, 122, 61, 0.8)) drop-shadow(0 6px 0 #2a0a04); animation: bl-slam 0.6s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes bl-slam { from { transform: scale(3) rotate(-6deg); opacity: 0; } }
+.bl-cards { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; max-width: 1100px; padding: 0 16px; perspective: 1000px; }
+/* The card drops in (outer, with opacity), the inner part flips (3D needs no opacity on it). */
+.bl-card { position: relative; width: 170px; height: 230px; perspective: 900px; opacity: 0;
+    animation: bl-drop 0.55s cubic-bezier(.2, 1.3, .4, 1) forwards; animation-delay: calc(0.25s + var(--k) * 0.38s); }
+.bl-inner { position: absolute; inset: 0; transform-style: preserve-3d; animation: bl-flip 0.5s ease-in-out forwards; animation-delay: calc(0.65s + var(--k) * 0.38s); }
+@keyframes bl-drop { from { opacity: 0; transform: translateY(-140px) scale(0.6); } to { opacity: 1; transform: none; } }
+@keyframes bl-flip { from { transform: rotateY(0deg); } to { transform: rotateY(180deg); } }
+.bl-back, .bl-front { position: absolute; inset: 0; border-radius: 12px; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.bl-back { background: repeating-linear-gradient(45deg, #3a2a6a 0 10px, #2a1d4e 10px 20px); border: 3px solid #8a7ac8; font-family: var(--font-pixel); font-size: 4rem; color: #d8d0ff; text-shadow: 0 0 16px #b48aff; }
+.bl-front { transform: rotateY(180deg); background: radial-gradient(circle at 50% 40%, rgba(150, 130, 220, 0.35), transparent 70%), linear-gradient(180deg, #221a40, #120c26); border: 3px solid #8a7ac8; box-shadow: 0 0 26px rgba(138, 122, 200, 0.5); padding: 10px; }
+.bl-card.up .bl-front { border-color: #6be08a; box-shadow: 0 0 30px rgba(107, 224, 138, 0.6); }
+.bl-card.special .bl-front { border-color: #ffd166; background: radial-gradient(circle at 50% 40%, rgba(255, 209, 102, 0.45), transparent 70%), linear-gradient(180deg, #3a2a08, #1a1006); box-shadow: 0 0 50px rgba(255, 209, 102, 0.8); }
+.bl-card.special::before { content: ""; position: absolute; left: 50%; bottom: 50%; width: 90px; height: 900px; translate: -50% 0; pointer-events: none;
+    background: linear-gradient(0deg, rgba(255, 230, 150, 0.6), transparent); filter: blur(6px); opacity: 0; animation: bl-beam 1.6s ease-out forwards; animation-delay: calc(0.8s + var(--k) * 0.38s); }
+@keyframes bl-beam { 20% { opacity: 1; } to { opacity: 0; } }
+.bl-card.hp .bl-front { border-color: #ff6a7a; box-shadow: 0 0 30px rgba(255, 90, 110, 0.6); }
+.bl-heart { font-size: 4.2rem; color: #ff5a6e; text-shadow: 0 0 20px #ff5a6e; animation: np-heart 1s ease-in-out infinite; }
+.bl-badge { font-family: var(--font-pixel); font-weight: 700; font-size: 1rem; letter-spacing: 0.1em; padding: 3px 10px; border-radius: 4px; color: #0b0618; background: #d8d0ff; }
+.bl-card.up .bl-badge { background: #6be08a; } .bl-card.special .bl-badge { background: linear-gradient(90deg, #ffd166, #fff2c0, #ffd166); } .bl-card.hp .bl-badge { background: #ff8a9a; }
+.bl-name { font-family: var(--font-pixel); color: #fff; font-size: 0.95rem; text-align: center; }
+.bl-empty { font-family: var(--font-pixel); color: #d8d0ff; font-size: 1.3rem; }
+.bl-foot { position: relative; display: flex; align-items: center; gap: 24px; }
+.bl-timer { font-family: var(--font-pixel); color: #ffd8a8; font-size: 1.1rem; } .bl-timer b { font-size: 1.6rem; color: #fff; }
+.bl-fight { font-family: var(--font-pixel); font-weight: 700; font-size: 1.8rem; padding: 14px 40px; border-radius: 10px; border: 3px solid #fff2c0; cursor: pointer; color: #2a0a04;
+    background: linear-gradient(180deg, #ffd166, #ff7a1a); box-shadow: 0 0 30px rgba(255, 122, 26, 0.8), 0 6px 0 #8a2a08; animation: blitz-pulse 0.9s ease-in-out infinite; }
+.bl-fight:hover { filter: brightness(1.15); }
+.bl-fight.on { background: linear-gradient(180deg, #6be08a, #2fae5c); border-color: #d8ffe0; box-shadow: 0 0 30px rgba(107, 224, 138, 0.8), 0 6px 0 #1b6a38; animation: none; }
+.bl-fight.on::after { content: " · ready!"; font-size: 1rem; }
+.bl-hint { position: relative; color: var(--text-dim, #a7a3c8); font-size: 0.9rem; }
+@media (prefers-reduced-motion: reduce) { .bl-rays, .blitz-go, .bl-fight { animation: none; } }

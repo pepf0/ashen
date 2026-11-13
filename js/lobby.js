@@ -7,6 +7,7 @@ import { toast } from "./ui.js";
 
 const FIELDS = [
     { key: "public", label: "Public lobby", type: "checkbox" },
+    { key: "blitz", label: "⚡ Blitz mode (no shop, free loot)", type: "checkbox" },
     { key: "lives", label: "Starting lives", min: 1, max: 20 },
     { key: "shopSeconds", label: "Shop timer (s)", min: 10, max: 600 },
     { key: "startMoney", label: "Starting money", min: 0, max: 10000 },

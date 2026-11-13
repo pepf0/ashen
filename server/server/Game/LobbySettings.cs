@@ -23,6 +23,8 @@ public class LobbySettings
     public int HpUpgradeCostIncrease { get; set; } = 5;
     /// <summary>Multiplies every player's special item chance in the shop.</summary>
     public double SpecialChanceMult { get; set; } = 1;
+    /// <summary>Blitz: no shop. Every round each player gets an automatic loot drop, fights hit harder and end fast.</summary>
+    public bool Blitz { get; set; }
 
     /// <summary>Clamps every value into a sane range so a host can't break the game.</summary>
     public LobbySettings Sanitized() => new()
@@ -38,6 +40,7 @@ public class LobbySettings
         HpUpgradeMult = Math.Clamp(double.IsFinite(HpUpgradeMult) ? HpUpgradeMult : 1.2, 1, 10),
         HpUpgradeCost = Math.Clamp(HpUpgradeCost, 0, 10000),
         HpUpgradeCostIncrease = Math.Clamp(HpUpgradeCostIncrease, 0, 10000),
-        SpecialChanceMult = Math.Clamp(double.IsFinite(SpecialChanceMult) ? SpecialChanceMult : 1, 0, 100)
+        SpecialChanceMult = Math.Clamp(double.IsFinite(SpecialChanceMult) ? SpecialChanceMult : 1, 0, 100),
+        Blitz = Blitz
     };
 }

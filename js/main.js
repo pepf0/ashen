@@ -221,6 +221,7 @@ async function showProgress(p) {
 // ---------------- menu ----------------
 
 document.getElementById("createLobby").addEventListener("click", () => app.socket.send("create"));
+document.getElementById("blitzStart").addEventListener("click", () => app.socket.send("solo", { bots: 5, difficulty: "normal", blitz: true }));
 document.getElementById("soloStart").addEventListener("click", () => app.socket.send("solo", {
     bots: Number(document.getElementById("soloBots").value),
     difficulty: document.getElementById("soloDifficulty").value

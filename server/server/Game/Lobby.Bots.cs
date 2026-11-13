@@ -47,12 +47,12 @@ public partial class Lobby
     }
 
     /// <summary>Solo game: fills the lobby with bots and starts right away.</summary>
-    public string? StartSolo(Connection conn, int bots, BotDifficulty difficulty)
+    public string? StartSolo(Connection conn, int bots, BotDifficulty difficulty, bool blitz = false)
     {
         lock (sync)
         {
             bots = Math.Clamp(bots, 1, MaxPlayers - 1);
-            Settings = new LobbySettings { Public = false }.Sanitized();
+            Settings = new LobbySettings { Public = false, Blitz = blitz }.Sanitized();
             for (int i = 0; i < bots && Members.Count < MaxPlayers; i++) AddBotUnlocked(difficulty);
             BroadcastLobby();
             return Start(conn);
