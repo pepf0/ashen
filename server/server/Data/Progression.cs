@@ -84,7 +84,7 @@ public record ProgressResult(int XpGained, int Xp, int Level, int LevelXp, int N
 
 public static class Progression
 {
-    public const int MaxLevel = 50;
+    public const int MaxLevel = 100;
 
     /// <summary>XP needed to go from <paramref name="level"/> to the next: 300, then +10% per level.</summary>
     public static int XpForLevel(int level) => (int)Math.Round(300 * Math.Pow(1.1, level - 1));

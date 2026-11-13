@@ -329,7 +329,7 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
 ## Levels, achievements & cosmetics
 
 - XP per match: 100, +50 per placement above last, +10 per fight won, +25 per
-  new achievement. Each level needs 10 % more XP than the last (max level 50).
+  new achievement. Each level needs 10 % more XP than the last (max level 100).
 - 40 achievements (`json/achievements.json`), with the share of players who
   have each.
 - Cosmetics (`json/cosmetics.json`) unlock with levels or achievements. Purely
@@ -346,7 +346,8 @@ claimed and the list of open/claimed events. Defined in `json/events.json`.
     weapons (Sword, Hammer, Frying Pan, Bow) in the shop, your build and fights.
   - **Victory effects** played in the arena when you win a fight (Confetti,
     Fireworks, Lightning, Meteor, Soul Harvest, Ash Storm, …).
-  - **Admins** (`ASHEN_ADMINS`) have every cosmetic and title in the game for
+  - **Admins** (`ASHEN_ADMINS`) and **testers** (`ASHEN_TESTERS`, no admin
+    panel) have every cosmetic and title in the game for
     testing: all level and achievement unlocks, every signature set and every
     kit mastery title.
   - **Admin set "Pepf Prime"** (only for `ASHEN_ADMINS`, hidden from everyone

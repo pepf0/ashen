@@ -9,6 +9,8 @@ BRANCH="${ASHEN_BRANCH:-ccode}"
 PORT="${ASHEN_PORT:-6769}"
 TRUSTED_PROXIES="${ASHEN_TRUSTED_PROXIES:-10.10.0.1}"
 ADMINS="${ASHEN_ADMINS:-pepf}"
+# Testers: every cosmetic and title unlocked, no admin panel. Kept from the last install unless given.
+TESTERS="${ASHEN_TESTERS:-$(sed -n 's/^Environment=ASHEN_TESTERS=//p' /etc/systemd/system/ashen.service 2>/dev/null || true)}"
 PREFIX="/opt/ashen"
 DATA="/var/lib/ashen"
 DOTNET_DIR="/opt/dotnet"
@@ -86,6 +88,7 @@ Environment=ASHEN_DB=$DATA/ashen.db
 Environment=ASPNETCORE_URLS=http://0.0.0.0:$PORT
 Environment=ASHEN_TRUSTED_PROXIES=$TRUSTED_PROXIES
 Environment=ASHEN_ADMINS=$ADMINS
+Environment=ASHEN_TESTERS=$TESTERS
 Environment=DOTNET_ROOT=$DOTNET_DIR
 Environment=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1

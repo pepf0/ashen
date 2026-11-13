@@ -19,6 +19,9 @@ public class Program
         Admin.Usernames = (Environment.GetEnvironmentVariable("ASHEN_ADMINS") ?? "pepf")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Admin.Testers = (Environment.GetEnvironmentVariable("ASHEN_TESTERS") ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var builder = WebApplication.CreateBuilder(args);
         builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);

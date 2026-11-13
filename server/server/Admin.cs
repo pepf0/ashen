@@ -9,6 +9,10 @@ public static class Admin
 
     public static bool IsAdmin(User user) => Usernames.Contains(user.Username);
 
+    /// <summary>Testers (ASHEN_TESTERS): every cosmetic and title unlocked like an admin, but no admin panel.</summary>
+    public static HashSet<string> Testers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public static bool UnlocksAll(User user) => IsAdmin(user) || Testers.Contains(user.Username);
+
     /// <summary>Visual-only prank effects the admin troll panel can send (see js/troll.js).</summary>
     public static readonly HashSet<string> FxEffects = new()
     {

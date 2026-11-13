@@ -137,7 +137,7 @@ public partial class Database
         return new ProgressResult(gained, xp, level, into, needed, level - oldLevel, earned, newCosmetics);
     }
 
-    private CosmeticOwner? OwnerOf(long userId) => GetUser(userId) is { } u ? new CosmeticOwner(Admin.IsAdmin(u), u.Username) : null;
+    private CosmeticOwner? OwnerOf(long userId) => GetUser(userId) is { } u ? new CosmeticOwner(Admin.UnlocksAll(u), u.Username) : null;
 
     /// <summary>What others see: equipped cosmetics (only if still unlocked), chosen title and level.</summary>
     public Appearance GetAppearance(long userId)
